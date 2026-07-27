@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+:root {
+  --lcars-black: #000000;
+  --lcars-orange: #ff9900;
+  --lcars-amber: #ffcc66;
+  --lcars-red: #cc6666;
+  --lcars-salmon: #ff9c7a;
+  --lcars-lilac: #cc99cc;
+  --lcars-violet: #9999ff;
+  --lcars-ice: #cce6ff;
+  --lcars-teal: #66ccbb;
+  --lcars-panel: #10121a;
+}
+
+@theme inline {
+  --color-lcars-black: var(--lcars-black);
+  --color-lcars-orange: var(--lcars-orange);
+  --color-lcars-amber: var(--lcars-amber);
+  --color-lcars-red: var(--lcars-red);
+  --color-lcars-salmon: var(--lcars-salmon);
+  --color-lcars-lilac: var(--lcars-lilac);
+  --color-lcars-violet: var(--lcars-violet);
+  --color-lcars-ice: var(--lcars-ice);
+  --color-lcars-teal: var(--lcars-teal);
+  --color-lcars-panel: var(--lcars-panel);
+  --font-lcars: var(--font-lcars), "Arial Narrow", sans-serif;
+}
+
+body {
+  font-family: var(--font-lcars), "Arial Narrow", sans-serif;
+}
+
+/* Wide LCARS-style letterspacing for headings/labels */
+.lcars-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Scrollable but chrome-free - content can still be flicked/wheeled, but no
+   browser scrollbar track is ever drawn. Used as a safety net on panels
+   that should normally fit the viewport outright. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
