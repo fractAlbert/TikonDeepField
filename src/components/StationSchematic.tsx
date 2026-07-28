@@ -52,7 +52,13 @@ const WEDGE: [number, number] = [-58, 58];
 const PIVOT_X = HULL_X + HULL_W;
 const PIVOT_Y = ARRAY_CY;
 
-const S_TRUE = 0.08;
+// Small enough to read as "dwarfed," but not so small that the hull's own
+// top/center/bottom callout anchors (HULL, ISOLINEAR CORE, DOCKING PORT)
+// collapse into an indistinguishable cluster - at 200 units tall, S_TRUE
+// needs to keep at least a few dozen units between them to read as three
+// separate points once rendered, rather than one tangled knot of leader
+// lines.
+const S_TRUE = 0.2;
 const S_FULL = 1;
 
 const TIMING = {
