@@ -1,4 +1,5 @@
 import { LcarsPanel } from "@/components/LcarsShell";
+import { PANEL_LABELS } from "@/lib/copy";
 
 export function HelpPanel() {
   return (
@@ -35,7 +36,8 @@ export function HelpPanel() {
             to mark cells it definitely isn&apos;t at.
           </li>
           <li>
-            Out of regions? <strong className="text-lcars-orange">Survey New Region</strong> in
+            Out of regions?{" "}
+            <strong className="text-lcars-orange">{PANEL_LABELS.surveyNewRegion}</strong> in
             the right-hand rail generates a fresh field and takes you straight
             to its Briefing &mdash; a random 6-8 signatures with a fresh set
             of bearings to work from.

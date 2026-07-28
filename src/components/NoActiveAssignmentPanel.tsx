@@ -1,6 +1,5 @@
 import { OutpostLogo } from "@/components/OutpostLogo";
-import { OUTPOST_NAME } from "@/lib/constants";
-import { COPY } from "@/lib/copy";
+import { COPY, OUTPOST_NAME } from "@/lib/copy";
 import { playButtonClick } from "@/lib/sound";
 
 export function NoActiveAssignmentPanel({

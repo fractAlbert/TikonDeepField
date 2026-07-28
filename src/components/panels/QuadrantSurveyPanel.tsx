@@ -5,6 +5,7 @@ import { Region, Quadrant } from "@/lib/puzzle-types";
 import { QUADRANTS } from "@/lib/grid";
 import { runShape } from "@/lib/lcars-colors";
 import { surveyQuadrant } from "@/lib/quadrant-survey";
+import { PANEL_LABELS } from "@/lib/copy";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { LcarsButton } from "@/components/LcarsButton";
 
@@ -14,7 +15,7 @@ export function QuadrantSurveyPanel({ region }: { region: Region }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <LcarsPanel title="Quadrant Survey" accent="bg-lcars-salmon">
+      <LcarsPanel title={PANEL_LABELS.survey} accent="bg-lcars-salmon">
         <p className="text-sm text-lcars-ice/70 leading-relaxed mb-4">
           Sweep a quadrant for a census of every ring and bearing within it —
           how many signatures sit inside it, and what they&apos;re classified

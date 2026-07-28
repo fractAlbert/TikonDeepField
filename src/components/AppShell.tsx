@@ -20,7 +20,7 @@ import { NoActiveAssignmentPanel } from "@/components/NoActiveAssignmentPanel";
 import { StationInfoPanel } from "@/components/panels/StationInfoPanel";
 import { StationLoadingScreen } from "@/components/StationLoadingScreen";
 import { LcarsPanel } from "@/components/LcarsShell";
-import { GAME_NAME, OUTPOST_NAME } from "@/lib/constants";
+import { GAME_NAME, OUTPOST_NAME, PANEL_LABELS } from "@/lib/copy";
 
 type PanelId =
   | "briefing"
@@ -34,9 +34,9 @@ type PanelId =
 
 const PRIMARY_NAV: NavItem[] = [
   { id: "briefing", label: "Briefing", color: "orange" },
-  { id: "manifest", label: "Star Manifest", color: "lilac" },
-  { id: "sweep", label: "Sweep Scope", color: "violet" },
-  { id: "survey", label: "Quadrant Survey", color: "salmon" },
+  { id: "manifest", label: PANEL_LABELS.manifest, color: "lilac" },
+  { id: "sweep", label: PANEL_LABELS.sweep, color: "violet" },
+  { id: "survey", label: PANEL_LABELS.survey, color: "salmon" },
   { id: "log", label: "Log", color: "amber" },
 ];
 
@@ -47,7 +47,7 @@ const PRIMARY_NAV: NavItem[] = [
 const UTILITY_NAV: NavItem[] = [
   { id: "help", label: "Help", color: "ice" },
   { id: "prototypes", label: "Prototypes", color: "teal" },
-  { id: "generate", label: "Survey New Region", color: "orange" },
+  { id: "generate", label: PANEL_LABELS.surveyNewRegion, color: "orange" },
 ];
 
 // Purely for flavor - the region is already generated before this starts,
@@ -200,7 +200,7 @@ export function AppShell() {
             ))}
           {panel === "manifest" &&
             (noActiveAssignment ? (
-              <LcarsPanel id="manifest-placeholder" title="Star Manifest" accent="bg-lcars-lilac" className="h-full">
+              <LcarsPanel id="manifest-placeholder" title={PANEL_LABELS.manifest} accent="bg-lcars-lilac" className="h-full">
                 <NoActiveAssignmentPanel onOpenStationInfo={openStationInfo} />
               </LcarsPanel>
             ) : (
@@ -216,13 +216,13 @@ export function AppShell() {
             )}
           </div>
           {panel === "sweep" && noActiveAssignment && (
-            <LcarsPanel id="sweep-placeholder" title="Sweep Scope" accent="bg-lcars-violet" className="h-full">
+            <LcarsPanel id="sweep-placeholder" title={PANEL_LABELS.sweep} accent="bg-lcars-violet" className="h-full">
               <NoActiveAssignmentPanel onOpenStationInfo={openStationInfo} />
             </LcarsPanel>
           )}
           {panel === "survey" &&
             (noActiveAssignment ? (
-              <LcarsPanel id="survey-placeholder" title="Quadrant Survey" accent="bg-lcars-salmon" className="h-full">
+              <LcarsPanel id="survey-placeholder" title={PANEL_LABELS.survey} accent="bg-lcars-salmon" className="h-full">
                 <NoActiveAssignmentPanel onOpenStationInfo={openStationInfo} />
               </LcarsPanel>
             ) : (

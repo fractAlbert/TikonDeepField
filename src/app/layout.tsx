@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Antonio } from "next/font/google";
-import { GAME_NAME } from "@/lib/constants";
+import { GAME_NAME } from "@/lib/copy";
 import "./globals.css";
 
 const antonio = Antonio({

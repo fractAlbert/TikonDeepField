@@ -6,7 +6,7 @@ import { LcarsPanel } from "@/components/LcarsShell";
 import { LcarsButton } from "@/components/LcarsButton";
 import { OutpostLogo } from "@/components/OutpostLogo";
 import { StationSchematic } from "@/components/StationSchematic";
-import { OUTPOST_NAME } from "@/lib/constants";
+import { OUTPOST_NAME } from "@/lib/copy";
 
 type SectionId = "overview" | "size" | "value" | "survey" | "schematic";
 

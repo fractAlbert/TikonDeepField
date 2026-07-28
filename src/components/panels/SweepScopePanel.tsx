@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Region } from "@/lib/puzzle-types";
 import { buildSectors } from "@/lib/grid";
 import { quasarColorHex } from "@/lib/quasar-colors";
+import { PANEL_LABELS } from "@/lib/copy";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { RelativeDistanceScope, ScopeSignature } from "@/components/sweep/RelativeDistanceScope";
 
@@ -29,7 +30,7 @@ export function SweepScopePanel({ region, visible }: { region: Region; visible: 
 
   return (
     <div className="flex flex-col gap-4">
-      <LcarsPanel title={`Sweep Scope — ${region.name}`} accent="bg-lcars-violet">
+      <LcarsPanel title={`${PANEL_LABELS.sweep} — ${region.name}`} accent="bg-lcars-violet">
         <p className="text-sm text-lcars-ice/70 leading-relaxed mb-4">
           Pick a signature as a reference &mdash; a single line sweeps out
           from it every cycle. Others glow as the line approaches, peaking

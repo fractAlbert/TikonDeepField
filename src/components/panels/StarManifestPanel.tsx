@@ -1,5 +1,6 @@
 import { Region } from "@/lib/puzzle-types";
 import { quasarColorHex } from "@/lib/quasar-colors";
+import { PANEL_LABELS } from "@/lib/copy";
 import { LcarsPanel } from "@/components/LcarsShell";
 
 function hasDirectTypeClue(region: Region, quasarId: string): boolean {
@@ -11,7 +12,7 @@ function hasDirectTypeClue(region: Region, quasarId: string): boolean {
 export function StarManifestPanel({ region }: { region: Region }) {
   return (
     <div className="flex flex-col gap-4">
-      <LcarsPanel title={`Star Manifest — ${region.name}`} accent="bg-lcars-lilac">
+      <LcarsPanel title={`${PANEL_LABELS.manifest} — ${region.name}`} accent="bg-lcars-lilac">
         <p className="text-sm text-lcars-ice/70 leading-relaxed mb-4">
           Every signature logged in this region, by name and color. Clues and
           Quadrant Survey talk about <em>types</em>; this is what ties a name
