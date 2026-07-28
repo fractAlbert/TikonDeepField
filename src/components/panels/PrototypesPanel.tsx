@@ -22,6 +22,13 @@ const PROTOTYPES: Prototype[] = [
       "Two candidate layouts for the Star Map's answer grid, side by side: a ring-and-wedge “bullseye” matrix, and a chord/spoke diagram connecting quasar nodes to type nodes.",
     href: "https://claude.ai/code/artifact/19593429-300b-40ce-9ad7-f9b7b8dcefe0",
   },
+  {
+    title: "Station Schematic — Scale Reveal",
+    status: "Under review",
+    description:
+      "Animates StationSchematic.tsx's sensor array from a dramatized true scale (dwarfing the hull, per the station lore) down to the exact compact proportions the game ships, with pointer-labeled callouts that fade and relabel across the morph.",
+    href: "https://claude.ai/code/artifact/67ac6b41-b6b5-4836-bd44-703e13e2c906",
+  },
 ];
 
 export function PrototypesPanel() {
