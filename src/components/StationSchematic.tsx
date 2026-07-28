@@ -52,13 +52,7 @@ const WEDGE: [number, number] = [-58, 58];
 const PIVOT_X = HULL_X + HULL_W;
 const PIVOT_Y = ARRAY_CY;
 
-// Small enough to read as "dwarfed," but not so small that the hull's own
-// top/center/bottom callout anchors (HULL, ISOLINEAR CORE, DOCKING PORT)
-// collapse into an indistinguishable cluster - at 200 units tall, S_TRUE
-// needs to keep at least a few dozen units between them to read as three
-// separate points once rendered, rather than one tangled knot of leader
-// lines.
-const S_TRUE = 0.2;
+const S_TRUE = 0.08;
 const S_FULL = 1;
 
 const TIMING = {
@@ -338,6 +332,15 @@ export function StationSchematic({ className = "" }: { className?: string }) {
   );
 }
 
+// Elbow leader: a diagonal run from the anchor to a point level with the
+// label's baseline, then a short flush horizontal run into the text -
+// rather than one straight diagonal all the way to the label, which (at
+// a shallow enough angle) reads as cutting across the letters instead of
+// pointing at them. The horizontal run is what makes the connection
+// unambiguous, same as a real schematic's callout leaders.
+const ELBOW_RUN = 40;
+const LEADER_GAP = 4;
+
 function Callout({
   anchor,
   textPos,
@@ -347,13 +350,22 @@ function Callout({
   textPos: { x: number; y: number };
   lines: string[];
 }) {
+  const elbowX = textPos.x + ELBOW_RUN;
   return (
     <g>
-      <line x1={anchor.x} y1={anchor.y} x2={textPos.x} y2={textPos.y} stroke="rgba(204,230,255,0.28)" strokeWidth={1} />
+      <line x1={anchor.x} y1={anchor.y} x2={elbowX} y2={textPos.y} stroke="rgba(204,230,255,0.28)" strokeWidth={1} />
+      <line
+        x1={elbowX}
+        y1={textPos.y}
+        x2={textPos.x - LEADER_GAP}
+        y2={textPos.y}
+        stroke="rgba(204,230,255,0.28)"
+        strokeWidth={1}
+      />
       <circle cx={anchor.x} cy={anchor.y} r={2.5} fill="var(--lcars-violet)" />
       <text
-        x={textPos.x + 8}
-        y={textPos.y - 6}
+        x={textPos.x}
+        y={textPos.y}
         fontSize={11}
         fill="rgba(204,230,255,0.55)"
         fontFamily="ui-monospace, monospace"
@@ -362,7 +374,7 @@ function Callout({
         {lines.map((line, i) => (
           <tspan
             key={i}
-            x={textPos.x + 8}
+            x={textPos.x}
             dy={i === 0 ? 0 : 13}
             fill={i === 0 ? "var(--lcars-ice)" : undefined}
             fontWeight={i === 0 ? 600 : undefined}
