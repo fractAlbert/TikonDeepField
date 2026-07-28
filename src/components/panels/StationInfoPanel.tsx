@@ -22,6 +22,15 @@ export function StationInfoPanel({ onBack }: { onBack: () => void }) {
   const [section, setSection] = useState<SectionId>("overview");
   const current = SECTIONS.find((s) => s.id === section)!;
 
+  // Bumped every time "Schematic" is selected, so keying SchematicSection on
+  // it forces a fresh mount - and therefore a fresh true-scale-to-
+  // operational replay - each time you land back on that section.
+  const [schematicVisit, setSchematicVisit] = useState(0);
+  function selectSection(id: SectionId) {
+    if (id === "schematic") setSchematicVisit((n) => n + 1);
+    setSection(id);
+  }
+
   return (
     <div className="flex flex-col gap-4 h-full">
       <LcarsPanel className="shrink-0">
@@ -46,7 +55,7 @@ export function StationInfoPanel({ onBack }: { onBack: () => void }) {
             color={s.color}
             shape={runShape(i, SECTIONS.length)}
             orientation="horizontal"
-            onClick={() => setSection(s.id)}
+            onClick={() => selectSection(s.id)}
             className={section === s.id ? "" : "opacity-55"}
           >
             {s.label}
@@ -60,7 +69,7 @@ export function StationInfoPanel({ onBack }: { onBack: () => void }) {
           {section === "size" && <SizeCrewSection />}
           {section === "value" && <WhyItMattersSection />}
           {section === "survey" && <SurveyProcessSection />}
-          {section === "schematic" && <SchematicSection />}
+          {section === "schematic" && <SchematicSection key={schematicVisit} />}
         </div>
       </LcarsPanel>
     </div>

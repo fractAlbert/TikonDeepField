@@ -1,0 +1,24 @@
+.labelGroup {
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+.labelGroup.visible {
+  opacity: 1;
+}
+
+.arrayArc {
+  animation: breathe 3.6s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.85; }
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .labelGroup { transition: none; }
+  .arrayArc { animation: none; }
+}
