@@ -244,16 +244,55 @@ export function StationSchematic({ className = "" }: { className?: string }) {
           transform attribute, set imperatively via applyHullScale, grows
           it from true relative scale up to this. */}
       <g ref={hullGroupRef} transform={`translate(${PIVOT_X} ${PIVOT_Y}) scale(${S_TRUE})`}>
-        <rect x={-60} y={-100} width={60} height={200} rx={14} fill="rgba(207,227,242,0.05)" stroke="var(--lcars-ice)" strokeWidth={2} />
+        {/* The silhouette strokes are non-scaling: SVG multiplies
+            stroke-width by the group's transform, so at true scale a
+            2-unit stroke would render at 2 * 0.08 = 0.16 units - well
+            under a pixel, leaving the correctly-sized hull essentially
+            invisible. Holding these constant keeps the miniature crisp
+            and legible at every point in the growth. Interior detail
+            (deck dividers, core dots) is deliberately left scaling, so
+            it fades out as the hull shrinks, exactly as real detail
+            would at that size. */}
+        <rect
+          x={-60}
+          y={-100}
+          width={60}
+          height={200}
+          rx={14}
+          fill="rgba(207,227,242,0.05)"
+          stroke="var(--lcars-ice)"
+          strokeWidth={2}
+          vectorEffect="non-scaling-stroke"
+        />
         {Array.from({ length: DECKS - 1 }).map((_, i) => {
           const ly = -100 + (i + 1) * DECK_H;
           return <line key={i} x1={-60} y1={ly} x2={0} y2={ly} stroke="rgba(207,227,242,0.25)" strokeWidth={1} />;
         })}
-        <line x1={-30} y1={-94} x2={-30} y2={94} stroke="var(--lcars-amber)" strokeWidth={3} opacity={0.85} filter="url(#schematic-glow)" />
+        <line
+          x1={-30}
+          y1={-94}
+          x2={-30}
+          y2={94}
+          stroke="var(--lcars-amber)"
+          strokeWidth={3}
+          opacity={0.85}
+          filter="url(#schematic-glow)"
+          vectorEffect="non-scaling-stroke"
+        />
         {Array.from({ length: DECKS }).map((_, i) => (
           <circle key={i} cx={-30} cy={-100 + (i + 0.5) * DECK_H} r={3} fill="#fff8ec" />
         ))}
-        <rect x={-40} y={100} width={20} height={14} rx={3} fill="none" stroke="var(--lcars-orange)" strokeWidth={2} />
+        <rect
+          x={-40}
+          y={100}
+          width={20}
+          height={14}
+          rx={3}
+          fill="none"
+          stroke="var(--lcars-orange)"
+          strokeWidth={2}
+          vectorEffect="non-scaling-stroke"
+        />
 
         <g className={`${styles.labelGroup} ${operationalVisible ? styles.visible : ""}`}>
           {Array.from({ length: DECKS }).map((_, i) => (
@@ -292,22 +331,22 @@ export function StationSchematic({ className = "" }: { className?: string }) {
             x: round((PIVOT_X + (ARRAY_CX - 40)) / 2),
             y: round((PIVOT_Y - 30 * S_TRUE + (ARRAY_CY - 50)) / 2),
           }}
-          textPos={{ x: 10, y: 55 }}
+          labelY={55}
           lines={["MOUNTING STRUTS"]}
         />
         <Callout
           anchor={{ x: round(PIVOT_X - 30 * S_TRUE), y: round(PIVOT_Y - 100 * S_TRUE) }}
-          textPos={{ x: 10, y: 120 }}
+          labelY={120}
           lines={["HULL", "TRUE RELATIVE SCALE"]}
         />
         <Callout
           anchor={{ x: round(PIVOT_X - 30 * S_TRUE), y: PIVOT_Y }}
-          textPos={{ x: 10, y: 175 }}
+          labelY={175}
           lines={["ISOLINEAR CORE"]}
         />
         <Callout
           anchor={{ x: round(PIVOT_X - 30 * S_TRUE), y: round(PIVOT_Y + 100 * S_TRUE) }}
-          textPos={{ x: 10, y: 230 }}
+          labelY={230}
           lines={["DOCKING PORT"]}
         />
         <text x={370} y={270} textAnchor="end" fontSize={9.5} fill="rgba(207,227,242,0.4)" fontFamily="ui-monospace, monospace">
@@ -332,40 +371,51 @@ export function StationSchematic({ className = "" }: { className?: string }) {
   );
 }
 
-// Elbow leader: a diagonal run from the anchor to a point level with the
-// label's baseline, then a short flush horizontal run into the text -
-// rather than one straight diagonal all the way to the label, which (at
-// a shallow enough angle) reads as cutting across the letters instead of
-// pointing at them. The horizontal run is what makes the connection
-// unambiguous, same as a real schematic's callout leaders.
-const ELBOW_RUN = 40;
-const LEADER_GAP = 4;
+// Callout labels sit in a left-hand column, the diagram sits to their
+// right, so every leader has to approach a label from the right and stop
+// before reaching it - it must never enter the text's own x-range, or it
+// reads as striking through the words rather than pointing at them.
+//
+// All labels are right-aligned to a shared edge (LABEL_RIGHT) so the
+// column has a clean margin for the leaders to meet. Each leader is an
+// elbow: a short horizontal run off the label's right edge, then a
+// diagonal out to the anchor. The horizontal segment is what makes the
+// association with the label unambiguous.
+const LABEL_RIGHT = 150;
+const ELBOW_X = 195;
+const LEADER_GAP = 6;
+// Nudge the leader off the text baseline to the visual middle of the
+// first line's cap height, so it meets the label centrally instead of
+// underlining it.
+const LEADER_RISE = 4;
 
 function Callout({
   anchor,
-  textPos,
+  labelY,
   lines,
 }: {
   anchor: { x: number; y: number };
-  textPos: { x: number; y: number };
+  /** Baseline of the label's first line. */
+  labelY: number;
   lines: string[];
 }) {
-  const elbowX = textPos.x + ELBOW_RUN;
+  const leaderY = labelY - LEADER_RISE;
   return (
     <g>
-      <line x1={anchor.x} y1={anchor.y} x2={elbowX} y2={textPos.y} stroke="rgba(204,230,255,0.28)" strokeWidth={1} />
       <line
-        x1={elbowX}
-        y1={textPos.y}
-        x2={textPos.x - LEADER_GAP}
-        y2={textPos.y}
+        x1={LABEL_RIGHT + LEADER_GAP}
+        y1={leaderY}
+        x2={ELBOW_X}
+        y2={leaderY}
         stroke="rgba(204,230,255,0.28)"
         strokeWidth={1}
       />
+      <line x1={ELBOW_X} y1={leaderY} x2={anchor.x} y2={anchor.y} stroke="rgba(204,230,255,0.28)" strokeWidth={1} />
       <circle cx={anchor.x} cy={anchor.y} r={2.5} fill="var(--lcars-violet)" />
       <text
-        x={textPos.x}
-        y={textPos.y}
+        x={LABEL_RIGHT}
+        y={labelY}
+        textAnchor="end"
         fontSize={11}
         fill="rgba(204,230,255,0.55)"
         fontFamily="ui-monospace, monospace"
@@ -374,7 +424,7 @@ function Callout({
         {lines.map((line, i) => (
           <tspan
             key={i}
-            x={textPos.x}
+            x={LABEL_RIGHT}
             dy={i === 0 ? 0 : 13}
             fill={i === 0 ? "var(--lcars-ice)" : undefined}
             fontWeight={i === 0 ? 600 : undefined}
