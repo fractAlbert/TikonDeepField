@@ -45,6 +45,16 @@ const DECK_H = HULL_H / DECKS;
 const ARRAY_CX = 300;
 const ARRAY_CY = 120;
 const WEDGE: [number, number] = [-58, 58];
+const ARRAY_RADII = [100, 75, 50];
+
+// The dish's arcs bulge away from the hull, so the part of the array
+// nearest the station is the pair of tips on the innermost arc. Deriving
+// the strut endpoints from that arc (rather than hardcoding a point in
+// front of it) is what makes the struts actually land on the array -
+// they previously stopped ~66 units short and read as floating.
+const ARRAY_INNER_R = ARRAY_RADII[ARRAY_RADII.length - 1];
+const STRUT_TOP = polar(ARRAY_CX, ARRAY_CY, ARRAY_INNER_R, WEDGE[0]);
+const STRUT_BOTTOM = polar(ARRAY_CX, ARRAY_CY, ARRAY_INNER_R, WEDGE[1]);
 
 // The hull grows from this point - its right edge, vertically centered,
 // where the mounting struts attach - rather than from its own corner, so
@@ -211,7 +221,7 @@ export function StationSchematic({ className = "" }: { className?: string }) {
       </defs>
 
       {/* sensor array - fixed size and position throughout; only the hull scales */}
-      {[100, 75, 50].map((r) => (
+      {ARRAY_RADII.map((r) => (
         <path
           key={r}
           d={arcPath(ARRAY_CX, ARRAY_CY, r, WEDGE[0], WEDGE[1])}
@@ -236,8 +246,8 @@ export function StationSchematic({ className = "" }: { className?: string }) {
       {/* struts - the array-side end is fixed; the hull-side end scales
           with the hull group, so they're updated imperatively instead of
           living inside it */}
-      <line ref={strut1Ref} x2={ARRAY_CX - 40} y2={ARRAY_CY - 50} stroke="rgba(207,227,242,0.35)" strokeWidth={1.5} />
-      <line ref={strut2Ref} x2={ARRAY_CX - 40} y2={ARRAY_CY + 50} stroke="rgba(207,227,242,0.35)" strokeWidth={1.5} />
+      <line ref={strut1Ref} x2={STRUT_TOP.x} y2={STRUT_TOP.y} stroke="rgba(207,227,242,0.35)" strokeWidth={1.5} />
+      <line ref={strut2Ref} x2={STRUT_BOTTOM.x} y2={STRUT_BOTTOM.y} stroke="rgba(207,227,242,0.35)" strokeWidth={1.5} />
 
       {/* hull - built once in local coordinates around PIVOT at scale 1
           (identical proportions to the original static schematic); one
@@ -328,8 +338,8 @@ export function StationSchematic({ className = "" }: { className?: string }) {
       <g className={`${styles.labelGroup} ${trueVisible ? styles.visible : ""}`}>
         <Callout
           anchor={{
-            x: round((PIVOT_X + (ARRAY_CX - 40)) / 2),
-            y: round((PIVOT_Y - 30 * S_TRUE + (ARRAY_CY - 50)) / 2),
+            x: round((PIVOT_X + STRUT_TOP.x) / 2),
+            y: round((PIVOT_Y - 30 * S_TRUE + STRUT_TOP.y) / 2),
           }}
           labelY={55}
           lines={["MOUNTING STRUTS"]}
