@@ -44,7 +44,15 @@ export function subscribeSoundMuted(fn: (muted: boolean) => void): () => void {
   return () => listeners.delete(fn);
 }
 
-/** Call from any click handler to satisfy browser autoplay-unlock rules. */
+/**
+ * Call as early as possible - ideally before the first real sound effect
+ * needs to play - to satisfy browser autoplay-unlock rules. Constructing an
+ * AudioContext and transitioning it from "suspended" to "running" both have
+ * real, one-time latency; calling this only from inside each sound effect
+ * (the old behavior) meant that cost landed on whichever click happened to
+ * be first, which is what showed up as a laggy first sound each session.
+ * See AppShell's mount effect for where this gets called ahead of time.
+ */
 export function unlockAudio() {
   getCtx();
 }

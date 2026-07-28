@@ -6,6 +6,7 @@ import { generateRegion } from "@/lib/generate-region";
 import { Region } from "@/lib/puzzle-types";
 import { BUTTON_COLORS, ButtonColor } from "@/lib/lcars-colors";
 import { EMPTY_LOG, getSurveyLog, subscribeSurveyLog, touchSurvey } from "@/lib/survey-log";
+import { unlockAudio } from "@/lib/sound";
 import { NavRail, NavItem } from "@/components/NavRail";
 import { SoundToggle } from "@/components/SoundToggle";
 import { BriefingPanel } from "@/components/panels/BriefingPanel";
@@ -96,6 +97,20 @@ export function AppShell() {
     /* eslint-disable-next-line react-hooks/set-state-in-effect -- one-time
        mount flag, same pattern as the localStorage-sync effects elsewhere. */
     setMounted(true);
+  }, []);
+
+  // Prime the sound engine's AudioContext ahead of the first real sound
+  // effect. Constructing it here (no gesture required for that part) pays
+  // most of the one-time setup cost before anyone's clicked anything; the
+  // pointerdown listener catches the actual unlock gesture as early as
+  // possible too, so it's already resumed by the time a button's own click
+  // handler gets around to playing a sound a tick later. Otherwise all of
+  // that latency lands on whichever click happens to be first.
+  useEffect(() => {
+    unlockAudio();
+    const unlock = () => unlockAudio();
+    document.addEventListener("pointerdown", unlock, { once: true, capture: true });
+    return () => document.removeEventListener("pointerdown", unlock, { capture: true });
   }, []);
 
   const builtInIds = useMemo(() => new Set(builtInRegions.map((r) => r.id)), []);
