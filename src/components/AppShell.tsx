@@ -20,7 +20,7 @@ import { NoActiveAssignmentPanel } from "@/components/NoActiveAssignmentPanel";
 import { StationInfoPanel } from "@/components/panels/StationInfoPanel";
 import { StationLoadingScreen } from "@/components/StationLoadingScreen";
 import { LcarsPanel } from "@/components/LcarsShell";
-import { OUTPOST_NAME } from "@/lib/constants";
+import { GAME_NAME, OUTPOST_NAME } from "@/lib/constants";
 
 type PanelId =
   | "briefing"
@@ -156,13 +156,13 @@ export function AppShell() {
     panel === "log" && logPreviewRegion ? logPreviewRegion : noActiveAssignment ? null : region;
 
   return (
-    <div className="flex-1 flex flex-col gap-3 p-3 md:p-6 h-full overflow-hidden">
-      <header className="flex items-stretch gap-3 shrink-0">
+    <div id="app-shell" className="flex-1 flex flex-col gap-3 p-3 md:p-6 h-full overflow-hidden">
+      <header id="app-header" className="flex items-stretch gap-3 shrink-0">
         <div className="w-16 md:w-24 bg-lcars-orange rounded-tl-[2rem] rounded-bl-[2rem]" />
         <div className="flex-1 flex items-center justify-between gap-3 bg-lcars-orange rounded-tr-[2rem] px-4 md:px-8 py-3 md:py-4">
           <div>
             <h1 className="lcars-caps text-2xl md:text-4xl font-bold text-black leading-none">
-              Quasar: Isolinear
+              {GAME_NAME}
             </h1>
             <p className="lcars-caps text-xs md:text-sm text-black/70 mt-1">
               Deep Space Survey &mdash; {OUTPOST_NAME}
@@ -174,6 +174,7 @@ export function AppShell() {
 
       <div className="flex flex-1 min-h-0">
         <NavRail
+          id="nav-rail-primary"
           items={PRIMARY_NAV}
           fillerColors={LEFT_RAIL_FILLERS}
           activeId={panel}
@@ -182,10 +183,10 @@ export function AppShell() {
           className="w-32 md:w-40 shrink-0 mr-[48px]"
         />
 
-        <main className="flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar">
+        <main id="main-content" data-panel={panel} className="flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar">
           {panel === "briefing" &&
             (generating ? (
-              <LcarsPanel className="h-full">
+              <LcarsPanel id="briefing-loading" className="h-full">
                 <StationLoadingScreen />
               </LcarsPanel>
             ) : (
@@ -199,7 +200,7 @@ export function AppShell() {
             ))}
           {panel === "manifest" &&
             (noActiveAssignment ? (
-              <LcarsPanel title="Star Manifest" accent="bg-lcars-lilac" className="h-full">
+              <LcarsPanel id="manifest-placeholder" title="Star Manifest" accent="bg-lcars-lilac" className="h-full">
                 <NoActiveAssignmentPanel onOpenStationInfo={openStationInfo} />
               </LcarsPanel>
             ) : (
@@ -209,19 +210,19 @@ export function AppShell() {
               its sweep clock keeps running in the background against real
               elapsed time while you're on a different panel, instead of
               resetting every time you switch back to it. */}
-          <div className={panel === "sweep" && !noActiveAssignment ? "" : "hidden"}>
+          <div id="sweep-scope-container" className={panel === "sweep" && !noActiveAssignment ? "" : "hidden"}>
             {visitedSweep && (
               <SweepScopePanel region={region} visible={panel === "sweep" && !noActiveAssignment} />
             )}
           </div>
           {panel === "sweep" && noActiveAssignment && (
-            <LcarsPanel title="Sweep Scope" accent="bg-lcars-violet" className="h-full">
+            <LcarsPanel id="sweep-placeholder" title="Sweep Scope" accent="bg-lcars-violet" className="h-full">
               <NoActiveAssignmentPanel onOpenStationInfo={openStationInfo} />
             </LcarsPanel>
           )}
           {panel === "survey" &&
             (noActiveAssignment ? (
-              <LcarsPanel title="Quadrant Survey" accent="bg-lcars-salmon" className="h-full">
+              <LcarsPanel id="survey-placeholder" title="Quadrant Survey" accent="bg-lcars-salmon" className="h-full">
                 <NoActiveAssignmentPanel onOpenStationInfo={openStationInfo} />
               </LcarsPanel>
             ) : (
@@ -240,7 +241,10 @@ export function AppShell() {
           {panel === "prototypes" && <PrototypesPanel />}
         </main>
 
-        <div className="w-full lg:w-[360px] shrink-0 min-h-0 overflow-y-auto no-scrollbar ml-[20px]">
+        <div
+          id="starmap-sidebar"
+          className="w-full lg:w-[360px] shrink-0 min-h-0 overflow-y-auto no-scrollbar ml-[20px]"
+        >
           {panel === "log" && logPreviewRegion && logPreviewRegion.id !== region.id && (
             <p className="lcars-caps text-[10px] tracking-wider text-lcars-amber/80 mb-2 px-1">
               Previewing from Log &mdash; not your active survey
@@ -250,6 +254,7 @@ export function AppShell() {
         </div>
 
         <NavRail
+          id="nav-rail-utility"
           items={UTILITY_NAV}
           activeId={panel}
           onSelect={handleUtilitySelect}

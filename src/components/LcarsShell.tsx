@@ -5,14 +5,16 @@ export function LcarsPanel({
   accent = "bg-lcars-amber",
   children,
   className = "",
+  id,
 }: {
   title?: string;
   accent?: string;
   children: ReactNode;
   className?: string;
+  id?: string;
 }) {
   return (
-    <div className={`bg-lcars-panel rounded-xl overflow-hidden flex flex-col ${className}`}>
+    <div id={id} className={`bg-lcars-panel rounded-xl overflow-hidden flex flex-col ${className}`}>
       {title ? (
         <div
           className={`${accent} lcars-caps text-black font-semibold px-4 py-1.5 text-sm shrink-0`}

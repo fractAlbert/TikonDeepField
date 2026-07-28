@@ -1,5 +1,6 @@
 import { OutpostLogo } from "@/components/OutpostLogo";
 import { OUTPOST_NAME } from "@/lib/constants";
+import { COPY } from "@/lib/copy";
 import { playButtonClick } from "@/lib/sound";
 
 export function NoActiveAssignmentPanel({
@@ -10,12 +11,16 @@ export function NoActiveAssignmentPanel({
   onOpenStationInfo?: () => void;
 }) {
   return (
-    <div className="h-full flex flex-col items-center justify-center text-center gap-3 px-6">
-      <div className="lcars-caps text-sm text-lcars-ice/60 tracking-wider">
-        No Active Assignment
+    <div
+      id="no-active-assignment"
+      className="h-full relative flex flex-col items-center justify-center text-center gap-3 px-6"
+    >
+      <div id="no-active-assignment-caption" className="lcars-caps text-sm text-lcars-ice/60 tracking-wider">
+        {COPY.noActiveAssignment.caption}
       </div>
 
       <button
+        id="station-logo-button"
         type="button"
         disabled={!onOpenStationInfo}
         onClick={() => {
@@ -36,8 +41,17 @@ export function NoActiveAssignmentPanel({
         </div>
       </button>
 
-      <p className="text-sm text-lcars-ice/50 mt-2 max-w-sm mx-auto leading-relaxed">
-        {hint ?? "Select a region on the Briefing panel, or survey a new one, to begin."}
+      {/* Absolutely positioned so its height never factors into the
+          centering above - different callers pass hints of very different
+          lengths (this panel's default vs. Briefing's archived-region
+          hint), and if the hint sat in-flow, a longer one would grow the
+          centered group and shift the logo up relative to shorter-hint
+          instances of this same component. */}
+      <p
+        id="no-active-assignment-hint"
+        className="absolute bottom-4 inset-x-6 text-sm text-lcars-ice/50 max-w-sm mx-auto leading-relaxed"
+      >
+        {hint ?? COPY.noActiveAssignment.defaultHint}
       </p>
     </div>
   );

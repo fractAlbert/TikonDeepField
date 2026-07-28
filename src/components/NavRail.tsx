@@ -23,6 +23,7 @@ export function NavRail({
   onSelect,
   indicatorSide,
   className = "",
+  id,
 }: {
   items: NavItem[];
   fillerColors?: ButtonColor[];
@@ -31,6 +32,7 @@ export function NavRail({
   /** Which side of the rail faces the main content - that's the side the selection indicator bulges toward. */
   indicatorSide: "left" | "right";
   className?: string;
+  id?: string;
 }) {
   // With fillers, every row stretches evenly to fill the rail's full height.
   // Without them, buttons sit at their natural size and the rest of the
@@ -42,7 +44,7 @@ export function NavRail({
   const outerShape = indicatorSide === "right" ? "cap-start" : "cap-end";
 
   return (
-    <div className={`flex flex-col gap-1 ${className}`}>
+    <div id={id} className={`flex flex-col gap-1 ${className}`}>
       {items.map((item) => (
         <Row key={item.id} color={item.color} selected={activeId === item.id} indicatorSide={indicatorSide} stretch={stretch}>
           <LcarsButton

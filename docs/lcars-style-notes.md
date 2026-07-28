@@ -32,7 +32,7 @@ Analysis of reference image `LCARS-2.jpg`, cataloging the style conventions that
 - Thin outline ship/technical schematics rendered in a single accent color as line art, used as functional-looking decoration within an otherwise abstract panel.
 - Stacked short color pills along edges acting as index/legend strips, distinct from the interactive-looking buttons.
 
-## Status in Quasar: Isolinear
+## Status in Tikon: Deep Field
 
 Implemented:
 - Elbow/touching-run shape logic (rounded outer caps, flat inner joints)
