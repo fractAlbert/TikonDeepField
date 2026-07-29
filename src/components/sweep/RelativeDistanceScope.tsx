@@ -34,7 +34,11 @@ const AXIS_SPAN = AXIS_END - REF_POS;
 // vertically instead. The scope has room to give - and grows if a
 // particular tie needs more than the default height allows.
 const BLIP_ROW_GAP = 42;
-const SCOPE_MIN_HEIGHT = 190;
+// Sized so a 4-deep tie - which needs 3*42 + 80 = 206 - fits without the
+// panel resizing at all. Regions run 6-8 signatures, so 4 sharing a single
+// distance is already an unusual reading; anything deeper still grows, it
+// just stops being the common case.
+const SCOPE_MIN_HEIGHT = 210;
 // Enough headroom for the topmost label (18px above its core, plus the
 // text itself) and the bottom-most core, so a fanned stack never clips
 // against the scope's edges.
