@@ -27,11 +27,25 @@ const REF_POS = 0;
 const AXIS_END = 95;
 const AXIS_SPAN = AXIS_END - REF_POS;
 
+// Absolute distance means ties are routine, not exceptional: anything 2
+// clockwise and anything 2 counterclockwise are both simply "2 away", so
+// they share an axis position exactly. Stacked at the same height they
+// rendered as one blip with overlapping labels, so a tie is fanned out
+// vertically instead. The scope has room to give - and grows if a
+// particular tie needs more than the default height allows.
+const BLIP_ROW_GAP = 42;
+const SCOPE_MIN_HEIGHT = 190;
+// Enough headroom for the topmost label (18px above its core, plus the
+// text itself) and the bottom-most core, so a fanned stack never clips
+// against the scope's edges.
+const SCOPE_PADDING = 80;
+
 interface PositionedBlip {
   id: string;
   label: string;
   color: string;
   pos: number; // percentage, REF_POS..AXIS_END
+  dy: number; // px offset from the baseline, to separate equal distances
 }
 
 export function RelativeDistanceScope({
@@ -75,17 +89,45 @@ export function RelativeDistanceScope({
 
   const blips: PositionedBlip[] = useMemo(() => {
     if (!ref) return [];
-    return signatures
+    const inRange = signatures
       .filter((s) => s.id !== ref.id)
       .map((s) => ({ s, dist: Math.abs(orthogonalDistanceSigned(ref, s)) }))
-      .filter(({ dist }) => dist <= VISIBILITY_RANGE)
-      .map(({ s, dist }) => ({
-        id: s.id,
-        label: s.label,
-        color: s.color,
-        pos: REF_POS + (dist / VISIBILITY_RANGE) * AXIS_SPAN,
-      }));
+      .filter(({ dist }) => dist <= VISIBILITY_RANGE);
+
+    // Bucket by distance, then centre each bucket on the baseline: a lone
+    // blip stays exactly where it always sat, a pair straddles it, three
+    // put one back in the middle. Keeping the fan symmetrical means the
+    // common case is visually unchanged.
+    const byDistance = new Map<number, typeof inRange>();
+    for (const entry of inRange) {
+      const bucket = byDistance.get(entry.dist);
+      if (bucket) bucket.push(entry);
+      else byDistance.set(entry.dist, [entry]);
+    }
+
+    const positioned: PositionedBlip[] = [];
+    for (const [dist, bucket] of byDistance) {
+      bucket.forEach(({ s }, i) => {
+        positioned.push({
+          id: s.id,
+          label: s.label,
+          color: s.color,
+          pos: REF_POS + (dist / VISIBILITY_RANGE) * AXIS_SPAN,
+          dy: (i - (bucket.length - 1) / 2) * BLIP_ROW_GAP,
+        });
+      });
+    }
+    return positioned;
   }, [signatures, ref]);
+
+  // Only grows past the default when some tie is big enough to need it, so
+  // the panel doesn't jump height every time the reference changes.
+  const scopeHeight = useMemo(() => {
+    const perPosition = new Map<number, number>();
+    for (const b of blips) perPosition.set(b.pos, (perPosition.get(b.pos) ?? 0) + 1);
+    const deepestStack = Math.max(1, ...perPosition.values());
+    return Math.max(SCOPE_MIN_HEIGHT, (deepestStack - 1) * BLIP_ROW_GAP + SCOPE_PADDING);
+  }, [blips]);
 
   const blipsRef = useRef(blips);
   useEffect(() => {
@@ -199,7 +241,7 @@ export function RelativeDistanceScope({
         ))}
       </div>
 
-      <div className={styles.scope} ref={scopeRef}>
+      <div className={styles.scope} ref={scopeRef} style={{ height: scopeHeight }}>
         <div className={styles.baseline} />
         <div className={styles.distGuides}>
           {ticks
@@ -217,7 +259,11 @@ export function RelativeDistanceScope({
         <div className={styles.sweepLine} ref={sweepLineRef} />
 
         {blips.map((b) => {
-          const style = { left: `${b.pos}%`, "--q-color": b.color } as CSSProperties;
+          const style = {
+            left: `${b.pos}%`,
+            "--q-color": b.color,
+            "--blip-dy": `${b.dy}px`,
+          } as CSSProperties;
           return (
             <div key={b.id} className={styles.blip} style={style}>
               <div

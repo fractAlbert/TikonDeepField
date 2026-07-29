@@ -104,11 +104,14 @@
   will-change: left;
 }
 
+/* --blip-dy fans signatures that share an axis position apart vertically;
+   it is 0 for a distance no one else shares, leaving those centred on the
+   baseline exactly as before. */
 .blip {
   position: absolute;
   top: 50%;
   left: 0;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, calc(-50% + var(--blip-dy, 0px)));
 }
 
 .core {
