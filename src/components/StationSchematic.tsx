@@ -385,7 +385,7 @@ export function StationSchematic({ className = "" }: { className?: string }) {
                 fill="rgba(207,227,242,0.5)"
                 fontFamily="ui-monospace, monospace"
               >
-                D{i + 1}
+                Deck {i + 1}
               </text>
             ))}
             <text
