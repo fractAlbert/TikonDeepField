@@ -7,7 +7,9 @@ import { Region } from "@/lib/puzzle-types";
 import { BUTTON_COLORS, ButtonColor } from "@/lib/lcars-colors";
 import { EMPTY_LOG, getSurveyLog, subscribeSurveyLog, touchSurvey } from "@/lib/survey-log";
 import { unlockAudio } from "@/lib/sound";
+import { BELOW_LG, useMediaQuery } from "@/lib/use-media-query";
 import { NavRail, NavItem } from "@/components/NavRail";
+import { NavStrip } from "@/components/NavStrip";
 import { SoundToggle } from "@/components/SoundToggle";
 import { BriefingPanel } from "@/components/panels/BriefingPanel";
 import { StarManifestPanel } from "@/components/panels/StarManifestPanel";
@@ -23,6 +25,9 @@ import { StationLoadingScreen } from "@/components/StationLoadingScreen";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { GAME_NAME, OUTPOST_NAME, PANEL_LABELS } from "@/lib/copy";
 
+// "starmap" only exists below `lg`, where the map loses its permanent
+// sidebar and becomes a panel like any other. On desktop it's unreachable
+// (and redirected away from, if you were on it when the window grew).
 type PanelId =
   | "briefing"
   | "manifest"
@@ -31,7 +36,8 @@ type PanelId =
   | "log"
   | "help"
   | "prototypes"
-  | "station";
+  | "station"
+  | "starmap";
 
 const PRIMARY_NAV: NavItem[] = [
   { id: "briefing", label: "Briefing", color: "orange" },
@@ -63,8 +69,28 @@ const LEFT_RAIL_FILLERS: ButtonColor[] = Array.from(
   (_, i) => BUTTON_COLORS[(i + PRIMARY_NAV.length) % BUTTON_COLORS.length]
 );
 
+// Below `lg` both rails collapse into one strip, with the star map joining
+// as a real destination. Amber to match its own panel header - the tie to
+// the thing it opens is worth more here than keeping every chip a
+// different color, which the rails don't manage either.
+const STARMAP_NAV: NavItem = { id: "starmap", label: "Star Map", color: "amber" };
+const MOBILE_NAV: NavItem[] = [PRIMARY_NAV[0], STARMAP_NAV, ...PRIMARY_NAV.slice(1), ...UTILITY_NAV];
+
 export function AppShell() {
-  const [panel, setPanel] = useState<PanelId>("briefing");
+  const [requestedPanel, setRequestedPanel] = useState<PanelId>("briefing");
+
+  // Drives which layout is *mounted*, not just which is visible - see
+  // use-media-query.ts for why that distinction is load-bearing.
+  const isMobile = useMediaQuery(BELOW_LG);
+
+  // "starmap" only exists below `lg`. Resolving that here rather than
+  // redirecting in an effect avoids a cascading render, and has the nicer
+  // side effect of being reversible: widening the window shows Briefing
+  // (the map is in the sidebar by then anyway), and narrowing it again
+  // puts you back on the map panel where you left off.
+  const panel: PanelId =
+    !isMobile && requestedPanel === "starmap" ? "briefing" : requestedPanel;
+
   const [regions, setRegions] = useState<Region[]>(builtInRegions);
   const [regionId, setRegionId] = useState(builtInRegions[0].id);
   const region = regions.find((r) => r.id === regionId) ?? regions[0];
@@ -133,12 +159,12 @@ export function AppShell() {
   }, [region, builtInIds]);
 
   function selectPanel(id: string) {
-    setPanel(id as PanelId);
+    setRequestedPanel(id as PanelId);
     if (id === "sweep") setVisitedSweep(true);
     if (id !== "log") setLogPreviewRegion(null);
   }
 
-  function handleUtilitySelect(id: string) {
+  function handleNavSelect(id: string) {
     if (id === "generate") {
       // Generate immediately (it's fast either way) but hold the reveal
       // behind a deliberate delay - the loading screen is purely flavor.
@@ -170,8 +196,30 @@ export function AppShell() {
   const starMapRegion: Region | null =
     panel === "log" && logPreviewRegion ? logPreviewRegion : noActiveAssignment ? null : region;
 
+  // Rendered into the sidebar on desktop and into `main` below `lg`, but
+  // never both at once - each call site is gated on `isMobile`, so there is
+  // structurally only ever one StarMap alive to write placements.
+  const starMapView = (
+    <>
+      {panel === "log" && logPreviewRegion && logPreviewRegion.id !== region.id && (
+        <p className="lcars-caps text-[10px] tracking-wider text-lcars-amber/80 mb-2 px-1">
+          Previewing from Log &mdash; not your active survey
+        </p>
+      )}
+      <StarMapPanel region={starMapRegion} />
+    </>
+  );
+
   return (
-    <div id="app-shell" className="flex-1 flex flex-col gap-3 p-3 md:p-6 h-full overflow-hidden">
+    <div
+      id="app-shell"
+      className={`flex-1 flex flex-col gap-3 p-3 md:p-6 ${
+        // Desktop pins the whole app to the viewport and scrolls inside
+        // `main`. On a phone the chrome alone outgrows the screen, so the
+        // shell itself becomes the scroller instead.
+        isMobile ? "overflow-y-auto no-scrollbar" : "h-full overflow-hidden"
+      }`}
+    >
       <header id="app-header" className="flex items-stretch gap-3 shrink-0">
         <div className="w-16 md:w-24 bg-lcars-orange rounded-tl-[2rem] rounded-bl-[2rem]" />
         <div className="flex-1 flex items-center justify-between gap-3 bg-lcars-orange rounded-tr-[2rem] px-4 md:px-8 py-3 md:py-4">
@@ -187,18 +235,44 @@ export function AppShell() {
         </div>
       </header>
 
-      <div className="flex flex-1 min-h-0">
-        <NavRail
-          id="nav-rail-primary"
-          items={PRIMARY_NAV}
-          fillerColors={LEFT_RAIL_FILLERS}
+      {isMobile && (
+        <NavStrip
+          id="nav-strip"
+          items={MOBILE_NAV}
           activeId={panel}
-          onSelect={selectPanel}
-          indicatorSide="right"
-          className="w-32 md:w-40 shrink-0 mr-[48px]"
+          onSelect={handleNavSelect}
         />
+      )}
 
-        <main id="main-content" data-panel={panel} className="flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar">
+      {/* `main` keeps the same position in the tree either way, so crossing
+          the breakpoint restyles the layout without remounting any panel -
+          Sweep Scope's background clock in particular survives a resize. */}
+      <div className={isMobile ? "flex-1" : "flex flex-1 min-h-0"}>
+        {!isMobile && (
+          <NavRail
+            id="nav-rail-primary"
+            items={PRIMARY_NAV}
+            fillerColors={LEFT_RAIL_FILLERS}
+            activeId={panel}
+            onSelect={selectPanel}
+            indicatorSide="right"
+            /* max-lg:hidden covers the pre-hydration frame only. The server
+               can't measure a viewport, so a phone's first paint is the
+               desktop layout - and that layout squeezes `main` to zero
+               width, which looks broken rather than merely wrong. Hiding
+               the desktop-only columns in CSS lets that frame render as
+               header + full-width content until the strip appears. Once
+               hydrated these three aren't rendered below `lg` at all, so
+               the class never gets a chance to apply. */
+            className="w-32 md:w-40 shrink-0 mr-[48px] max-lg:hidden"
+          />
+        )}
+
+        <main
+          id="main-content"
+          data-panel={panel}
+          className={isMobile ? "" : "flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar"}
+        >
           {panel === "briefing" &&
             (generating ? (
               <LcarsPanel id="briefing-loading" className="h-full">
@@ -254,28 +328,28 @@ export function AppShell() {
           )}
           {panel === "help" && <HelpPanel />}
           {panel === "prototypes" && <PrototypesPanel />}
+          {isMobile && panel === "starmap" && starMapView}
         </main>
 
-        <div
-          id="starmap-sidebar"
-          className="w-full lg:w-[360px] shrink-0 min-h-0 overflow-y-auto no-scrollbar ml-[20px]"
-        >
-          {panel === "log" && logPreviewRegion && logPreviewRegion.id !== region.id && (
-            <p className="lcars-caps text-[10px] tracking-wider text-lcars-amber/80 mb-2 px-1">
-              Previewing from Log &mdash; not your active survey
-            </p>
-          )}
-          <StarMapPanel region={starMapRegion} />
-        </div>
+        {!isMobile && (
+          <div
+            id="starmap-sidebar"
+            className="w-[360px] shrink-0 min-h-0 overflow-y-auto no-scrollbar ml-[20px] max-lg:hidden"
+          >
+            {starMapView}
+          </div>
+        )}
 
-        <NavRail
-          id="nav-rail-utility"
-          items={UTILITY_NAV}
-          activeId={panel}
-          onSelect={handleUtilitySelect}
-          indicatorSide="left"
-          className="w-28 md:w-36 shrink-0 ml-[48px]"
-        />
+        {!isMobile && (
+          <NavRail
+            id="nav-rail-utility"
+            items={UTILITY_NAV}
+            activeId={panel}
+            onSelect={handleNavSelect}
+            indicatorSide="left"
+            className="w-28 md:w-36 shrink-0 ml-[48px] max-lg:hidden"
+          />
+        )}
       </div>
     </div>
   );
