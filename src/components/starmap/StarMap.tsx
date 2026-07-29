@@ -34,6 +34,18 @@ const SEG_GAP_DEG = 3;
 const RING_THICKNESS = (MAX_R - INNER_HOLE) / RING_COUNT;
 const SEG_SPAN = 360 / SEGMENT_COUNT;
 
+// Ring/segment/centre labels. The size is in SVG user units, not pixels:
+// the viewBox is 440 wide and renders into 260px, so a label paints at
+// size * 260/440. The old value of 10 came out at 5.9px, which was simply
+// too small to read. 18 lands at 10.6px and, per the label-size trial in
+// the Prototypes panel, is still clear of the grid - the ring labels sit
+// at a fixed radius and only start crowding their own ring nearer 22.
+// Neutral gray rather than the ice tint used elsewhere, so labels this
+// much larger sit behind the signatures instead of competing with them.
+const LABEL_SIZE = 18;
+const LABEL_SIZE_CTR = 17;
+const LABEL_FILL = "rgba(198,203,211,0.45)";
+
 const CELL_LINE = "rgba(232,240,247,0.24)";
 const CELL_LINE_GHOST = "rgba(232,240,247,0.65)";
 const CELL_FILL = "rgba(207,227,242,0.045)";
@@ -183,11 +195,11 @@ export function StarMap({ region }: { region: Region | null }) {
           <circle cx={CX} cy={CY} r={INNER_HOLE - 4} fill="none" stroke={CELL_LINE} />
           <text
             x={CX}
-            y={CY + 3}
+            y={CY + 6}
             textAnchor="middle"
-            fontSize={9.5}
+            fontSize={LABEL_SIZE_CTR}
             letterSpacing="0.08em"
-            fill="rgba(207,227,242,0.5)"
+            fill={LABEL_FILL}
           >
             CTR
           </text>
@@ -250,8 +262,8 @@ export function StarMap({ region }: { region: Region | null }) {
                 x={p.x}
                 y={p.y}
                 textAnchor="end"
-                fontSize={10}
-                fill="rgba(207,227,242,0.5)"
+                fontSize={LABEL_SIZE}
+                fill={LABEL_FILL}
                 fontFamily="ui-monospace, monospace"
               >
                 R{ring + 1}
@@ -268,8 +280,8 @@ export function StarMap({ region }: { region: Region | null }) {
                 x={p.x}
                 y={p.y}
                 textAnchor={mid > 185 ? "end" : mid < 175 ? "start" : "middle"}
-                fontSize={10}
-                fill="rgba(207,227,242,0.5)"
+                fontSize={LABEL_SIZE}
+                fill={LABEL_FILL}
                 fontFamily="ui-monospace, monospace"
               >
                 S{seg + 1}
