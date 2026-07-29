@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Region } from "@/lib/puzzle-types";
-import { RING_COUNT, SEGMENT_COUNT, buildSectors, sectorId } from "@/lib/grid";
+import { RING_COUNT, SEGMENT_COUNT, buildSectors, quadrantOf, sectorId } from "@/lib/grid";
 import { annularSegmentPath, polarPoint } from "@/lib/polar-geometry";
 import { quasarColorHex } from "@/lib/quasar-colors";
 import { starMapStorageKey } from "@/lib/starmap-storage";
@@ -60,6 +60,7 @@ export function StarMap({ region }: { region: Region | null }) {
   const [markMode, setMarkMode] = useState<MarkMode>("place");
   const [verified, setVerified] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [hovered, setHovered] = useState<string | null>(null);
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- one-time sync from
@@ -110,6 +111,8 @@ export function StarMap({ region }: { region: Region | null }) {
     }
     return map;
   }, [placements]);
+
+  const hoveredSector = hovered ? sectors.find((s) => s.id === hovered) ?? null : null;
 
   const placedCount = quasars.filter((q) => placements[q.id]).length;
   const correctCount =
@@ -219,9 +222,11 @@ export function StarMap({ region }: { region: Region | null }) {
                   strokeWidth={1}
                   className="cursor-pointer transition-colors"
                   onMouseEnter={(e) => {
+                    setHovered(id);
                     if (!occupantId) e.currentTarget.setAttribute("fill", CELL_FILL_HOVER);
                   }}
                   onMouseLeave={(e) => {
+                    setHovered((h) => (h === id ? null : h));
                     if (!occupantId)
                       e.currentTarget.setAttribute(
                         "fill",
@@ -347,6 +352,7 @@ export function StarMap({ region }: { region: Region | null }) {
 
       {region && (
       <div className="flex flex-col gap-4 w-full">
+        <div className="flex items-start justify-between gap-3">
         <div>
           <div className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50 mb-1.5">
             Click action
@@ -377,6 +383,32 @@ export function StarMap({ region }: { region: Region | null }) {
               Rule out
             </button>
           </div>
+        </div>
+
+        {/* Hover readout. The ring/segment labels drawn in the map are
+            fontSize 10 in a 440-unit viewBox rendered at 260px, so they
+            land at 10 * 260/440 = about 5.9 CSS px - too small to read,
+            and not fixable by bumping the number alone without crowding
+            the dial. This repeats whatever the cursor is over at a
+            legible size instead. Fixed min-width and a reserved second
+            line so nothing reflows as the cursor moves. */}
+        <div className="text-right shrink-0 min-w-[104px]">
+          <div className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50 mb-1.5">
+            Sector
+          </div>
+          <div
+            className={`font-mono text-lg leading-none tabular-nums ${
+              hoveredSector ? "text-lcars-amber" : "text-lcars-ice/25"
+            }`}
+          >
+            {hoveredSector ? hoveredSector.id : "--"}
+          </div>
+          <div className="text-[10px] text-lcars-ice/50 mt-1 h-[1.2em]">
+            {hoveredSector
+              ? `Ring ${hoveredSector.ring + 1} · Seg ${hoveredSector.seg + 1} · Quad ${quadrantOf(hoveredSector)}`
+              : ""}
+          </div>
+        </div>
         </div>
 
         <div>
