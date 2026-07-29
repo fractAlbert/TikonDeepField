@@ -37,6 +37,11 @@ function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
+// Shared coordinate system. Both SVG layers use these user units; only
+// the core layer's viewport is narrower (see STRUT_CLIP_X).
+const VIEW_W = 460;
+const VIEW_H = 290;
+
 const DECKS = 6;
 const HULL_X = 180;
 const HULL_W = 60;
@@ -65,6 +70,66 @@ const PIVOT_Y = ARRAY_CY;
 const S_TRUE = 0.08;
 const S_FULL = 1;
 
+// Each strut is two members that are not rigidly joined.
+//
+// Part A is station hardware: it lives inside the hull group, so it scales
+// with the hull. Part B is dish hardware: a fixed truss on the array,
+// never touched.
+//
+// They line up at TRUE scale, where they are equal halves of one straight
+// strut. True scale is the honest picture - a real station moored to a
+// real dish - so that is the state where the structure has to make
+// physical sense. The operational view is explicitly NOT TO SCALE (the
+// hull is inflated 12.5x so its decks are legible), and the struts coming
+// apart is what shows it.
+//
+// Because A rides the hull's transform, at full scale it would grow to
+// 12.5x its true length and reach (780.63, -160) - clean off a 460x290
+// canvas, crossing straight over the dish on the way. So the hull group is
+// wrapped in a clip that ends at the joint and A's surplus length is
+// simply not drawn. The visible arm therefore holds a constant 47.65 units
+// at a constant -24.82 degrees and rides up with the hull, while the gap
+// at the clip line opens from 0 to 27.6.
+//
+// Neither member ever changes slope. An earlier version drew each strut as
+// a single line from the (moving) hull attachment to the (fixed) array
+// tip, which pivoted through 16.66 degrees over the morph and read as the
+// struts bending.
+const STRUT_HULL_DY = 30;
+
+function lerpPoint(a: { x: number; y: number }, b: { x: number; y: number }, t: number) {
+  return { x: round(a.x + (b.x - a.x) * t), y: round(a.y + (b.y - a.y) * t) };
+}
+
+// The joint is the midpoint of the strut AS IT IS AT TRUE SCALE. That is
+// what makes A and B equal collinear halves in the connected state, and
+// what keeps B short - 47.65 units, sitting 43.25 clear of the inflated
+// hull's right edge, so it can never read as still being bolted to the
+// core the way a joint parked next to the tiny hull did.
+function strutJoint(arrayTip: { x: number; y: number }, dy: number) {
+  const attachAtTrueScale = { x: PIVOT_X, y: PIVOT_Y + dy * S_TRUE };
+  const world = lerpPoint(attachAtTrueScale, arrayTip, 0.5);
+  return {
+    world,
+    // Part A in hull-local coordinates: the hull group is
+    // translate(PIVOT) scale(s), so local (lx, ly) renders at
+    // (PIVOT_X + s*lx, PIVOT_Y + s*ly). Dividing by S_TRUE puts A's
+    // outboard end exactly on the joint at s = S_TRUE.
+    local: { x: round((world.x - PIVOT_X) / S_TRUE), y: round((world.y - PIVOT_Y) / S_TRUE) },
+  };
+}
+
+const STRUT_A_TOP = strutJoint(STRUT_TOP, -STRUT_HULL_DY);
+const STRUT_A_BOTTOM = strutJoint(STRUT_BOTTOM, STRUT_HULL_DY);
+const JOINT_TOP = STRUT_A_TOP.world;
+const JOINT_BOTTOM = STRUT_A_BOTTOM.world;
+const JOINT_TOP_LOCAL = STRUT_A_TOP.local;
+const JOINT_BOTTOM_LOCAL = STRUT_A_BOTTOM.local;
+
+// The "view limit on the core side" - everything hull-side is drawn only
+// up to the joint. Both joints share this x by symmetry.
+const STRUT_CLIP_X = JOINT_TOP.x;
+
 const TIMING = {
   fadeIn: 60,
   hold: 7800, // tripled from an earlier 2600ms pass - not enough time to read the callouts otherwise
@@ -76,12 +141,10 @@ const TIMING = {
 type Cancelled = { current: boolean };
 type SkipRef = { current: (() => void) | null };
 
-function applyHullScale(s: number, hullGroup: SVGGElement, strut1: SVGLineElement, strut2: SVGLineElement) {
+// One transform is now the whole of it - the struts' moving halves ride
+// inside the hull group rather than being repositioned per frame.
+function applyHullScale(s: number, hullGroup: SVGGElement) {
   hullGroup.setAttribute("transform", `translate(${PIVOT_X} ${PIVOT_Y}) scale(${s})`);
-  strut1.setAttribute("x1", String(PIVOT_X));
-  strut1.setAttribute("y1", String(round(PIVOT_Y - 30 * s)));
-  strut2.setAttribute("x1", String(PIVOT_X));
-  strut2.setAttribute("y1", String(round(PIVOT_Y + 30 * s)));
 }
 
 /** A pause between animation beats. */
@@ -129,9 +192,7 @@ function morphHull(
   to: number,
   duration: number,
   cancelled: Cancelled,
-  hullGroup: SVGGElement,
-  strut1: SVGLineElement,
-  strut2: SVGLineElement
+  hullGroup: SVGGElement
 ): Promise<void> {
   return new Promise((resolve) => {
     let elapsed = 0;
@@ -141,7 +202,7 @@ function morphHull(
       elapsed += now - last;
       last = now;
       const t = Math.min(1, elapsed / duration);
-      applyHullScale(from + (to - from) * easeInOutCubic(t), hullGroup, strut1, strut2);
+      applyHullScale(from + (to - from) * easeInOutCubic(t), hullGroup);
       if (t < 1) requestAnimationFrame(frame);
       else resolve();
     }
@@ -151,8 +212,6 @@ function morphHull(
 
 export function StationSchematic({ className = "" }: { className?: string }) {
   const hullGroupRef = useRef<SVGGElement>(null);
-  const strut1Ref = useRef<SVGLineElement>(null);
-  const strut2Ref = useRef<SVGLineElement>(null);
   const skipRef = useRef<(() => void) | null>(null);
 
   const [trueVisible, setTrueVisible] = useState(false);
@@ -160,21 +219,19 @@ export function StationSchematic({ className = "" }: { className?: string }) {
 
   useEffect(() => {
     const hullGroup = hullGroupRef.current;
-    const strut1 = strut1Ref.current;
-    const strut2 = strut2Ref.current;
-    if (!hullGroup || !strut1 || !strut2) return;
+    if (!hullGroup) return;
 
     const cancelled: Cancelled = { current: false };
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    async function run(hullGroup: SVGGElement, strut1: SVGLineElement, strut2: SVGLineElement) {
+    async function run(hullGroup: SVGGElement) {
       if (reduceMotion) {
-        applyHullScale(S_FULL, hullGroup, strut1, strut2);
+        applyHullScale(S_FULL, hullGroup);
         setOperationalVisible(true);
         return;
       }
 
-      applyHullScale(S_TRUE, hullGroup, strut1, strut2);
+      applyHullScale(S_TRUE, hullGroup);
       await wait(TIMING.fadeIn, cancelled);
       if (cancelled.current) return;
       setTrueVisible(true);
@@ -185,7 +242,7 @@ export function StationSchematic({ className = "" }: { className?: string }) {
 
       await wait(TIMING.fadeOut, cancelled);
       if (cancelled.current) return;
-      await morphHull(S_TRUE, S_FULL, TIMING.morph, cancelled, hullGroup, strut1, strut2);
+      await morphHull(S_TRUE, S_FULL, TIMING.morph, cancelled, hullGroup);
       if (cancelled.current) return;
 
       await wait(TIMING.gap, cancelled);
@@ -193,7 +250,7 @@ export function StationSchematic({ className = "" }: { className?: string }) {
       setOperationalVisible(true);
     }
 
-    run(hullGroup, strut1, strut2);
+    run(hullGroup);
     return () => {
       cancelled.current = true;
       skipRef.current = null;
@@ -207,177 +264,236 @@ export function StationSchematic({ className = "" }: { className?: string }) {
   }
 
   return (
-    <svg
-      viewBox="0 0 460 290"
-      className={`${className} ${trueVisible ? styles.clickable : ""}`}
+    // Two overlaid SVGs rather than one, so the core and the array can be
+    // animated independently later. They share a single coordinate system:
+    // both are pinned to the same origin at the same height, and the core
+    // layer's box width is exactly STRUT_CLIP_X/VIEW_W of the stage, so its
+    // viewBox aspect matches its box aspect and a given user unit lands on
+    // the same pixel in both layers.
+    <div
+      className={`${className} ${styles.stage} ${trueVisible ? styles.clickable : ""}`}
+      style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}
       role="img"
       aria-label="Station schematic"
       onClick={handleStageClick}
     >
-      <defs>
-        <filter id="schematic-glow" x="-150%" y="-150%" width="400%" height="400%">
-          <feGaussianBlur stdDeviation="2.5" />
-        </filter>
-      </defs>
-
-      {/* sensor array - fixed size and position throughout; only the hull scales */}
-      {ARRAY_RADII.map((r) => (
-        <path
-          key={r}
-          d={arcPath(ARRAY_CX, ARRAY_CY, r, WEDGE[0], WEDGE[1])}
-          fill="none"
-          stroke="var(--lcars-violet)"
-          strokeWidth={2}
-          className={styles.arrayArc}
-        />
-      ))}
-      <text
-        x={ARRAY_CX + 30}
-        y={30}
-        textAnchor="middle"
-        fontSize={10}
-        letterSpacing="0.06em"
-        fill="rgba(207,227,242,0.6)"
-        fontFamily="ui-monospace, monospace"
+      {/* CORE LAYER - the station, and only the station. Its viewport
+          deliberately stops at the joint: part A is authored long enough
+          to reach (780.63, -160) at full scale, so everything past this
+          edge falls outside the viewBox and is never drawn. That is the
+          whole trimming mechanism - no clip path, just a narrower view. */}
+      <svg
+        className={styles.coreLayer}
+        viewBox={`0 0 ${STRUT_CLIP_X} ${VIEW_H}`}
+        style={{ width: `${(STRUT_CLIP_X / VIEW_W) * 100}%` }}
+        aria-hidden="true"
       >
-        SENSOR ARRAY
-      </text>
+        <defs>
+          <filter id="schematic-glow" x="-150%" y="-150%" width="400%" height="400%">
+            <feGaussianBlur stdDeviation="2.5" />
+          </filter>
+        </defs>
 
-      {/* struts - the array-side end is fixed; the hull-side end scales
-          with the hull group, so they're updated imperatively instead of
-          living inside it */}
-      <line ref={strut1Ref} x2={STRUT_TOP.x} y2={STRUT_TOP.y} stroke="rgba(207,227,242,0.35)" strokeWidth={1.5} />
-      <line ref={strut2Ref} x2={STRUT_BOTTOM.x} y2={STRUT_BOTTOM.y} stroke="rgba(207,227,242,0.35)" strokeWidth={1.5} />
+        {/* hull - built once in local coordinates around PIVOT at scale 1
+            (identical proportions to the original static schematic); one
+            transform attribute, set imperatively via applyHullScale, grows
+            it from true relative scale up to this. */}
+        <g ref={hullGroupRef} transform={`translate(${PIVOT_X} ${PIVOT_Y}) scale(${S_TRUE})`}>
+          {/* strut part A - the station's own mounting arms. Inside the
+              group, so they scale with the hull and therefore hold a
+              constant world-space angle; their outboard ends meet part B
+              exactly at true scale, and the surplus length is trimmed by
+              this layer's viewport as the hull inflates. Non-scaling
+              stroke for the same reason as the silhouette below. */}
+          <line
+            x1={0}
+            y1={-STRUT_HULL_DY}
+            x2={JOINT_TOP_LOCAL.x}
+            y2={JOINT_TOP_LOCAL.y}
+            stroke="rgba(207,227,242,0.35)"
+            strokeWidth={1.5}
+            vectorEffect="non-scaling-stroke"
+          />
+          <line
+            x1={0}
+            y1={STRUT_HULL_DY}
+            x2={JOINT_BOTTOM_LOCAL.x}
+            y2={JOINT_BOTTOM_LOCAL.y}
+            stroke="rgba(207,227,242,0.35)"
+            strokeWidth={1.5}
+            vectorEffect="non-scaling-stroke"
+          />
 
-      {/* hull - built once in local coordinates around PIVOT at scale 1
-          (identical proportions to the original static schematic); one
-          transform attribute, set imperatively via applyHullScale, grows
-          it from true relative scale up to this. */}
-      <g ref={hullGroupRef} transform={`translate(${PIVOT_X} ${PIVOT_Y}) scale(${S_TRUE})`}>
-        {/* The silhouette strokes are non-scaling: SVG multiplies
-            stroke-width by the group's transform, so at true scale a
-            2-unit stroke would render at 2 * 0.08 = 0.16 units - well
-            under a pixel, leaving the correctly-sized hull essentially
-            invisible. Holding these constant keeps the miniature crisp
-            and legible at every point in the growth. Interior detail
-            (deck dividers, core dots) is deliberately left scaling, so
-            it fades out as the hull shrinks, exactly as real detail
-            would at that size. */}
-        <rect
-          x={-60}
-          y={-100}
-          width={60}
-          height={200}
-          rx={14}
-          fill="rgba(207,227,242,0.05)"
-          stroke="var(--lcars-ice)"
-          strokeWidth={2}
-          vectorEffect="non-scaling-stroke"
-        />
-        {Array.from({ length: DECKS - 1 }).map((_, i) => {
-          const ly = -100 + (i + 1) * DECK_H;
-          return <line key={i} x1={-60} y1={ly} x2={0} y2={ly} stroke="rgba(207,227,242,0.25)" strokeWidth={1} />;
-        })}
-        <line
-          x1={-30}
-          y1={-94}
-          x2={-30}
-          y2={94}
-          stroke="var(--lcars-amber)"
-          strokeWidth={3}
-          opacity={0.85}
-          filter="url(#schematic-glow)"
-          vectorEffect="non-scaling-stroke"
-        />
-        {Array.from({ length: DECKS }).map((_, i) => (
-          <circle key={i} cx={-30} cy={-100 + (i + 0.5) * DECK_H} r={3} fill="#fff8ec" />
-        ))}
-        <rect
-          x={-40}
-          y={100}
-          width={20}
-          height={14}
-          rx={3}
-          fill="none"
-          stroke="var(--lcars-orange)"
-          strokeWidth={2}
-          vectorEffect="non-scaling-stroke"
-        />
-
-        <g className={`${styles.labelGroup} ${operationalVisible ? styles.visible : ""}`}>
+          {/* The silhouette strokes are non-scaling: SVG multiplies
+              stroke-width by the group's transform, so at true scale a
+              2-unit stroke would render at 2 * 0.08 = 0.16 units - well
+              under a pixel, leaving the correctly-sized hull essentially
+              invisible. Holding these constant keeps the miniature crisp
+              and legible at every point in the growth. Interior detail
+              (deck dividers, core dots) is deliberately left scaling, so
+              it fades out as the hull shrinks, exactly as real detail
+              would at that size. */}
+          <rect
+            x={-60}
+            y={-100}
+            width={60}
+            height={200}
+            rx={14}
+            fill="rgba(207,227,242,0.05)"
+            stroke="var(--lcars-ice)"
+            strokeWidth={2}
+            vectorEffect="non-scaling-stroke"
+          />
+          {Array.from({ length: DECKS - 1 }).map((_, i) => {
+            const ly = -100 + (i + 1) * DECK_H;
+            return <line key={i} x1={-60} y1={ly} x2={0} y2={ly} stroke="rgba(207,227,242,0.25)" strokeWidth={1} />;
+          })}
+          <line
+            x1={-30}
+            y1={-94}
+            x2={-30}
+            y2={94}
+            stroke="var(--lcars-amber)"
+            strokeWidth={3}
+            opacity={0.85}
+            filter="url(#schematic-glow)"
+            vectorEffect="non-scaling-stroke"
+          />
           {Array.from({ length: DECKS }).map((_, i) => (
+            <circle key={i} cx={-30} cy={-100 + (i + 0.5) * DECK_H} r={3} fill="#fff8ec" />
+          ))}
+          <rect
+            x={-40}
+            y={100}
+            width={20}
+            height={14}
+            rx={3}
+            fill="none"
+            stroke="var(--lcars-orange)"
+            strokeWidth={2}
+            vectorEffect="non-scaling-stroke"
+          />
+
+          <g className={`${styles.labelGroup} ${operationalVisible ? styles.visible : ""}`}>
+            {Array.from({ length: DECKS }).map((_, i) => (
+              <text
+                key={i}
+                x={-68}
+                y={-100 + (i + 0.5) * DECK_H + 3}
+                textAnchor="end"
+                fontSize={9}
+                fill="rgba(207,227,242,0.5)"
+                fontFamily="ui-monospace, monospace"
+              >
+                D{i + 1}
+              </text>
+            ))}
             <text
-              key={i}
-              x={-68}
-              y={-100 + (i + 0.5) * DECK_H + 3}
-              textAnchor="end"
+              x={-30}
+              y={-108}
+              textAnchor="middle"
               fontSize={9}
-              fill="rgba(207,227,242,0.5)"
+              letterSpacing="0.06em"
+              fill="rgba(207,227,242,0.6)"
               fontFamily="ui-monospace, monospace"
             >
-              D{i + 1}
+              ISOLINEAR CORE
             </text>
-          ))}
-          <text
-            x={-30}
-            y={-108}
-            textAnchor="middle"
-            fontSize={9}
-            letterSpacing="0.06em"
-            fill="rgba(207,227,242,0.6)"
-            fontFamily="ui-monospace, monospace"
-          >
-            ISOLINEAR CORE
-          </text>
+          </g>
         </g>
-      </g>
+      </svg>
 
-      {/* true-scale callouts - anchored to where the hull/struts/core/port
-          sit while the hull is still tiny; computed once at S_TRUE, since
-          they're only ever shown during that static hold. */}
-      <g className={`${styles.labelGroup} ${trueVisible ? styles.visible : ""}`}>
-        <Callout
-          anchor={{
-            x: round((PIVOT_X + STRUT_TOP.x) / 2),
-            y: round((PIVOT_Y - 30 * S_TRUE + STRUT_TOP.y) / 2),
-          }}
-          labelY={55}
-          lines={["MOUNTING STRUTS"]}
-        />
-        <Callout
-          anchor={{ x: round(PIVOT_X - 30 * S_TRUE), y: round(PIVOT_Y - 100 * S_TRUE) }}
-          labelY={120}
-          lines={["HULL", "TRUE RELATIVE SCALE"]}
-        />
-        <Callout
-          anchor={{ x: round(PIVOT_X - 30 * S_TRUE), y: PIVOT_Y }}
-          labelY={175}
-          lines={["ISOLINEAR CORE"]}
-        />
-        <Callout
-          anchor={{ x: round(PIVOT_X - 30 * S_TRUE), y: round(PIVOT_Y + 100 * S_TRUE) }}
-          labelY={230}
-          lines={["DOCKING PORT"]}
-        />
-        <text x={370} y={270} textAnchor="end" fontSize={9.5} fill="rgba(207,227,242,0.4)" fontFamily="ui-monospace, monospace">
-          CLICK TO CONTINUE
-        </text>
-      </g>
-
-      <g className={`${styles.labelGroup} ${operationalVisible ? styles.visible : ""}`}>
+      {/* ARRAY LAYER - the dish, its own fixed truss (part B), and every
+          label layer. Full-width viewBox, so callout leaders can run from
+          the left-hand label column across to anchors on either side of
+          the core/array boundary. Drawn after the core layer, so leaders
+          land on top of the hull rather than under it. */}
+      <svg className={styles.arrayLayer} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} aria-hidden="true">
+        {/* sensor array - fixed size and position throughout; only the hull scales */}
+        {ARRAY_RADII.map((r) => (
+          <path
+            key={r}
+            d={arcPath(ARRAY_CX, ARRAY_CY, r, WEDGE[0], WEDGE[1])}
+            fill="none"
+            stroke="var(--lcars-violet)"
+            strokeWidth={2}
+            className={styles.arrayArc}
+          />
+        ))}
         <text
-          x={230}
-          y={272}
+          x={ARRAY_CX + 30}
+          y={30}
           textAnchor="middle"
           fontSize={10}
-          letterSpacing="0.08em"
-          fill="rgba(207,227,242,0.4)"
+          letterSpacing="0.06em"
+          fill="rgba(207,227,242,0.6)"
           fontFamily="ui-monospace, monospace"
         >
-          SCHEMATIC (NOT TO SCALE)
+          SENSOR ARRAY
         </text>
-      </g>
-    </svg>
+
+        {/* strut part B - the dish's own fixed truss. Static markup: never
+            repositioned, at any scale. Part A is in the core layer above. */}
+        <line
+          x1={JOINT_TOP.x}
+          y1={JOINT_TOP.y}
+          x2={STRUT_TOP.x}
+          y2={STRUT_TOP.y}
+          stroke="rgba(207,227,242,0.35)"
+          strokeWidth={1.5}
+        />
+        <line
+          x1={JOINT_BOTTOM.x}
+          y1={JOINT_BOTTOM.y}
+          x2={STRUT_BOTTOM.x}
+          y2={STRUT_BOTTOM.y}
+          stroke="rgba(207,227,242,0.35)"
+          strokeWidth={1.5}
+        />
+
+        {/* true-scale callouts - anchored to where the hull/struts/core/port
+            sit while the hull is still tiny; computed once at S_TRUE, since
+            they're only ever shown during that static hold. */}
+        <g className={`${styles.labelGroup} ${trueVisible ? styles.visible : ""}`}>
+          {/* Anchored to part B's midpoint. At true scale A and B are equal
+              halves of one straight strut, so either would do - B is picked
+              because it never moves. */}
+          <Callout anchor={lerpPoint(JOINT_TOP, STRUT_TOP, 0.5)} labelY={55} lines={["MOUNTING STRUTS"]} />
+          <Callout
+            anchor={{ x: round(PIVOT_X - 30 * S_TRUE), y: round(PIVOT_Y - 100 * S_TRUE) }}
+            labelY={120}
+            lines={["HULL", "TRUE RELATIVE SCALE"]}
+          />
+          <Callout
+            anchor={{ x: round(PIVOT_X - 30 * S_TRUE), y: PIVOT_Y }}
+            labelY={175}
+            lines={["ISOLINEAR CORE"]}
+          />
+          <Callout
+            anchor={{ x: round(PIVOT_X - 30 * S_TRUE), y: round(PIVOT_Y + 100 * S_TRUE) }}
+            labelY={230}
+            lines={["DOCKING PORT"]}
+          />
+          <text x={370} y={270} textAnchor="end" fontSize={9.5} fill="rgba(207,227,242,0.4)" fontFamily="ui-monospace, monospace">
+            CLICK TO CONTINUE
+          </text>
+        </g>
+
+        <g className={`${styles.labelGroup} ${operationalVisible ? styles.visible : ""}`}>
+          <text
+            x={230}
+            y={272}
+            textAnchor="middle"
+            fontSize={10}
+            letterSpacing="0.08em"
+            fill="rgba(207,227,242,0.4)"
+            fontFamily="ui-monospace, monospace"
+          >
+            SCHEMATIC (NOT TO SCALE)
+          </text>
+        </g>
+      </svg>
+    </div>
   );
 }
 

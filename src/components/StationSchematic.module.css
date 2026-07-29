@@ -18,6 +18,35 @@
   cursor: pointer;
 }
 
+/* The schematic is two overlaid SVGs sharing one coordinate system - see
+   the note in StationSchematic.tsx. Both are pinned to the same top-left
+   origin at the same height, so a given user unit lands on the same pixel
+   in each; the core's viewport is simply narrower, which is what trims
+   part A as the hull inflates. */
+.stage {
+  position: relative;
+  display: block;
+}
+.stage > svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  display: block;
+  overflow: hidden;
+}
+/* Width comes from an inline style (STRUT_CLIP_X / VIEW_W), so the core's
+   viewBox aspect matches its box aspect exactly and no letterboxing shifts
+   its coordinates out of step with the array layer. */
+.coreLayer {
+  z-index: 0;
+}
+/* Sits above the core so callout leaders land on top of the hull. */
+.arrayLayer {
+  width: 100%;
+  z-index: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .labelGroup { transition: none; }
   .arrayArc { animation: none; }
