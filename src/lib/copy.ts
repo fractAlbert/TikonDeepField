@@ -33,7 +33,9 @@ export const COPY = {
     defaultHint: "Select a region on the Briefing panel, or survey a new one, to begin.",
   },
   briefing: {
-    archivedHint: `This region was archived. Pick one above, or use ${PANEL_LABELS.surveyNewRegion} in the right-hand rail, to continue.`,
+    // Deliberately doesn't name a rail - it's the right-hand one on
+    // desktop and part of the single strip on a phone.
+    archivedHint: `This region was archived. Pick one above, or use ${PANEL_LABELS.surveyNewRegion} in the navigation, to continue.`,
   },
   stationLoading: {
     label: "Surveying…",

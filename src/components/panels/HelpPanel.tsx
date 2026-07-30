@@ -38,7 +38,7 @@ export function HelpPanel() {
           <li>
             Out of regions?{" "}
             <strong className="text-lcars-orange">{PANEL_LABELS.surveyNewRegion}</strong> in
-            the right-hand rail generates a fresh field and takes you straight
+            the navigation generates a fresh field and takes you straight
             to its Briefing &mdash; a random 6-8 signatures with a fresh set
             of bearings to work from.
           </li>

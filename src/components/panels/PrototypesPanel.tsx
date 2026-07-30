@@ -29,6 +29,13 @@ const PROTOTYPES: Prototype[] = [
       "Plays once (no loop): StationSchematic.tsx's sensor array stays fixed at its shipped size throughout, while the hull starts tiny — true relative scale — and grows into the exact operational proportions, pointer-labeled callouts fading and relabeling across the reveal. Includes a mock section-tab to test resetting on return.",
     href: "https://claude.ai/code/artifact/67ac6b41-b6b5-4836-bd44-703e13e2c906",
   },
+  {
+    title: "Star Map — Label Size Trial",
+    status: "Under review",
+    description:
+      "Why the ring and segment labels read as tiny: fontSize 10 is in SVG user units, and a 440-unit viewBox rendered at 260px paints them at 5.9px. Replicates the dial's exact geometry and puts both levers — label size and rendered map width — on sliders, plus a fixed strip comparing 10 / 14 / 18 / 22 at the shipped 260px to show where labels start fouling the grid.",
+    href: "https://claude.ai/code/artifact/e4be8419-6641-4338-8cf1-762165e8a55e",
+  },
 ];
 
 export function PrototypesPanel() {

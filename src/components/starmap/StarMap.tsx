@@ -34,6 +34,19 @@ const SEG_GAP_DEG = 3;
 const RING_THICKNESS = (MAX_R - INNER_HOLE) / RING_COUNT;
 const SEG_SPAN = 360 / SEGMENT_COUNT;
 
+// Ring/segment/centre labels. The size is in SVG user units, not pixels:
+// the viewBox is 440 wide and renders into 260px in the desktop sidebar,
+// so a label paints at size * 260/440 there (and correspondingly larger on
+// a phone, where the map is wider). The old value of 10 came out at 5.9px,
+// which was simply too small to read. 18 lands at 10.6px and, per the label-size trial in
+// the Prototypes panel, is still clear of the grid - the ring labels sit
+// at a fixed radius and only start crowding their own ring nearer 22.
+// Neutral gray rather than the ice tint used elsewhere, so labels this
+// much larger sit behind the signatures instead of competing with them.
+const LABEL_SIZE = 18;
+const LABEL_SIZE_CTR = 17;
+const LABEL_FILL = "rgba(198,203,211,0.45)";
+
 const CELL_LINE = "rgba(232,240,247,0.24)";
 const CELL_LINE_GHOST = "rgba(232,240,247,0.65)";
 const CELL_FILL = "rgba(207,227,242,0.045)";
@@ -171,7 +184,11 @@ export function StarMap({ region }: { region: Region | null }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-center">
-        <svg viewBox="0 0 440 440" className="w-full max-w-[260px] h-auto">
+        {/* 260px is what fits the desktop sidebar. Below `lg` the map is a
+            full-width panel instead, so it's allowed to grow - and because
+            the whole viewBox scales together, a bigger map buys bigger
+            labels without crowding the dial any further. */}
+        <svg viewBox="0 0 440 440" className="w-full max-w-[260px] max-lg:max-w-[420px] h-auto">
           <defs>
             {/* Blurred glow halo behind a solid core - the same look Sweep
                 Scope's blips use, kept consistent so a quasar reads the
@@ -183,11 +200,11 @@ export function StarMap({ region }: { region: Region | null }) {
           <circle cx={CX} cy={CY} r={INNER_HOLE - 4} fill="none" stroke={CELL_LINE} />
           <text
             x={CX}
-            y={CY + 3}
+            y={CY + 6}
             textAnchor="middle"
-            fontSize={9.5}
+            fontSize={LABEL_SIZE_CTR}
             letterSpacing="0.08em"
-            fill="rgba(207,227,242,0.5)"
+            fill={LABEL_FILL}
           >
             CTR
           </text>
@@ -250,8 +267,8 @@ export function StarMap({ region }: { region: Region | null }) {
                 x={p.x}
                 y={p.y}
                 textAnchor="end"
-                fontSize={10}
-                fill="rgba(207,227,242,0.5)"
+                fontSize={LABEL_SIZE}
+                fill={LABEL_FILL}
                 fontFamily="ui-monospace, monospace"
               >
                 R{ring + 1}
@@ -268,8 +285,8 @@ export function StarMap({ region }: { region: Region | null }) {
                 x={p.x}
                 y={p.y}
                 textAnchor={mid > 185 ? "end" : mid < 175 ? "start" : "middle"}
-                fontSize={10}
-                fill="rgba(207,227,242,0.5)"
+                fontSize={LABEL_SIZE}
+                fill={LABEL_FILL}
                 fontFamily="ui-monospace, monospace"
               >
                 S{seg + 1}
@@ -385,13 +402,12 @@ export function StarMap({ region }: { region: Region | null }) {
           </div>
         </div>
 
-        {/* Hover readout. The ring/segment labels drawn in the map are
-            fontSize 10 in a 440-unit viewBox rendered at 260px, so they
-            land at 10 * 260/440 = about 5.9 CSS px - too small to read,
-            and not fixable by bumping the number alone without crowding
-            the dial. This repeats whatever the cursor is over at a
-            legible size instead. Fixed min-width and a reserved second
-            line so nothing reflows as the cursor moves. */}
+        {/* Hover readout: repeats whatever the cursor is over at a size
+            the in-map labels can't reach without crowding the dial. Fixed
+            min-width and a reserved second line so nothing reflows as the
+            cursor moves. Sits at "--" on touch, where mouseenter never
+            fires - accepted, since tapping a cell is the real interaction
+            and it says what it did afterward anyway. */}
         <div className="text-right shrink-0 min-w-[104px]">
           <div className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50 mb-1.5">
             Sector
