@@ -18,7 +18,27 @@ const SECTIONS: { id: SectionId; label: string; color: ButtonColor }[] = [
   { id: "schematic", label: "Schematic", color: "teal" },
 ];
 
-export function StationInfoPanel({ onBack }: { onBack: () => void }) {
+// Three per row is the widest that fits the longest labels ("Why It
+// Matters", "Survey Process") on a 390px screen without truncating.
+const SECTIONS_PER_ROW = 3;
+const SECTION_ROWS = Array.from(
+  { length: Math.ceil(SECTIONS.length / SECTIONS_PER_ROW) },
+  (_, i) => SECTIONS.slice(i * SECTIONS_PER_ROW, (i + 1) * SECTIONS_PER_ROW)
+);
+
+export function StationInfoPanel({
+  onBack,
+  /**
+   * False on a phone, where the shell's panel bar already carries both the
+   * station name and a Back button - keeping this block too would show the
+   * same title twice and two Backs pointing to different places, for 84px
+   * that the prose sections would rather have.
+   */
+  showHeader = true,
+}: {
+  onBack: () => void;
+  showHeader?: boolean;
+}) {
   const [section, setSection] = useState<SectionId>("overview");
   const current = SECTIONS.find((s) => s.id === section)!;
 
@@ -33,33 +53,48 @@ export function StationInfoPanel({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      <LcarsPanel className="shrink-0">
-        <div className="flex items-center gap-4">
-          <OutpostLogo size={56} />
-          <div className="flex-1 min-w-0">
-            <div className="lcars-caps text-lg font-bold text-lcars-amber leading-none">
-              {OUTPOST_NAME}
+      {showHeader && (
+        <LcarsPanel className="shrink-0">
+          <div className="flex items-center gap-4">
+            <OutpostLogo size={56} className="shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="lcars-caps text-lg font-bold text-lcars-amber leading-none">
+                {OUTPOST_NAME}
+              </div>
+              <div className="text-xs text-lcars-ice/50 mt-1">Station Information</div>
             </div>
-            <div className="text-xs text-lcars-ice/50 mt-1">Station Information</div>
+            <LcarsButton color="ice" onClick={onBack}>
+              Back
+            </LcarsButton>
           </div>
-          <LcarsButton color="ice" onClick={onBack}>
-            Back
-          </LcarsButton>
-        </div>
-      </LcarsPanel>
+        </LcarsPanel>
+      )}
 
-      <div className="flex flex-nowrap gap-1 shrink-0 overflow-x-auto">
-        {SECTIONS.map((s, i) => (
-          <LcarsButton
-            key={s.id}
-            color={s.color}
-            shape={runShape(i, SECTIONS.length)}
-            orientation="horizontal"
-            onClick={() => selectSection(s.id)}
-            className={section === s.id ? "" : "opacity-55"}
-          >
-            {s.label}
-          </LcarsButton>
+      {/* Wrapped into rows rather than one scrolling run. Five labels never
+          fit across a phone, but they didn't fit on desktop either - `main`
+          is only ~452px at 1280px wide, against roughly 600px of buttons,
+          so the old flex-nowrap + overflow-x-auto was quietly scrolling
+          (with a visible scrollbar) at every width. Each row gets its own
+          caps so the LCARS run shape still reads correctly, and flex-1
+          divides each row evenly. */}
+      <div className="shrink-0 flex flex-col gap-1">
+        {SECTION_ROWS.map((row, rowIndex) => (
+          <div key={rowIndex} className="flex gap-1">
+            {row.map((s, i) => (
+              <LcarsButton
+                key={s.id}
+                color={s.color}
+                shape={runShape(i, row.length)}
+                orientation="horizontal"
+                onClick={() => selectSection(s.id)}
+                className={`flex-1 min-w-0 px-2 md:px-6 text-sm md:text-base whitespace-nowrap ${
+                  section === s.id ? "" : "opacity-55"
+                }`}
+              >
+                {s.label}
+              </LcarsButton>
+            ))}
+          </div>
         ))}
       </div>
 
