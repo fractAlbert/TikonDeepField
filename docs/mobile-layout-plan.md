@@ -7,16 +7,31 @@ reality differed from it.
 ## What happens today
 
 Below `lg` (1024px) the star map stops being a permanent sidebar and becomes
-a panel like any other, both nav rails collapse into one horizontally
-scrollable strip under the header, and the shell itself scrolls vertically.
-At `lg` and above nothing changed at all — verified at 1280px, where the
-rails, `main` and the sidebar measure exactly what they did before.
+a panel like any other, both nav rails are replaced by a **menu hub** with a
+Back button on each panel, and the shell does not scroll. At `lg` and above
+nothing changed — verified at 1280px, where the rails, `main` and the
+sidebar measure exactly what they did before.
 
-Measured at 390px across all nine panels: no horizontal overflow anywhere
-(`documentElement.scrollWidth == 390`), vertical scrolling where content
-warrants it, and exactly one `StarMap` mounted at any time. The map renders
-318px wide instead of 260px, which puts the ring/segment labels at 13.0
-painted px instead of 10.6.
+Measured at 390×844: no horizontal overflow anywhere
+(`documentElement.scrollWidth == 390`), the page never scrolls, and exactly
+one `StarMap` mounted at any time. Briefing, Star Map, Star Manifest, Sweep
+Scope, Quadrant Survey and every Station Info section **fit outright**; Log,
+Help and Prototypes overflow by 85/41/42px and flick-scroll inside `main`.
+The map renders 318px wide instead of 260px, putting the ring/segment labels
+at 13.0 painted px instead of 10.6.
+
+### The first attempt scrolled, and that was wrong
+
+The version first built made the shell itself the vertical scroller and put
+both rails into one horizontally scrollable strip. Both violate a standing
+project rule that had been recorded only as an implementation note rather
+than a rule — see "Project rules" in `docs/lcars-style-notes.md`, now
+promoted and expanded. The fix was the hub: trading a persistent nav for one
+tap returns ~58px on every screen, and a smaller header another ~57px, which
+is what let six panels fit outright rather than merely scroll less. The
+lesson worth keeping: **budget the chrome first.** At 390px the old header
+plus strip plus gutters came to 214px of an 844px screen before any content,
+and the Star Map was missing the cut by 19px.
 
 ## The problem it fixed
 
@@ -55,17 +70,21 @@ star map, and no content at all.
 
 ## How it works
 
-- `PanelId` gained `"starmap"`. Below `lg` the sidebar isn't rendered and
-  `StarMapPanel` shows inside `main`; at `lg`+ the sidebar renders as before
-  and the panel is unreachable.
-- `NavStrip.tsx` carries all 5 primary + 3 utility items plus Star Map, as
-  one touching run built from the existing `runShape`/`LcarsButton`
-  machinery, with the selection indicator bulging *down* toward the content
-  instead of sideways. No decorative fillers — there's no empty space to pad
-  out horizontally. 952px of buttons scroll inside 366px.
-- `main` goes full width and the shell becomes the scroller
-  (`overflow-y-auto no-scrollbar` instead of `h-full overflow-hidden`).
-  `layout.tsx` was not touched.
+- `PanelId` gained `"starmap"` and `"menu"`, both phone-only and both
+  resolving to Briefing on desktop. Initial state is `"menu"`, so a phone
+  lands on the hub and desktop still opens on Briefing without needing to
+  know the viewport during the first render.
+- `MobileMenu.tsx` is the hub: all 9 destinations as one touching vertical
+  run, stretched to fill the height the way the desktop rail's fillers do.
+- `MobilePanelBar.tsx` gives every phone panel a title and a Back. The title
+  matters as much as the button — with no nav on screen there's otherwise
+  nothing saying where you are. Titles come from the menu entries, so the
+  two can't drift.
+- `main` goes full width. The shell keeps `h-full overflow-hidden` at every
+  width; `main` is the only scroller, exactly as on desktop. `layout.tsx` was
+  not touched.
+- Station Info hides its own header block on mobile (`showHeader={false}`),
+  since the panel bar already carries the name and a Back.
 
 ### The one load-bearing decision
 
@@ -121,9 +140,19 @@ gates which branch renders.
 ## Not verified
 
 Crossing the breakpoint *at runtime* (rotating a phone, dragging a desktop
-window across 1024px) was never exercised. Chrome was minimized for this
-work, and a minimized window dispatches no `resize` or `matchMedia` `change`
-events at all — iframe resizes registered zero events. Both cold-load paths
-were verified directly. The panel resolution is pure (derived, not an
-effect), so it's correct by construction once a render happens, but the
-transition itself is untested.
+window across 1024px). Both cold-load paths are verified directly, and the
+panel resolution is pure (derived, not an effect) so it's correct by
+construction once a render happens — but the transition itself is untested.
+
+Worth knowing if you pick this up: a **minimized** Chrome window dispatches
+no `resize` or `matchMedia` `change` events at all, and starves React's
+commits besides — an instrumented iframe resize from 390 to 1280 logged zero
+events, and a stale render sat uncorrected indefinitely because the query
+never transitioned. That is a testing artifact, not app behavior, but it will
+waste an hour if you don't know it. Bring the window forward first.
+
+Chrome also won't size a real window below ~500px. To get a true 390px
+viewport, a same-origin harness page in `public/` holding
+`<iframe src="/" width="390">` works, and an iframe can be *wider* than the
+window too, which is how desktop was checked at 1280px inside a 560px
+window.

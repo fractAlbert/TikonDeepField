@@ -9,7 +9,8 @@ import { EMPTY_LOG, getSurveyLog, subscribeSurveyLog, touchSurvey } from "@/lib/
 import { unlockAudio } from "@/lib/sound";
 import { BELOW_LG, useMediaQuery } from "@/lib/use-media-query";
 import { NavRail, NavItem } from "@/components/NavRail";
-import { NavStrip } from "@/components/NavStrip";
+import { MobileMenu } from "@/components/MobileMenu";
+import { MobilePanelBar } from "@/components/MobilePanelBar";
 import { SoundToggle } from "@/components/SoundToggle";
 import { BriefingPanel } from "@/components/panels/BriefingPanel";
 import { StarManifestPanel } from "@/components/panels/StarManifestPanel";
@@ -25,9 +26,10 @@ import { StationLoadingScreen } from "@/components/StationLoadingScreen";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { GAME_NAME, OUTPOST_NAME, PANEL_LABELS } from "@/lib/copy";
 
-// "starmap" only exists below `lg`, where the map loses its permanent
-// sidebar and becomes a panel like any other. On desktop it's unreachable
-// (and redirected away from, if you were on it when the window grew).
+// "starmap" and "menu" only exist below `lg`: the map loses its permanent
+// sidebar and becomes a panel like any other, and "menu" is the phone
+// landing hub that stands in for the two rails. Both resolve to Briefing on
+// desktop, where neither is reachable.
 type PanelId =
   | "briefing"
   | "manifest"
@@ -37,7 +39,10 @@ type PanelId =
   | "help"
   | "prototypes"
   | "station"
-  | "starmap";
+  | "starmap"
+  | "menu";
+
+const MOBILE_ONLY_PANELS: PanelId[] = ["starmap", "menu"];
 
 const PRIMARY_NAV: NavItem[] = [
   { id: "briefing", label: "Briefing", color: "orange" },
@@ -69,27 +74,39 @@ const LEFT_RAIL_FILLERS: ButtonColor[] = Array.from(
   (_, i) => BUTTON_COLORS[(i + PRIMARY_NAV.length) % BUTTON_COLORS.length]
 );
 
-// Below `lg` both rails collapse into one strip, with the star map joining
-// as a real destination. Amber to match its own panel header - the tie to
-// the thing it opens is worth more here than keeping every chip a
+// Below `lg` both rails are replaced by the menu hub, with the star map
+// joining as a real destination. Amber to match its own panel header - the
+// tie to the thing it opens is worth more here than keeping every entry a
 // different color, which the rails don't manage either.
 const STARMAP_NAV: NavItem = { id: "starmap", label: "Star Map", color: "amber" };
 const MOBILE_NAV: NavItem[] = [PRIMARY_NAV[0], STARMAP_NAV, ...PRIMARY_NAV.slice(1), ...UTILITY_NAV];
 
+// Panel titles for the phone panel bar. Everything reachable from the menu
+// is titled by the menu entry that opened it, so the two can't drift; only
+// Station Info needs its own, since you get there from Briefing's emblem
+// rather than from the menu.
+const MOBILE_TITLES: Record<string, string> = {
+  ...Object.fromEntries(MOBILE_NAV.map((item) => [item.id, item.label])),
+  station: OUTPOST_NAME,
+};
+
 export function AppShell() {
-  const [requestedPanel, setRequestedPanel] = useState<PanelId>("briefing");
+  // Starts on the menu, which is the phone landing view and resolves to
+  // Briefing on desktop - so desktop still opens on Briefing exactly as
+  // before, without needing to know the viewport during the first render.
+  const [requestedPanel, setRequestedPanel] = useState<PanelId>("menu");
 
   // Drives which layout is *mounted*, not just which is visible - see
   // use-media-query.ts for why that distinction is load-bearing.
   const isMobile = useMediaQuery(BELOW_LG);
 
-  // "starmap" only exists below `lg`. Resolving that here rather than
-  // redirecting in an effect avoids a cascading render, and has the nicer
-  // side effect of being reversible: widening the window shows Briefing
-  // (the map is in the sidebar by then anyway), and narrowing it again
-  // puts you back on the map panel where you left off.
+  // Resolving the phone-only panels here rather than redirecting in an
+  // effect avoids a cascading render, and has the nicer side effect of
+  // being reversible: widening the window shows Briefing (the map is in the
+  // sidebar by then anyway), and narrowing it again puts you back where you
+  // left off.
   const panel: PanelId =
-    !isMobile && requestedPanel === "starmap" ? "briefing" : requestedPanel;
+    !isMobile && MOBILE_ONLY_PANELS.includes(requestedPanel) ? "briefing" : requestedPanel;
 
   const [regions, setRegions] = useState<Region[]>(builtInRegions);
   const [regionId, setRegionId] = useState(builtInRegions[0].id);
@@ -211,23 +228,23 @@ export function AppShell() {
   );
 
   return (
-    <div
-      id="app-shell"
-      className={`flex-1 flex flex-col gap-3 p-3 md:p-6 ${
-        // Desktop pins the whole app to the viewport and scrolls inside
-        // `main`. On a phone the chrome alone outgrows the screen, so the
-        // shell itself becomes the scroller instead.
-        isMobile ? "overflow-y-auto no-scrollbar" : "h-full overflow-hidden"
-      }`}
-    >
+    // The viewport shell never scrolls, on any width - that's a standing
+    // LCARS rule (see docs/lcars-style-notes.md). Anything too tall falls
+    // back to a hidden-scrollbar flick-scroll inside `main`.
+    <div id="app-shell" className="flex-1 flex flex-col gap-3 p-3 md:p-6 h-full overflow-hidden">
+      {/* Phone-sized type here is doing real work, not just tidying: at the
+          desktop sizes the title and subtitle each wrapped to two lines,
+          making the header 108px of an 844px screen. One line each brings
+          it to roughly half that, and the Star Map only needed ~19px more
+          than it had. */}
       <header id="app-header" className="flex items-stretch gap-3 shrink-0">
-        <div className="w-16 md:w-24 bg-lcars-orange rounded-tl-[2rem] rounded-bl-[2rem]" />
-        <div className="flex-1 flex items-center justify-between gap-3 bg-lcars-orange rounded-tr-[2rem] px-4 md:px-8 py-3 md:py-4">
-          <div>
-            <h1 className="lcars-caps text-2xl md:text-4xl font-bold text-black leading-none">
+        <div className="w-10 md:w-24 bg-lcars-orange rounded-tl-[2rem] rounded-bl-[2rem]" />
+        <div className="flex-1 flex items-center justify-between gap-3 bg-lcars-orange rounded-tr-[2rem] px-3 md:px-8 py-2 md:py-4">
+          <div className="min-w-0">
+            <h1 className="lcars-caps text-lg md:text-4xl font-bold text-black leading-none">
               {GAME_NAME}
             </h1>
-            <p className="lcars-caps text-xs md:text-sm text-black/70 mt-1">
+            <p className="lcars-caps text-[10px] md:text-sm text-black/70 mt-0.5 md:mt-1 truncate">
               Deep Space Survey &mdash; {OUTPOST_NAME}
             </p>
           </div>
@@ -235,19 +252,17 @@ export function AppShell() {
         </div>
       </header>
 
-      {isMobile && (
-        <NavStrip
-          id="nav-strip"
-          items={MOBILE_NAV}
-          activeId={panel}
-          onSelect={handleNavSelect}
-        />
-      )}
-
       {/* `main` keeps the same position in the tree either way, so crossing
           the breakpoint restyles the layout without remounting any panel -
           Sweep Scope's background clock in particular survives a resize. */}
-      <div className={isMobile ? "flex-1" : "flex flex-1 min-h-0"}>
+      <div className={isMobile ? "flex flex-col flex-1 min-h-0 gap-3" : "flex flex-1 min-h-0"}>
+        {isMobile && panel !== "menu" && (
+          <MobilePanelBar
+            id="mobile-panel-bar"
+            title={MOBILE_TITLES[panel] ?? ""}
+            onBack={() => selectPanel("menu")}
+          />
+        )}
         {!isMobile && (
           <NavRail
             id="nav-rail-primary"
@@ -261,7 +276,7 @@ export function AppShell() {
                desktop layout - and that layout squeezes `main` to zero
                width, which looks broken rather than merely wrong. Hiding
                the desktop-only columns in CSS lets that frame render as
-               header + full-width content until the strip appears. Once
+               header + full-width content until the menu appears. Once
                hydrated these three aren't rendered below `lg` at all, so
                the class never gets a chance to apply. */
             className="w-32 md:w-40 shrink-0 mr-[48px] max-lg:hidden"
@@ -271,8 +286,11 @@ export function AppShell() {
         <main
           id="main-content"
           data-panel={panel}
-          className={isMobile ? "" : "flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar"}
+          className="flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar"
         >
+          {panel === "menu" && (
+            <MobileMenu id="mobile-menu" items={MOBILE_NAV} onSelect={handleNavSelect} />
+          )}
           {panel === "briefing" &&
             (generating ? (
               <LcarsPanel id="briefing-loading" className="h-full">
@@ -317,7 +335,9 @@ export function AppShell() {
             ) : (
               <QuadrantSurveyPanel region={region} />
             ))}
-          {panel === "station" && <StationInfoPanel onBack={() => selectPanel("briefing")} />}
+          {panel === "station" && (
+            <StationInfoPanel showHeader={!isMobile} onBack={() => selectPanel("briefing")} />
+          )}
           {panel === "log" && (
             <LogPanel
               builtInRegions={builtInRegions}

@@ -12,7 +12,13 @@ export function NoActiveAssignmentPanel({
   return (
     <div
       id="no-active-assignment"
-      className="h-full relative flex flex-col items-center justify-center text-center gap-3 px-6"
+      /* pb reserves the hint's strip at the bottom. The hint is positioned
+         out of flow (see below), which means nothing stops the centered
+         group from growing straight over it - and on a phone, where this
+         container is only ~370px tall and the hint runs to three lines,
+         that is exactly what happened: the emblem's caption landed on top
+         of the text. Padding keeps the centering box clear of it. */
+      className="h-full relative flex flex-col items-center justify-center text-center gap-3 px-6 pb-24 md:pb-20"
     >
       <div id="no-active-assignment-caption" className="lcars-caps text-sm text-lcars-ice/60 tracking-wider">
         {COPY.noActiveAssignment.caption}
@@ -33,7 +39,7 @@ export function NoActiveAssignmentPanel({
       >
         <OutpostLogo
           size={260}
-          className="opacity-90 max-h-full w-auto transition-opacity group-hover:opacity-100"
+          className="opacity-90 max-h-full w-auto max-w-[min(100%,220px)] md:max-w-none transition-opacity group-hover:opacity-100"
         />
         <div className="lcars-caps font-bold text-2xl text-lcars-amber transition-colors group-hover:text-lcars-orange">
           {OUTPOST_NAME}
