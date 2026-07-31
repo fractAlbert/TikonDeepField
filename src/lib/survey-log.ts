@@ -6,8 +6,22 @@
 // just its id, or it would have nothing left to point to after a refresh.
 
 import { Region } from "./puzzle-types";
+import { SurveyOutcome } from "./ranks";
+import { RankEvent, recordOutcome } from "./player";
 
 export type SurveyOrigin = "builtin" | "generated";
+
+/**
+ * How many times a region can be filed before the last one is binding.
+ *
+ * A filing returns a discrepancy count, which is only useful if you get to
+ * act on it - but unlimited filings make the count a search tool rather
+ * than evidence, and the region can be brute-forced. Three is enough to
+ * narrow a near-miss by reasoning and far too few to enumerate: with 6-8
+ * signatures over 40 sectors, guessing your way in on three tries is not a
+ * strategy. Spend all three without confirming and the region is retracted.
+ */
+export const FILING_LIMIT = 3;
 
 export interface SurveyLogEntry {
   regionId: string;
@@ -20,6 +34,31 @@ export interface SurveyLogEntry {
   solved: boolean;
   solvedAt: number | null;
   archived: boolean;
+  /**
+   * Filings spent. Optional because entries written before the filing
+   * budget existed have none - `filingsUsed()` reads it, not this field.
+   */
+  filings?: number;
+  /**
+   * Set once and never cleared. Its presence is what "closed" means, and
+   * it is the flag that keeps a region from being reported to the career
+   * record twice.
+   */
+  outcome?: SurveyOutcome;
+  closedAt?: number;
+}
+
+/** What one filing did, for the Star Map to render and announce. */
+export interface FilingResult {
+  discrepancies: number;
+  solved: boolean;
+  /** Filings spent including this one. */
+  filings: number;
+  remaining: number;
+  /** Non-null if this filing closed the region. */
+  outcome: SurveyOutcome | null;
+  /** Non-null if closing it also moved the officer's rank. */
+  rankEvent: RankEvent | null;
 }
 
 const STORAGE_KEY = "quasar-isolinear:survey-log";
@@ -85,25 +124,114 @@ export function touchSurvey(region: Region, origin: SurveyOrigin) {
         solved: false,
         solvedAt: null,
         archived: false,
+        filings: 0,
       };
   commit(store);
 }
 
-/** Call whenever Verify is pressed in the Star Map. */
-export function recordVerify(regionId: string, allCorrect: boolean) {
-  if (typeof window === "undefined") return;
+export function filingsUsed(entry: SurveyLogEntry): number {
+  return entry.filings ?? entry.verifyAttempts;
+}
+
+export function filingsRemaining(entry: SurveyLogEntry): number {
+  return Math.max(0, FILING_LIMIT - filingsUsed(entry));
+}
+
+/**
+ * A region's outcome, tolerating entries written before outcomes existed.
+ * Those only recorded a `solved` boolean, so a legacy solved region reads
+ * as confirmed and a legacy unsolved one reads as still open - which is
+ * what it was.
+ */
+export function entryOutcome(entry: SurveyLogEntry): SurveyOutcome | null {
+  if (entry.outcome) return entry.outcome;
+  return entry.solved ? "confirmed" : null;
+}
+
+export function isClosed(entry: SurveyLogEntry): boolean {
+  return entryOutcome(entry) !== null;
+}
+
+export function getEntry(regionId: string): SurveyLogEntry | undefined {
+  if (typeof window === "undefined") return undefined;
+  return getStore()[regionId];
+}
+
+/**
+ * Writes the outcome and reports it to the career record - the single
+ * place either of those happens.
+ *
+ * The `isClosed` guard is what makes "exactly once per region" structural
+ * rather than a thing every caller has to remember: a second close is a
+ * no-op, so a double-click, a re-render or a restored save can't inflate
+ * the review window.
+ */
+function closeEntry(
+  store: LogStore,
+  entry: SurveyLogEntry,
+  region: Region,
+  outcome: SurveyOutcome,
+  now: number
+): { entry: SurveyLogEntry; rankEvent: RankEvent | null } {
+  if (isClosed(entry)) return { entry, rankEvent: null };
+  const closed: SurveyLogEntry = {
+    ...entry,
+    outcome,
+    closedAt: now,
+    solved: outcome === "confirmed" ? true : entry.solved,
+    solvedAt: outcome === "confirmed" ? entry.solvedAt ?? now : entry.solvedAt,
+  };
+  store[region.id] = closed;
+  return { entry: closed, rankEvent: recordOutcome(outcome, region.id, region.name) };
+}
+
+/**
+ * Call whenever a classification is filed from the Star Map. Spends one
+ * filing, and closes the region if this filing either got it right or was
+ * the last one available.
+ */
+export function recordFiling(region: Region, discrepancies: number): FilingResult | null {
+  if (typeof window === "undefined") return null;
   const store = { ...getStore() };
-  const existing = store[regionId];
-  if (!existing) return;
+  const existing = store[region.id];
+  if (!existing || isClosed(existing)) return null;
+
   const now = Date.now();
-  store[regionId] = {
+  const filings = filingsUsed(existing) + 1;
+  const solved = discrepancies === 0;
+
+  const spent: SurveyLogEntry = {
     ...existing,
     lastActiveAt: now,
     verifyAttempts: existing.verifyAttempts + 1,
-    solved: existing.solved || allCorrect,
-    solvedAt: existing.solved ? existing.solvedAt : allCorrect ? now : existing.solvedAt,
+    filings,
   };
+  store[region.id] = spent;
+
+  let outcome: SurveyOutcome | null = null;
+  let rankEvent: RankEvent | null = null;
+  if (solved) outcome = "confirmed";
+  else if (filings >= FILING_LIMIT) outcome = "retracted";
+
+  if (outcome) ({ rankEvent } = closeEntry(store, spent, region, outcome, now));
+
   commit(store);
+  return { discrepancies, solved, filings, remaining: FILING_LIMIT - filings, outcome, rankEvent };
+}
+
+/**
+ * Release a region unresolved. Neutral against rank by design - see
+ * docs/win-conditions.md - and irreversible, which is what makes it a
+ * judgment call rather than a free reset.
+ */
+export function withdrawSurvey(region: Region): RankEvent | null {
+  if (typeof window === "undefined") return null;
+  const store = { ...getStore() };
+  const existing = store[region.id];
+  if (!existing || isClosed(existing)) return null;
+  const { rankEvent } = closeEntry(store, existing, region, "withdrawn", Date.now());
+  commit(store);
+  return rankEvent;
 }
 
 export function isSolved(regionId: string): boolean {

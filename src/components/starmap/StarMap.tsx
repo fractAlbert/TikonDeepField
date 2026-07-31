@@ -1,12 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Region } from "@/lib/puzzle-types";
 import { RING_COUNT, SEGMENT_COUNT, buildSectors, quadrantOf, sectorId } from "@/lib/grid";
 import { annularSegmentPath, polarPoint } from "@/lib/polar-geometry";
 import { quasarColorHex } from "@/lib/quasar-colors";
 import { starMapStorageKey } from "@/lib/starmap-storage";
-import { isSolved, recordVerify } from "@/lib/survey-log";
+import {
+  EMPTY_LOG,
+  FILING_LIMIT,
+  entryOutcome,
+  filingsUsed,
+  getSurveyLog,
+  isSolved,
+  recordFiling,
+  subscribeSurveyLog,
+  withdrawSurvey,
+} from "@/lib/survey-log";
+import { RankEvent } from "@/lib/player";
+import { RELIEVED, REVIEW_WINDOW, SurveyOutcome, rankHex, rankTitle } from "@/lib/ranks";
+import { RankInsignia } from "@/components/RankInsignia";
 import {
   playButtonClick,
   playPlace,
@@ -19,6 +32,26 @@ import {
 type Placements = Record<string, string | undefined>; // quasarId -> sectorId
 type RuledOut = Record<string, Set<string>>; // quasarId -> set of sectorId
 type MarkMode = "place" | "ruleout";
+
+/**
+ * The result of one filing, frozen at the moment Verify was pressed.
+ *
+ * It has to be a snapshot rather than something derived from live state.
+ * This used to be a `verified` boolean latch with the correct/incorrect
+ * marks computed from `placements` on every render, which meant the first
+ * press turned the map into a permanent oracle: move a marker and its ring
+ * re-coloured instantly, so you could hunt the solution one cell at a time
+ * without ever filing again (and without the survey log counting it).
+ *
+ * `snapshot` is what makes that impossible - a filing describes the board
+ * as it was, and any later edit makes it stale rather than updating it.
+ */
+interface Filing {
+  placements: Placements;
+  /** Signatures whose sector did not match the confirmed catalog entry. */
+  discrepancies: number;
+  solved: boolean;
+}
 
 interface SavedState {
   placements: Placements;
@@ -47,6 +80,28 @@ const LABEL_SIZE = 18;
 const LABEL_SIZE_CTR = 17;
 const LABEL_FILL = "rgba(198,203,211,0.45)";
 
+// What each ending says once the region is closed. The wording matters:
+// "retracted" is the station pulling an entry before it reached anyone,
+// which is the actual stake (docs/win-conditions.md) - a wrong filing
+// propagates, and ships navigate against it.
+const OUTCOME_COPY: Record<SurveyOutcome, { label: string; tone: string; detail: string }> = {
+  confirmed: {
+    label: "Classification confirmed",
+    tone: "text-lcars-teal",
+    detail: "Filed to the regional catalog.",
+  },
+  retracted: {
+    label: "Classification retracted",
+    tone: "text-lcars-red",
+    detail: "Filing allocation spent without a match. The entry was pulled before it went out.",
+  },
+  withdrawn: {
+    label: "Survey withdrawn",
+    tone: "text-lcars-ice/70",
+    detail: "Released unresolved. Nothing filed, and nothing against your record.",
+  },
+};
+
 const CELL_LINE = "rgba(232,240,247,0.24)";
 const CELL_LINE_GHOST = "rgba(232,240,247,0.65)";
 const CELL_FILL = "rgba(207,227,242,0.045)";
@@ -71,14 +126,38 @@ export function StarMap({ region }: { region: Region | null }) {
   const [ruledOut, setRuledOut] = useState<RuledOut>({});
   const [armed, setArmed] = useState<string | null>(null);
   const [markMode, setMarkMode] = useState<MarkMode>("place");
-  const [verified, setVerified] = useState(false);
+  const [filing, setFiling] = useState<Filing | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
+
+  // The filing budget and the region's outcome live in the survey log, not
+  // in local state: they have to survive a reload (a region you retracted
+  // stays retracted), and the Log panel reads the same record. Subscribing
+  // rather than reading once is what makes the buttons below update the
+  // instant a filing lands.
+  const log = useSyncExternalStore(subscribeSurveyLog, getSurveyLog, () => EMPTY_LOG);
+  const entry = region ? log.find((e) => e.regionId === region.id) : undefined;
+  const outcome = entry ? entryOutcome(entry) : null;
+  const closed = outcome !== null;
+  const filingsSpent = entry ? filingsUsed(entry) : 0;
+  const filingsLeft = Math.max(0, FILING_LIMIT - filingsSpent);
+
+  // A rank change is announced on the filing that caused it, which is the
+  // one moment it's guaranteed to be looked at. The profile panel is the
+  // permanent record; this is the notification.
+  const [rankEvent, setRankEvent] = useState<RankEvent | null>(null);
+  // Withdrawal is irreversible and rank-neutral, so it needs to be easy to
+  // reach and impossible to hit by accident - hence a second click rather
+  // than a dialog.
+  const [confirmingWithdraw, setConfirmingWithdraw] = useState(false);
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- one-time sync from
        an external store (localStorage) on mount; state must start empty on
        the server since window is unavailable there. */
+    // Both of these describe the region being left, not the one arriving.
+    setRankEvent(null);
+    setConfirmingWithdraw(false);
     if (!region) {
       setLoaded(true);
       return;
@@ -97,7 +176,13 @@ export function StarMap({ region }: { region: Region | null }) {
         const stillAllCorrect = region.quasars.every(
           (q) => saved.placements?.[q.id] === region.solution[q.id]?.sector
         );
-        if (isSolved(region.id) && stillAllCorrect) setVerified(true);
+        if (isSolved(region.id) && stillAllCorrect) {
+          setFiling({
+            placements: saved.placements ?? {},
+            discrepancies: 0,
+            solved: true,
+          });
+        }
       }
     } catch {
       // ignore corrupt/unavailable storage
@@ -127,13 +212,43 @@ export function StarMap({ region }: { region: Region | null }) {
 
   const hoveredSector = hovered ? sectors.find((s) => s.id === hovered) ?? null : null;
 
+  /** Centre point of a sector's cell, in SVG user units. */
+  const centerOf = useMemo(() => {
+    const byId = new Map(sectors.map((s) => [s.id, s]));
+    return (sid: string) => {
+      const sector = byId.get(sid)!;
+      const r0 = INNER_HOLE + sector.ring * RING_THICKNESS + RING_GAP / 2;
+      const r1 = INNER_HOLE + (sector.ring + 1) * RING_THICKNESS - RING_GAP / 2;
+      const a0 = sector.seg * SEG_SPAN + SEG_GAP_DEG / 2;
+      const a1 = (sector.seg + 1) * SEG_SPAN - SEG_GAP_DEG / 2;
+      return polarPoint(CX, CY, (r0 + r1) / 2, (a0 + a1) / 2);
+    };
+  }, [sectors]);
+
   const placedCount = quasars.filter((q) => placements[q.id]).length;
-  const correctCount =
-    verified && region
-      ? quasars.filter((q) => placements[q.id] === region.solution[q.id]?.sector).length
-      : 0;
+  const allPlaced = quasars.length > 0 && placedCount === quasars.length;
+
+  // A filing describes the board it was made against, so it expires the
+  // moment the board changes. Deriving that here rather than clearing the
+  // state in each handler means no mutation path can forget to do it -
+  // place, pick up, swap and reset are all covered by construction.
+  const currentFiling =
+    filing && quasars.every((q) => placements[q.id] === filing.placements[q.id])
+      ? filing
+      : null;
+
+  // A closed region is settled - the outcome is already on the record and
+  // in the review window, so the true catalog entry stops being a secret.
+  // Showing it is the only feedback a retraction gives, and without it a
+  // withdrawal teaches nothing at all. A confirmed region needs no reveal:
+  // every marker is already right.
+  const revealed = closed && outcome !== "confirmed";
 
   function handleCellClick(sectorIdClicked: string) {
+    // A closed region is read-only. Editing it would suggest the filing
+    // could still change, and the board is now evidence for the outcome
+    // shown underneath it.
+    if (closed) return;
     const occupantId = occupantBySector.get(sectorIdClicked);
 
     if (occupantId) {
@@ -173,16 +288,54 @@ export function StarMap({ region }: { region: Region | null }) {
   }
 
   function handleReset() {
+    if (closed) return;
     setPlacements({});
     setRuledOut({});
     setArmed(null);
-    setVerified(false);
+    setFiling(null);
     if (region) window.localStorage.removeItem(starMapStorageKey(region.id));
     playReset();
   }
 
+  function handleFile() {
+    if (!region || !allPlaced || closed) return;
+    const discrepancies = quasars.filter(
+      (q) => placements[q.id] !== region.solution[q.id]?.sector
+    ).length;
+    const solved = discrepancies === 0;
+    if (solved) playVerifySuccess();
+    else playVerifyFail();
+    const result = recordFiling(region, discrepancies);
+    setFiling({ placements: { ...placements }, discrepancies, solved });
+    setConfirmingWithdraw(false);
+    if (result?.rankEvent) setRankEvent(result.rankEvent);
+  }
+
+  function handleWithdraw() {
+    if (!region || closed) return;
+    if (!confirmingWithdraw) {
+      playButtonClick();
+      setConfirmingWithdraw(true);
+      return;
+    }
+    // Closing the window on a withdrawal can still change a rank - the
+    // outcome is neutral in itself, but it may be the eighth region and
+    // complete a review that the other seven had already decided.
+    const event = withdrawSurvey(region);
+    setConfirmingWithdraw(false);
+    playReset();
+    if (event) setRankEvent(event);
+  }
+
   return (
     <div className="flex flex-col gap-4">
+      {region && (
+        <p className="text-xs text-lcars-ice/60 leading-relaxed -mb-1">
+          {closed
+            ? "This survey is closed. The board is kept as filed."
+            : "Arm a signature, then click a cell to place it. Switch to Rule Out to mark cells it definitely isn't at."}
+        </p>
+      )}
       <div className="flex items-center justify-center">
         {/* 260px is what fits the desktop sidebar. Below `lg` the map is a
             full-width panel instead, so it's allowed to grow - and because
@@ -237,10 +390,10 @@ export function StarMap({ region }: { region: Region | null }) {
                   stroke={isGhostTarget ? CELL_LINE_GHOST : CELL_LINE}
                   strokeDasharray={isGhostTarget ? "2 2" : undefined}
                   strokeWidth={1}
-                  className="cursor-pointer transition-colors"
+                  className={closed ? "cursor-default" : "cursor-pointer transition-colors"}
                   onMouseEnter={(e) => {
                     setHovered(id);
-                    if (!occupantId) e.currentTarget.setAttribute("fill", CELL_FILL_HOVER);
+                    if (!occupantId && !closed) e.currentTarget.setAttribute("fill", CELL_FILL_HOVER);
                   }}
                   onMouseLeave={(e) => {
                     setHovered((h) => (h === id ? null : h));
@@ -298,29 +451,25 @@ export function StarMap({ region }: { region: Region | null }) {
           {quasars.map((q) => {
             const sid = placements[q.id];
             if (!sid) return null;
-            const sector = sectors.find((s) => s.id === sid)!;
-            const r0 = INNER_HOLE + sector.ring * RING_THICKNESS + RING_GAP / 2;
-            const r1 = INNER_HOLE + (sector.ring + 1) * RING_THICKNESS - RING_GAP / 2;
-            const a0 = sector.seg * SEG_SPAN + SEG_GAP_DEG / 2;
-            const a1 = (sector.seg + 1) * SEG_SPAN - SEG_GAP_DEG / 2;
-            const p = polarPoint(CX, CY, (r0 + r1) / 2, (a0 + a1) / 2);
-            const correctness =
-              verified && region
-                ? placements[q.id] === region.solution[q.id]?.sector
-                  ? "correct"
-                  : "incorrect"
-                : null;
+            const p = centerOf(sid);
+            // Confirmation rings only ever appear on a solved region, where
+            // every marker is correct and the ring tells you nothing you
+            // don't already know. Marking them per-signature on a *failed*
+            // filing is what made the map an oracle: it answered "is this
+            // one right?" for each cell independently, which is the whole
+            // puzzle. A failed filing returns a count and nothing else.
+            const confirmed = currentFiling?.solved ?? false;
             return (
               <g key={q.id} style={{ pointerEvents: "none" }}>
                 <circle cx={p.x} cy={p.y} r={7} fill={q.color} filter="url(#quasar-glow)" />
                 <circle cx={p.x} cy={p.y} r={4} fill={q.color} />
-                {correctness && (
+                {confirmed && (
                   <circle
                     cx={p.x}
                     cy={p.y}
                     r={11}
                     fill="none"
-                    stroke={correctness === "correct" ? "#5ce1c8" : "#ff6b6b"}
+                    stroke="#5ce1c8"
                     strokeWidth={1.4}
                   />
                 )}
@@ -328,16 +477,52 @@ export function StarMap({ region }: { region: Region | null }) {
             );
           })}
 
+          {/* The real catalog entry, drawn only once the region is closed:
+              a dashed ring on each true sector, tethered to wherever the
+              marker actually ended up. The tether is what makes a
+              near-miss legible - one segment over reads very differently
+              from the other side of the field. */}
+          {revealed &&
+            region &&
+            quasars.map((q) => {
+              const trueSid = region.solution[q.id]?.sector;
+              if (!trueSid) return null;
+              const t = centerOf(trueSid);
+              const placedSid = placements[q.id];
+              const p = placedSid && placedSid !== trueSid ? centerOf(placedSid) : null;
+              return (
+                <g key={`truth-${q.id}`} style={{ pointerEvents: "none" }}>
+                  {p && (
+                    <line
+                      x1={p.x}
+                      y1={p.y}
+                      x2={t.x}
+                      y2={t.y}
+                      stroke={q.color}
+                      strokeWidth={1}
+                      strokeDasharray="2 3"
+                      opacity={0.5}
+                    />
+                  )}
+                  <circle
+                    cx={t.x}
+                    cy={t.y}
+                    r={9}
+                    fill="none"
+                    stroke={q.color}
+                    strokeWidth={1.6}
+                    strokeDasharray="3 2.5"
+                  />
+                  <circle cx={t.x} cy={t.y} r={2} fill={q.color} />
+                </g>
+              );
+            })}
+
           {armed &&
             [...(ruledOut[armed] ?? [])]
               .filter((sid) => !occupantBySector.has(sid))
               .map((sid) => {
-                const sector = sectors.find((s) => s.id === sid)!;
-                const r0 = INNER_HOLE + sector.ring * RING_THICKNESS + RING_GAP / 2;
-                const r1 = INNER_HOLE + (sector.ring + 1) * RING_THICKNESS - RING_GAP / 2;
-                const a0 = sector.seg * SEG_SPAN + SEG_GAP_DEG / 2;
-                const a1 = (sector.seg + 1) * SEG_SPAN - SEG_GAP_DEG / 2;
-                const p = polarPoint(CX, CY, (r0 + r1) / 2, (a0 + a1) / 2);
+                const p = centerOf(sid);
                 const s = 5;
                 return (
                   <g key={sid} style={{ pointerEvents: "none" }}>
@@ -370,7 +555,10 @@ export function StarMap({ region }: { region: Region | null }) {
       {region && (
       <div className="flex flex-col gap-4 w-full">
         <div className="flex items-start justify-between gap-3">
-        <div>
+        {/* Nothing on a closed board responds to a click, so the mode
+            switch would only advertise an interaction that no longer
+            exists. */}
+        <div className={closed ? "invisible" : ""}>
           <div className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50 mb-1.5">
             Click action
           </div>
@@ -438,15 +626,18 @@ export function StarMap({ region }: { region: Region | null }) {
                 <button
                   key={q.id}
                   type="button"
+                  disabled={closed}
                   onClick={() => {
                     playButtonClick();
                     setArmed(armed === q.id ? null : q.id);
                   }}
-                  className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs cursor-pointer transition-colors ${
+                  className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition-colors ${
+                    closed ? "cursor-default" : "cursor-pointer"
+                  } ${
                     armed === q.id
                       ? "bg-lcars-amber text-black font-semibold"
-                      : "bg-lcars-panel text-lcars-ice hover:bg-white/10"
-                  } ${sid ? "opacity-60" : ""}`}
+                      : `bg-lcars-panel text-lcars-ice ${closed ? "" : "hover:bg-white/10"}`
+                  } ${sid && !closed ? "opacity-60" : ""}`}
                 >
                   <span
                     className="w-2 h-2 rounded-full shrink-0"
@@ -456,41 +647,119 @@ export function StarMap({ region }: { region: Region | null }) {
                   {sid && (
                     <span className="text-[9px] text-lcars-ice/50 font-mono">{sid}</span>
                   )}
+                  {revealed && region && region.solution[q.id]?.sector !== sid && (
+                    <span className="text-[9px] font-mono text-lcars-teal">
+                      &rarr; {region.solution[q.id]?.sector}
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              if (!region) return;
-              const allCorrect =
-                placedCount === quasars.length &&
-                quasars.every((q) => placements[q.id] === region.solution[q.id]?.sector);
-              if (allCorrect) playVerifySuccess();
-              else playVerifyFail();
-              recordVerify(region.id, allCorrect);
-              setVerified(true);
-            }}
-            className="lcars-caps text-xs px-4 py-1.5 rounded-full bg-lcars-teal text-black font-semibold cursor-pointer hover:bg-lcars-ice transition-colors"
-          >
-            Verify
-          </button>
-          <button
-            type="button"
-            onClick={handleReset}
-            className="lcars-caps text-xs px-4 py-1.5 rounded-full bg-lcars-red text-black font-semibold cursor-pointer hover:bg-lcars-salmon transition-colors"
-          >
-            Reset
-          </button>
-        </div>
+        {!closed && (
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Disabled until every signature is placed. A partial filing
+                would be a free probe - place one marker, file, read the
+                count, and you've tested a single cell in isolation, which is
+                exactly the oracle this change removes. A filing is a
+                complete classification or it isn't one. */}
+            <button
+              type="button"
+              disabled={!allPlaced}
+              onClick={handleFile}
+              className="lcars-caps text-xs px-4 py-1.5 rounded-full bg-lcars-teal text-black font-semibold cursor-pointer hover:bg-lcars-ice transition-colors disabled:bg-lcars-panel disabled:text-lcars-ice/40 disabled:cursor-not-allowed disabled:hover:bg-lcars-panel"
+            >
+              {filingsLeft === 1 ? "File — Final" : "File Classification"}
+            </button>
+            {/* Withdrawal has to be a first-class control, not a hidden
+                escape hatch: roughly one region in five is provably
+                unsolvable, and the player can't tell those from ones they
+                merely misread. It costs nothing against rank, so the only
+                thing standing between them and a plateau is their own
+                willingness to file. */}
+            <button
+              type="button"
+              onClick={handleWithdraw}
+              onBlur={() => setConfirmingWithdraw(false)}
+              className={`lcars-caps text-xs px-4 py-1.5 rounded-full font-semibold cursor-pointer transition-colors ${
+                confirmingWithdraw
+                  ? "bg-lcars-red text-black hover:bg-lcars-salmon"
+                  : "bg-lcars-panel text-lcars-ice/80 hover:bg-white/15"
+              }`}
+            >
+              {confirmingWithdraw ? "Confirm withdrawal" : "Withdraw"}
+            </button>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="lcars-caps text-xs px-4 py-1.5 rounded-full bg-lcars-red text-black font-semibold cursor-pointer hover:bg-lcars-salmon transition-colors"
+            >
+              Reset
+            </button>
+          </div>
+        )}
 
-        <div className="text-[11px] text-lcars-ice/50 font-mono">
-          {placedCount} / {quasars.length} placed
-          {verified && ` · ${correctCount} / ${quasars.length} correct`}
+        <div className="flex flex-col gap-1.5 text-[11px] font-mono">
+          <div className="text-lcars-ice/50">
+            {placedCount} / {quasars.length} placed
+            {!closed && (
+              <>
+                {" · "}
+                <span className={filingsLeft === 1 ? "text-lcars-salmon" : undefined}>
+                  {filingsLeft} of {FILING_LIMIT} filings left
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* The cross-check result: a count, never which ones. That is
+              enough to reason from - it says how far off the whole
+              assignment is - without answering any individual sector, so
+              narrowing it down stays deduction rather than probing. */}
+          {!closed && currentFiling && !currentFiling.solved && (
+            <div className="text-lcars-salmon">
+              Cross-check: {currentFiling.discrepancies} of {quasars.length} signature
+              {currentFiling.discrepancies === 1 ? "" : "s"} inconsistent
+            </div>
+          )}
+
+          {closed && outcome && (
+            <div>
+              <div className={`${OUTCOME_COPY[outcome].tone} font-semibold`}>
+                {OUTCOME_COPY[outcome].label}
+              </div>
+              <div className="text-lcars-ice/45 mt-0.5">{OUTCOME_COPY[outcome].detail}</div>
+              {revealed && (
+                <div className="text-lcars-ice/45 mt-0.5">
+                  Catalog positions shown on the field.
+                </div>
+              )}
+            </div>
+          )}
+
+          {rankEvent && (
+            <div className="flex items-center gap-2.5 rounded-lg bg-black/40 px-2.5 py-2 mt-0.5">
+              <RankInsignia rank={rankEvent.to} size={32} />
+              <div className="min-w-0 leading-tight">
+                <div
+                  className="lcars-caps text-[11px] font-semibold"
+                  style={{ color: rankHex(rankEvent.to) }}
+                >
+                  {rankEvent.to === RELIEVED
+                    ? "Relieved of survey duty"
+                    : rankEvent.to > rankEvent.from
+                    ? `Promoted — ${rankTitle(rankEvent.to)}`
+                    : `Demoted — ${rankTitle(rankEvent.to)}`}
+                </div>
+                <div className="text-[10px] text-lcars-ice/50 mt-0.5">
+                  Catalog integrity review: {rankEvent.confirmed} confirmed,{" "}
+                  {rankEvent.retracted} retracted over {REVIEW_WINDOW} regions.
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       )}

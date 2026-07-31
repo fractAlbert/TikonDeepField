@@ -6,17 +6,30 @@ import { quasarColorHex } from "@/lib/quasar-colors";
 import { loadStarMapSave } from "@/lib/starmap-storage";
 import {
   EMPTY_LOG,
+  FILING_LIMIT,
   SurveyLogEntry,
+  entryOutcome,
+  filingsUsed,
   getSurveyLog,
   resolveEntryRegion,
   setArchived,
   subscribeSurveyLog,
 } from "@/lib/survey-log";
+import { SurveyOutcome } from "@/lib/ranks";
 import { playButtonClick } from "@/lib/sound";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { LcarsButton } from "@/components/LcarsButton";
 
 const ENTRIES_PER_PAGE = 3;
+
+// A region is open until it's filed or withdrawn, and then it's one of
+// three things. The old log only knew "solved", which couldn't tell a
+// region you gave up on from one you hadn't touched since lunch.
+const OUTCOME_STYLE: Record<SurveyOutcome, { label: string; chip: string; accent: string }> = {
+  confirmed: { label: "Confirmed", chip: "bg-lcars-teal", accent: "var(--lcars-teal)" },
+  retracted: { label: "Retracted", chip: "bg-lcars-red", accent: "var(--lcars-red)" },
+  withdrawn: { label: "Withdrawn", chip: "bg-lcars-ice/70", accent: "rgba(204,230,255,0.45)" },
+};
 
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleString(undefined, {
@@ -128,7 +141,10 @@ function LogEntryCard({
 
   const save = loadStarMapSave(entry.regionId);
   const placedCount = save ? Object.values(save.placements).filter(Boolean).length : 0;
-  const accentColor = entry.solved ? "var(--lcars-teal)" : "var(--lcars-amber)";
+  const outcome = entryOutcome(entry);
+  const style = outcome ? OUTCOME_STYLE[outcome] : null;
+  const accentColor = style?.accent ?? "var(--lcars-amber)";
+  const spent = filingsUsed(entry);
 
   return (
     <li
@@ -146,10 +162,10 @@ function LogEntryCard({
           <span className="text-sm font-semibold text-lcars-ice mr-1">{region.name}</span>
           <span
             className={`lcars-caps text-[10px] font-semibold tracking-wide rounded-full px-2 py-0.5 text-black ${
-              entry.solved ? "bg-lcars-teal" : "bg-lcars-amber"
+              style?.chip ?? "bg-lcars-amber"
             }`}
           >
-            {entry.solved ? "Solved" : "In Progress"}
+            {style?.label ?? "In Progress"}
           </span>
           <span className="lcars-caps text-[10px] font-semibold tracking-wide rounded-full px-2 py-0.5 bg-lcars-ice/70 text-black">
             {entry.origin === "generated" ? "Generated" : "Default"}
@@ -193,18 +209,33 @@ function LogEntryCard({
                 style={{ backgroundColor: quasarColorHex(i) }}
               />
               {q.designation}
-              {entry.solved && (
-                <span className="text-lcars-ice/40">&middot; {region.solution[q.id]?.type}</span>
+              {outcome && (
+                /* A closed region has nothing left to give away, so the
+                   log shows the catalog entry for all three outcomes -
+                   including the ones you got wrong, which is the only
+                   place a retraction can be learned from. */
+                <span className="text-lcars-ice/40">
+                  &middot; {region.solution[q.id]?.sector} &middot; {region.solution[q.id]?.type}
+                </span>
               )}
             </span>
           ))}
         </div>
 
         <p className="text-[11px] text-lcars-ice/40 font-mono">
-          {placedCount} / {region.quasars.length} placed &middot; {entry.verifyAttempts} verify
-          attempt{entry.verifyAttempts === 1 ? "" : "s"} &middot; first surveyed{" "}
-          {formatDate(entry.firstSurveyedAt)}
-          {entry.solved && entry.solvedAt && <> &middot; solved {formatDate(entry.solvedAt)}</>}
+          {/* Written as an explicit string because the plain version lost
+              its leading space and rendered "3filings used". The original
+              "verify attempts" line this replaced had the same bug, so
+              it's worth recognising: it shows up when a JSX text node
+              wraps across lines and contains an entity like &middot;. */}
+          {placedCount} / {region.quasars.length} placed &middot; {spent} of {FILING_LIMIT}
+          {" filings used"} &middot; first surveyed {formatDate(entry.firstSurveyedAt)}
+          {outcome && entry.closedAt && (
+            <>
+              {" "}
+              &middot; {style?.label.toLowerCase()} {formatDate(entry.closedAt)}
+            </>
+          )}
         </p>
       </div>
     </li>

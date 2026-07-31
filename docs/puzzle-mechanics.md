@@ -116,13 +116,65 @@ panel is a distinct, partial information channel:
 - **Star Map** (`StarMapPanel.tsx` / `starmap/StarMap.tsx`) — the actual
   answer sheet. Arm a quasar, click a sector to place it (or toggle "Rule
   out" mode to mark cells it definitely isn't at, independent per quasar).
-  "Verify" compares current placements against `region.solution` and
-  records the attempt (see persistence below); it does not reveal *which*
-  placements are wrong beyond a per-marker correct/incorrect ring.
+  "File Classification" **files a complete classification**: it's disabled
+  until every signature is placed, and returns a discrepancy *count* only —
+  "3 of 7 signatures inconsistent" — never which ones. Confirmation rings
+  appear only on a solved region, where they reveal nothing you don't
+  already know.
+
+  The result is a snapshot frozen at the moment of filing (the `Filing`
+  type in `StarMap.tsx`), and any later edit makes it stale rather than
+  updating it. That is load-bearing. The previous version was a `verified`
+  boolean latch with correctness derived live from `placements`, so the
+  first press turned the map into a permanent oracle — move a marker and
+  its ring re-coloured instantly, letting you hunt the solution one cell at
+  a time without ever filing again, and without the survey log counting any
+  of it. Staleness is *derived* by comparing the board against the
+  snapshot rather than cleared by each handler, so no future mutation path
+  can forget to invalidate it. Filing is also gated on a full board because
+  a partial filing is a free single-cell probe — the same oracle in another
+  shape.
+
+### Closing a region
+
+A region is **open** until it is filed correctly, filed wrongly for the
+third time, or withdrawn. `FILING_LIMIT = 3` (in `survey-log.ts`) is what
+stops the discrepancy count from becoming a search tool: three filings is
+enough to act on a near-miss and nowhere near enough to enumerate 6–8
+signatures over 40 sectors.
+
+| control | result |
+| --- | --- |
+| File, zero discrepancies | **Confirmed** |
+| File, discrepancies, budget left | still open, count shown |
+| File, discrepancies, third filing | **Retracted** |
+| Withdraw (two-click confirm) | **Withdrawn** |
+
+Closing is irreversible, and the board goes read-only — the outcome is
+already on the record, and the board is now the evidence for it. On a
+retraction or withdrawal the true catalog entry is revealed: a dashed ring
+on each true sector, tethered to wherever the marker actually ended up.
+Nothing is given away by this, because there is nothing left to give.
+
+`recordFiling`/`withdrawSurvey` are the only writers, and both go through
+`closeEntry`, which no-ops if the region is already closed. That is what
+makes "reported to the career record exactly once" structural rather than
+something every call site has to remember.
+
+### Rank (`ranks.ts`, `player.ts`)
+
+Closing a region appends to the officer's outcome stream, and every
+`REVIEW_WINDOW` (8) closed regions the station reviews it: 5+ confirmed
+with at most 1 retraction promotes, 3+ retractions demotes, anything else
+holds. Withdrawal counts as neither. The window resets on any rank change,
+so one bad stretch is charged once. `scripts/simulate-career.ts` exercises
+every path in that state machine head-on — the review is invisible for
+eight regions and then fires, which is not a thing you can usefully test by
+clicking. See `win-conditions.md` for why the ladder is shaped this way.
 
 ## Persistence (localStorage, client-only)
 
-Two independent stores, both browser-local (no backend):
+Three independent stores, all browser-local (no backend):
 
 - **Star Map progress** (`starmap-storage.ts`, key
   `quasar-isolinear:starmap:<regionId>`) — `{ placements, ruledOut }` per
@@ -131,11 +183,21 @@ Two independent stores, both browser-local (no backend):
   progress without duplicating `StarMap`'s parsing.
 - **Survey log** (`survey-log.ts`, key `quasar-isolinear:survey-log`) — one
   entry per region ever surveyed: origin (`builtin` vs `generated`),
-  timestamps, verify-attempt count, solved state, archived flag. A
-  `generated` region's entry carries a full snapshot of the `Region` itself
-  (not just its id), because generated regions otherwise vanish on reload —
-  the in-memory `regions` list `AppShell` keeps is not persisted.
+  timestamps, filings spent, outcome, archived flag. A `generated` region's
+  entry carries a full snapshot of the `Region` itself (not just its id),
+  because generated regions otherwise vanish on reload — the in-memory
+  `regions` list `AppShell` keeps is not persisted.
   `useSyncExternalStore`-friendly (`subscribeSurveyLog`/`getSurveyLog`).
+
+  `outcome` and `filings` are both optional, and every reader goes through
+  `entryOutcome()`/`filingsUsed()` rather than the raw fields — entries
+  written before those existed only recorded a `solved` boolean, which
+  reads as confirmed-or-still-open.
+- **Officer profile** (`player.ts`, key `quasar-isolinear:player`) — name,
+  service number, rank, the full outcome stream, the review-window start
+  index, and rank history. Commissioned lazily on first mount (via
+  `use-player.ts`) rather than during render, because it generates a random
+  name and the server would pick a different officer than the client.
 
 **Known leftover from the app rename** (see project memory on the rename):
 both storage keys still use the `quasar-isolinear:` prefix rather than a
@@ -155,11 +217,15 @@ src/lib/
   generate-region.ts        procedural region generation
   quadrant-survey.ts         Quadrant Survey panel's data source
   name-generator.ts           catalog-style quasar designations
+  officer-name.ts              officer names + personnel file numbers
   flavor-text.ts                region name/briefing flavor text
-  survey-log.ts                  play-history persistence
-  starmap-storage.ts              Star Map placement persistence (read side)
-  polar-geometry.ts                 SVG polar math for StarMap rendering
-  copy.ts                            centralized reusable UI chrome text
+  ranks.ts                       rank ladder + catalog integrity review (pure)
+  player.ts                       officer profile persistence + review execution
+  use-player.ts                    React binding for the above (commissions on mount)
+  survey-log.ts                     play-history persistence + region outcomes
+  starmap-storage.ts                 Star Map placement persistence (read side)
+  polar-geometry.ts                   SVG polar math for StarMap rendering
+  copy.ts                              centralized reusable UI chrome text
 
 src/data/regions/       hand-authored regions (currently just region-2.ts)
 src/components/panels/  one component per AppShell panel

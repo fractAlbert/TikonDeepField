@@ -22,6 +22,8 @@ import { HelpPanel } from "@/components/panels/HelpPanel";
 import { PrototypesPanel } from "@/components/panels/PrototypesPanel";
 import { NoActiveAssignmentPanel } from "@/components/NoActiveAssignmentPanel";
 import { StationInfoPanel } from "@/components/panels/StationInfoPanel";
+import { ProfilePanel } from "@/components/panels/ProfilePanel";
+import { OfficerBadge } from "@/components/OfficerBadge";
 import { StationLoadingScreen } from "@/components/StationLoadingScreen";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { GAME_NAME, OUTPOST_NAME, PANEL_LABELS } from "@/lib/copy";
@@ -39,6 +41,7 @@ type PanelId =
   | "help"
   | "prototypes"
   | "station"
+  | "profile"
   | "starmap"
   | "menu";
 
@@ -57,6 +60,7 @@ const PRIMARY_NAV: NavItem[] = [
 // another item in this rail visually, handled as a special case in the
 // rail's onSelect below.
 const UTILITY_NAV: NavItem[] = [
+  { id: "profile", label: "Officer", color: "lilac" },
   { id: "help", label: "Help", color: "ice" },
   { id: "prototypes", label: "Prototypes", color: "teal" },
   { id: "generate", label: PANEL_LABELS.surveyNewRegion, color: "orange" },
@@ -248,7 +252,20 @@ export function AppShell() {
               Deep Space Survey &mdash; {OUTPOST_NAME}
             </p>
           </div>
-          <SoundToggle />
+          {/* The officer on duty, always visible and always next to their
+              insignia - rank is the thing the record is about, and a name
+              without one is just a string. The name drops below `md`,
+              where the header is already one line of title and there is
+              no room for a second column of text; the insignia stays,
+              since it's the part that carries the rank. */}
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
+            <OfficerBadge
+              id="officer-badge"
+              onClick={() => selectPanel("profile")}
+              nameClassName="hidden md:block"
+            />
+            <SoundToggle />
+          </div>
         </div>
       </header>
 
@@ -346,6 +363,7 @@ export function AppShell() {
               onPreviewRegion={setLogPreviewRegion}
             />
           )}
+          {panel === "profile" && <ProfilePanel />}
           {panel === "help" && <HelpPanel />}
           {panel === "prototypes" && <PrototypesPanel />}
           {isMobile && panel === "starmap" && starMapView}
