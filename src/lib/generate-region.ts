@@ -24,6 +24,13 @@ const MIN_TYPES = 3;
 // at all; they're meant to be found via Sweep Scope/Quadrant Survey
 // triangulation from the two known anchors, not read off the page.
 const ANCHOR_MAX_DISTANCE = 5;
+// Anchors that land adjacent waste the pair. The two exact-coordinate clues
+// exist to be a triangulation baseline, and two neighbouring points barely
+// constrain the rest of the field - every other signature ends up roughly
+// the same distance from both, so the second anchor tells you almost
+// nothing the first didn't. A floor of 2 (at least one sector between them)
+// keeps the pair useful while staying inside Sweep Scope's visibility range.
+const ANCHOR_MIN_DISTANCE = 2;
 const QUADRANT_CLUE_COUNT = 2;
 
 function randomInt(min: number, max: number): number {
@@ -109,9 +116,21 @@ function buildMandatoryClues(region: Region, sectorLookup: Map<string, Sector>):
     }
   }
 
-  const inRange = shuffle(allPairs.filter((p) => p.dist <= ANCHOR_MAX_DISTANCE));
+  const inRange = shuffle(
+    allPairs.filter((p) => p.dist >= ANCHOR_MIN_DISTANCE && p.dist <= ANCHOR_MAX_DISTANCE)
+  );
+  // Fallback when no pair qualifies: prefer the closest pair that at least
+  // clears the minimum, and only fall back to the outright closest (which
+  // may be adjacent) if nothing does.
   const chosenPair =
-    inRange[0] ?? allPairs.reduce((closest, p) => (p.dist < closest.dist ? p : closest));
+    inRange[0] ??
+    allPairs
+      .filter((p) => p.dist >= ANCHOR_MIN_DISTANCE)
+      .reduce<{ a: string; b: string; dist: number } | null>(
+        (closest, p) => (!closest || p.dist < closest.dist ? p : closest),
+        null
+      ) ??
+    allPairs.reduce((closest, p) => (p.dist < closest.dist ? p : closest));
 
   const clues: Clue[] = [
     { kind: "quasar-sector", quasar: chosenPair.a, sector: region.solution[chosenPair.a].sector },
