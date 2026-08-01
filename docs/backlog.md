@@ -84,6 +84,19 @@ fixes:
    arguably the better first move. A distance matrix view, or a scratchpad
    on the Star Map, would both qualify.
 
+### The census slices the wrong axis
+
+**See `instrument-analysis.md` for the full comparison.** Headline: the
+Quadrant Survey counts signatures per quarter of the field, and a quadrant
+spans all five rings — so it says almost nothing about how far out anything
+sits, which is the half of the ambiguity that actually matters. Counting
+per *ring* instead takes unsolvable regions from 18.6% to 5.8%; reporting
+both rings and quadrants takes it to 3.9%.
+
+That is the largest single improvement available anywhere, it needs no new
+instrument, and it gives away nothing — the census still names no
+individual signature. It is the thing to do first.
+
 ### Ring Survey — two variants, and by-type is the better one
 
 Prototype only, deliberately not in the navigation (Prototypes panel, both
