@@ -84,6 +84,50 @@ fixes:
    arguably the better first move. A distance matrix view, or a scratchpad
    on the Star Map, would both qualify.
 
+### Retire the Quadrant Survey
+
+Decided 2026-08-01. The Ring Survey replaces it — see
+`instrument-analysis.md`. Counting per quadrant is the weakest census
+measured, and the ring census does the same job far better while keeping
+the same anonymity.
+
+Open choice: **replace or keep both.** Replacing gets unsolvable regions to
+~5.8%; keeping both gets ~3.9%. Keeping both costs nothing mechanically but
+leaves a panel that is now clearly the junior partner, and the whole point
+of removing it is that the nav is full. Replacing is the cleaner call
+unless the extra ~2 points turn out to matter in play.
+
+What retiring it touches: the `survey` entry in both nav lists in
+`AppShell.tsx`, `QuadrantSurveyPanel.tsx` and `quadrant-survey.ts`, the
+Help panel's step 4, and the `quadrantTotals` channel in the analysis
+scripts (keep the channel — it is still the baseline every other number is
+measured against). `quasar-quadrant` **briefing clues are separate and
+stay**: they are two of the four clues every region ships with, and nothing
+here changes that.
+
+### The Star Manifest carries no information
+
+Raised 2026-08-01. It lists every signature by name and colour, and now
+also whatever the briefing pins down (sector, quadrant) after the
+2026-07-31 fix. But that is all restatement — the briefing already said it
+and the Star Map already shows the colours. Nothing on the panel is
+something you could not get elsewhere in fewer clicks.
+
+Two ways out, and they want deciding before more is built on it:
+
+1. **Make it thematic.** Give it the character a personnel-and-equipment
+   roster would have: catalog provenance, when a signature was first
+   logged, which survey picked it up, confidence notes. Flavour rather
+   than mechanics — it would earn its place by making the station feel
+   staffed rather than by helping you solve anything.
+2. **Drop it.** One fewer nav entry, which the mobile hub would thank us
+   for (see the fat-buttons entry above — it is at ten and has no room).
+   The colour-to-name mapping it provides also already exists on the Star
+   Map's signature chips.
+
+Leaning toward (1) only if the flavour is genuinely wanted; otherwise (2).
+No mechanical argument for keeping it either way.
+
 ### The census slices the wrong axis
 
 **See `instrument-analysis.md` for the full comparison.** Headline: the
@@ -97,71 +141,53 @@ That is the largest single improvement available anywhere, it needs no new
 instrument, and it gives away nothing — the census still names no
 individual signature. It is the thing to do first.
 
-### Ring Survey — two variants, and by-type is the better one
+### Ring Survey - settled as an instrument, open on presentation
 
-Prototype only, deliberately not in the navigation (Prototypes panel, both
-variants live side by side). A range gate walks outward from the field's
-centre and rings light as it crosses them. Reports a ring, never a segment.
+**Decided 2026-08-01: ship it, as an anonymous per-ring census.** It
+replaces the Quadrant Survey. See `instrument-analysis.md` for the full
+comparison; the short version is that it takes unsolvable regions from
+~19% to ~6% (or ~4% keeping quadrants too) while leaving the amount of
+deduction unchanged, because it prunes dead ends rather than answering
+anything.
 
-**A - by signature.** Pick a signature, learn its ring.
+**Rejected: the by-signature variant.** Aiming the scan at a named
+signature and learning its ring is far too strong - unlimited use drops the
+work from 133 candidate eliminations per region to 23, with 90% of
+signatures then falling straight out of the two anchors. It would need a
+budget of about 2 to be viable, and the census version needs no such guard,
+which is the whole argument for it.
 
-**B - by type.** Pick a type, learn which rings hold one and how many,
-naming nobody - the Quadrant Survey's idiom applied to rings. Modelled as
-anonymous per-ring totals, and that reduction is exact: nothing observable
-links a name to a type, so types may be permuted freely between names and
-the only surviving constraint is the count per ring.
+The axis that matters here is **chain depth, not determinism**. Sudoku is
+fully deterministic and unique and is enjoyed for the grind; what separates
+a good one from one that arrives 90% filled in is how many inference steps
+chain. `measure-deduction-depth.ts` measures exactly that, and the census
+leaves it alone: 22% of regions still need three rounds, 3% need four.
 
-B is the better instrument, and not by a little:
+#### Still open: the look
 
-| | unsolvable | resolves by propagation | mean rounds | eliminations/region | stuck |
-| --- | --- | --- | --- | --- | --- |
-| Today | 19.0% | 60.7% | 2.60 | 133 | 1.32 |
-| **B, by type** | **3.1%** | 85.3% | 2.21 | **133** | 0.54 |
-| A, budget 2 | 7.9% | 87.0% | 2.17 | 90 | 0.22 |
-| A, unlimited | ~0% | 99.6% | 1.27 | 23 | 0.01 |
+Four presentations are live in the Prototypes panel, all showing the same
+census off the same data:
 
-B does *the same amount of work* - 133 candidate eliminations, unchanged -
-while cutting unsolvable from 19% to 3.1%. Being a global constraint it
-prunes dead ends rather than handing out naked singles, so the chains
-survive: 22% of regions still need three rounds of propagation, 3% need
-four. A does the opposite, buying its solvability by removing work.
+- **A - Sweep.** Returns flash as the gate crosses and fade behind it, like
+  the Sweep Scope. Most characterful; you have to watch a whole pass and
+  remember five numbers.
+- **B - Sweep + hold** *(current default)*. Identical, except a crossed
+  ring keeps its count, so one pass leaves the finished census on screen.
+  Keeps the character without being a memory test.
+- **C - Instant.** No animation. Honest about being a readout rather than a
+  live sensor, and the fastest to use.
+- **D - No dial.** One LCARS bar per ring. Most legible, least
+  characterful, and it throws away the fact that rings *are* radial - on
+  the dial a count maps onto the Star Map with nothing to translate.
 
-**Recommendation: ship B, unmetered.** It needs no budget, because it
-never answers the question - it only rules things out. A stays parked.
+An empty ring produces no return in every version, which is honest: the
+instrument found nothing there. The count is still listed in the text
+readout.
 
-Both work because they attack the documented failure mode directly: the
-dominant ambiguity is a signature sliding one ring out and one segment over
-with every reading unchanged (`win-conditions.md`), and any ring
-information kills half of that move. Variant A's budget curve, for
-reference: 1 survey ~12.5% unsolvable, 2 ~7.9%, 3 ~3.6%, unlimited ~0.1%.
-
-**The axis that matters is chain depth, not determinism.** Deterministic is fine —
-Sudoku is fully deterministic and is enjoyed for the grind. What separates
-a good Sudoku from one that arrives 90% filled in is how many inference
-steps chain, so that is what `measure-deduction-depth.ts` measures:
-
-| | resolves by propagation | mean rounds | signatures at depth 1 | eliminations/region |
-| --- | --- | --- | --- | --- |
-| Today | 63.1% | 2.58 | 29% | 134 |
-| Ring budget 2 | 87.5% | 2.16 | 54% | 91 |
-| Ring budget 3 | 92.9% | 1.96 | 66% | 69 |
-| Unlimited | 99.5% | 1.26 | 90% | 23 |
-
-Unlimited does not make the puzzle deterministic; it already was. It makes
-90% of signatures fall straight out of the two anchors with no intermediate
-reasoning, and cuts the work done to a sixth. Today 45% of regions need
-three rounds and 7% need four — that structure is the thing worth
-protecting.
-
-If variant A is ever wanted anyway, it needs a budget of about 2, folded
-into the sensor allocation in `win-conditions.md`: that holds mean rounds
-at 2.17 against today's 2.60 and keeps 38% of signatures at depth 2.
-Variant B needs no such guard, which is the whole argument for it.
-
-**Open question for B:** whether to emit `quasar-type` clues. Without them
-a player cannot attach a type to a name, so B reads as anonymous per-ring
-totals - which is what makes it safe, and also what caps it. Emitting type
-clues would sharpen it and would need re-measuring.
+**Open question:** whether to emit `quasar-type` clues. Nothing currently
+links a signature's name to its type, which is what makes a type-sliced
+census reduce exactly to anonymous per-ring totals - safe, and also capped.
+Emitting type clues would sharpen it and would need re-measuring.
 
 ## Interaction
 

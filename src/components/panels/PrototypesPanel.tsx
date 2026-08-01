@@ -7,7 +7,12 @@ import { generateRegion } from "@/lib/generate-region";
 import { quasarColorHex } from "@/lib/quasar-colors";
 import { playButtonClick } from "@/lib/sound";
 import { LcarsPanel } from "@/components/LcarsShell";
-import { RingScope, RingTarget } from "@/components/ringsurvey/RingScope";
+import {
+  RingCensusLadder,
+  RingScope,
+  RingScopeMode,
+} from "@/components/ringsurvey/RingScope";
+import { RING_COUNT } from "@/lib/grid";
 
 const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
 
@@ -95,25 +100,24 @@ export function PrototypesPanel({
   );
 }
 
+
 /**
- * Live, in-app prototype rather than a link out, because the question it
- * has to answer is "how does this feel next to the Sweep Scope" - which
- * needs the real region, the real signatures and the real colours.
+ * Live, in-app prototype rather than a link out: the question it has to
+ * answer is how this feels to read next to the Sweep Scope, which needs
+ * the real region, the real counts and the real colours.
  *
- * Both variants are shown at once because they are not two settings of one
- * instrument, they are different instruments. Measured over 3000 regions
- * (analyze-solvability.ts, measure-deduction-depth.ts):
+ * The instrument itself is settled (docs/instrument-analysis.md): a ring
+ * census, anonymous, naming no individual signature. Counting per ring
+ * rather than per quadrant takes unsolvable regions from ~19% to ~6% - and
+ * to ~4% keeping both - while leaving the amount of deduction unchanged at
+ * 133 candidate eliminations per region. What is NOT settled is the
+ * presentation, so all three candidates run side by side here off the same
+ * data.
  *
- *   by signature, unlimited  ~0% unsolvable, but 90% of signatures then
- *                            fall straight out of the two anchors, and the
- *                            work drops from 133 candidate eliminations
- *                            per region to 23. It hands over the puzzle.
- *   by type                  3.1% unsolvable with the eliminations
- *                            unchanged at 133 and chains intact. It prunes
- *                            dead ends without ever naming anyone.
- *
- * Neither is wired into the navigation: that is a difficulty decision, not
- * a plumbing one.
+ * The by-signature variant that was here previously has been dropped. It
+ * was measured and rejected: unlimited use drops the work from 133
+ * eliminations to 23, with 90% of signatures falling straight out of the
+ * two anchors.
  */
 function RingSurveyPrototype({ region }: { region: Region | null }) {
   // Falls back to a throwaway region so the prototype works with no active
@@ -130,55 +134,34 @@ function RingSurveyPrototype({ region }: { region: Region | null }) {
 
   const active = region ?? demo;
 
-  const signatures = useMemo(
-    () =>
-      active
-        ? active.quasars.map((q, i) => ({
-            id: q.designation,
-            label: q.designation,
-            color: quasarColorHex(i),
-            ring: sectorLookup.get(active.solution[q.id].sector)!.ring,
-            type: active.solution[q.id].type,
-          }))
-        : [],
-    [active]
-  );
+  // The whole output of the instrument: how many signatures sit in each
+  // ring. No identities, no segments, no types.
+  const counts = useMemo(() => {
+    const perRing = new Array(RING_COUNT).fill(0) as number[];
+    if (!active) return perRing;
+    for (const q of active.quasars) perRing[sectorLookup.get(active.solution[q.id].sector)!.ring]++;
+    return perRing;
+  }, [active]);
 
-  const [signatureId, setSignatureId] = useState("");
-  const [type, setType] = useState("");
+  const [mode, setMode] = useState<RingScopeMode>("accumulate");
+  const color = quasarColorHex(0);
 
-  // Resolved each render rather than reset on region change - if the stored
-  // selection no longer matches anyone, fall back to the first.
-  const selected = signatures.find((s) => s.id === signatureId) ?? signatures[0];
-  const types = active?.quasarTypes ?? [];
-  const selectedType = types.includes(type) ? type : types[0];
-
-  // Every ring holding at least one signature of the chosen type, and how
-  // many. The type variant's entire output, and it names nobody.
-  const typeTargets: RingTarget[] = useMemo(() => {
-    const byRing = new Map<number, number>();
-    for (const s of signatures) {
-      if (s.type !== selectedType) continue;
-      byRing.set(s.ring, (byRing.get(s.ring) ?? 0) + 1);
-    }
-    return [...byRing.entries()].map(([ring, count]) => ({ ring, count }));
-  }, [signatures, selectedType]);
-
-  if (!active || !selected) {
+  if (!active) {
     return (
-      <LcarsPanel title="Live Prototype — Ring Survey" accent="bg-lcars-orange">
-        <p className="text-sm text-lcars-ice/50">Preparing sample field…</p>
+      <LcarsPanel title="Prototype &mdash; Ring Survey" accent="bg-lcars-orange">
+        <p className="text-sm text-lcars-ice/50">Preparing sample field&hellip;</p>
       </LcarsPanel>
     );
   }
 
   return (
-    <LcarsPanel title="Live Prototype — Ring Survey" accent="bg-lcars-orange">
-      <p className="text-sm text-lcars-ice/70 leading-relaxed mb-4">
-        A range gate walks outward from the centre of the field, and rings light
-        as it crosses them. It reports a ring and nothing else &mdash; no
-        segment, no bearing. Two variants, which differ far more than they look
-        like they should.
+    <LcarsPanel title="Prototype &mdash; Ring Survey" accent="bg-lcars-orange">
+      <p className="text-sm text-lcars-ice/70 leading-relaxed mb-2">
+        A census of the field by ring: how many signatures sit in each band,
+        naming none of them. Replaces the Quadrant Survey, which slices the
+        wrong axis &mdash; a quadrant spans all five rings, so it says almost
+        nothing about how far out anything is, and that is the half of the
+        ambiguity that matters.
         {!region && (
           <span className="text-lcars-amber">
             {" "}
@@ -186,113 +169,79 @@ function RingSurveyPrototype({ region }: { region: Region | null }) {
           </span>
         )}
       </p>
+      <p className="text-xs text-lcars-ice/50 leading-relaxed mb-4">
+        <span className="text-lcars-orange font-semibold">To settle:</span> the
+        look. All three below show the identical census off the identical data
+        &mdash; the only difference is what it feels like to read.
+      </p>
 
-      {/* Stacked, not side by side. Tailwind's breakpoints measure the
-          viewport, but `main` is only ~500px even on a 1344px desktop -
-          the Star Map sidebar and both rails take the rest - so a
-          two-column split squeezed each dial to ~215px and crushed the
-          ring labels. Both variants are still on one screen, just one
-          scroll apart. */}
-      <div className="flex flex-col gap-4">
-        <div className="rounded-lg bg-black/25 p-3">
-          <div className="lcars-caps text-xs font-semibold text-lcars-teal mb-1">
-            A &middot; By signature
-          </div>
-          <p className="text-[11px] text-lcars-ice/50 leading-relaxed mb-3">
-            Pick one signature, learn its ring. Unlimited use leaves{" "}
-            <span className="font-mono">~0%</span> of regions unsolvable, but
-            drops the work from <span className="font-mono">133</span> candidate
-            eliminations per region to <span className="font-mono">23</span>, and
-            90% of signatures then fall straight out of the anchors with nothing
-            chaining. A budget of 2 keeps most of it:{" "}
-            <span className="font-mono">7.9%</span> unsolvable, 90 eliminations.
-          </p>
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {signatures.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => {
-                  playButtonClick();
-                  setSignatureId(s.id);
-                }}
-                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs cursor-pointer transition-colors ${
-                  s.id === selected.id
-                    ? "bg-lcars-teal text-black font-semibold"
-                    : "bg-lcars-panel text-lcars-ice hover:bg-white/10"
-                }`}
-              >
-                <span
-                  className="w-2 h-2 rounded-full shrink-0"
-                  style={{ backgroundColor: s.color }}
-                />
-                {s.label}
-              </button>
-            ))}
-          </div>
-          <RingScope
-            targets={[{ ring: selected.ring, count: 1 }]}
-            color={selected.color}
-            selectionKey={`sig:${selected.id}`}
-            visible
-          />
-        </div>
-
-        <div className="rounded-lg bg-black/25 p-3">
-          <div className="lcars-caps text-xs font-semibold text-lcars-orange mb-1">
-            B &middot; By type
-          </div>
-          <p className="text-[11px] text-lcars-ice/50 leading-relaxed mb-3">
-            Pick a type, learn which rings hold one and how many &mdash; naming
-            nobody, the way the Quadrant Survey doesn&apos;t. Takes unsolvable
-            from <span className="font-mono">19%</span> to{" "}
-            <span className="font-mono">3.1%</span> with the work{" "}
-            <em>unchanged</em> at <span className="font-mono">133</span>{" "}
-            eliminations and chains intact. It prunes dead ends instead of
-            answering the question.
-          </p>
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {types.map((t, i) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => {
-                  playButtonClick();
-                  setType(t);
-                }}
-                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs cursor-pointer transition-colors ${
-                  t === selectedType
-                    ? "bg-lcars-orange text-black font-semibold"
-                    : "bg-lcars-panel text-lcars-ice hover:bg-white/10"
-                }`}
-              >
-                <span
-                  className="w-2 h-2 rounded-full shrink-0"
-                  style={{ backgroundColor: quasarColorHex(i) }}
-                />
-                {t}
-              </button>
-            ))}
-          </div>
-          <RingScope
-            targets={typeTargets}
-            color={quasarColorHex(Math.max(0, types.indexOf(selectedType)))}
-            selectionKey={`type:${selectedType}`}
-            showCounts
-            visible
-          />
-        </div>
+      <div className="flex gap-1 mb-4">
+        {(
+          [
+            ["sweep", "A · Sweep"],
+            ["accumulate", "B · Sweep + hold"],
+            ["static", "C · Instant"],
+          ] as [RingScopeMode, string][]
+        ).map(([id, label], i, arr) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => {
+              playButtonClick();
+              setMode(id);
+            }}
+            className={`flex-1 lcars-caps text-[11px] font-semibold px-2 py-1.5 cursor-pointer transition-colors ${
+              i === 0 ? "rounded-l-full" : i === arr.length - 1 ? "rounded-r-full" : ""
+            } ${
+              mode === id
+                ? "bg-lcars-orange text-black"
+                : "bg-lcars-panel text-lcars-ice/70 hover:bg-white/10"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      <p className="text-xs text-lcars-ice/50 leading-relaxed mt-4">
-        <span className="text-lcars-orange font-semibold">One caveat on B:</span>{" "}
-        nothing in the game currently links a signature&apos;s name to its type
-        &mdash; generation emits no type clues &mdash; so in play this reads as
-        anonymous per-ring totals. That is exactly how it was modelled, and it
-        is still worth 16 points of solvability. Emitting type clues would
-        sharpen it further.
-      </p>
+      {/* Stacked, not columns. Tailwind's breakpoints measure the viewport,
+          but `main` is only ~500px even on a 1344px desktop - the Star Map
+          sidebar and both rails take the rest - so a two-column split
+          squeezed the dial to ~215px and bunched the ring labels together. */}
+      <RingScope counts={counts} color={color} mode={mode} visible />
+
+      <div className="mt-5 pt-4 border-t border-white/10">
+        <div className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50 mb-2">
+          D &middot; No dial, for comparison
+        </div>
+        <RingCensusLadder counts={counts} color={color} />
+        <p className="text-[11px] text-lcars-ice/45 leading-relaxed mt-3">
+          The most legible option and the least characterful. It also throws
+          away the one thing the dial gives for free: rings <em>are</em>{" "}
+          radial, so a count maps onto the Star Map with nothing to translate.
+        </p>
+      </div>
+
+      <div className="mt-5 pt-4 border-t border-white/10 text-xs text-lcars-ice/50 leading-relaxed">
+        <p className="mb-2">
+          <span className="text-lcars-ice/70 font-semibold">A &middot; Sweep</span>{" "}
+          &mdash; returns flash as the gate crosses them and fade behind it, like
+          the Sweep Scope. Most characterful, but you have to watch a whole
+          pass and remember five numbers.
+        </p>
+        <p className="mb-2">
+          <span className="text-lcars-ice/70 font-semibold">
+            B &middot; Sweep + hold
+          </span>{" "}
+          &mdash; identical, except a crossed ring keeps its count. One pass
+          leaves the finished census on screen. Keeps the instrument&apos;s
+          character without making it a memory test.
+        </p>
+        <p>
+          <span className="text-lcars-ice/70 font-semibold">C &middot; Instant</span>{" "}
+          &mdash; no animation at all. Honest about being a readout rather than a
+          live sensor, and the fastest to use.
+        </p>
+      </div>
     </LcarsPanel>
   );
 }
-
