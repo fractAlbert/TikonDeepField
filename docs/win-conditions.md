@@ -249,15 +249,23 @@ half the move. Measured, it does exactly that — and then some:
 
 Unlimited use effectively ends the problem, which is precisely why it is a
 prototype (Prototypes panel) and not a panel. With every ring known, each
-pairwise distance reduces to a segment hop by subtraction and the puzzle
-collapses from deduction to arithmetic — a difficulty decision far too
-large to make by adding a nav entry.
+pairwise distance reduces to a segment hop by subtraction: 90% of
+signatures then fall straight out of the two anchors with nothing chaining,
+and the work drops from 133 candidate eliminations per region to 23.
 
-A **budget** is the interesting version, and it is the same shape as the
-sensor allocation: with two or three surveys per region, choosing which
-signature to spend them on is itself a deduction, and the instrument turns
-a dead end into a decision rather than a formality. That is the natural
-place to fold it in.
+A second variant avoids that entirely. **Ring Survey by type** — pick a
+type, see which rings hold one and how many, naming nobody, exactly as the
+Quadrant Survey does — takes unsolvable to **3.1%** with the eliminations
+*unchanged at 133* and chains intact (22% of regions still need three
+rounds). Being a global constraint it prunes dead ends instead of handing
+out naked singles, so it fixes the loss rate without removing any of the
+puzzle. That is the variant to ship, and unlike the by-signature one it
+needs no budget.
+
+See `backlog.md` for the full comparison and `measure-deduction-depth.ts`
+for the method. Chain depth, not determinism, is the axis that matters:
+Sudoku is fully deterministic and unique too, and is enjoyed for the grind.
+What hurts is a region arriving 90% filled in.
 
 Note this changes the calibration argument below. A ~19% floor is why
 withdrawal has to be rank-neutral — but if the floor drops to ~4%, that
