@@ -1,0 +1,331 @@
+"use client";
+
+import { useState } from "react";
+import {
+  DEMOTION_RETRACTED,
+  PROMOTION_CONFIRMED,
+  RANKS,
+  RELIEVED,
+  REVIEW_WINDOW,
+  SurveyOutcome,
+  rankAt,
+  rankHex,
+  rankTitle,
+  reviewOutlook,
+  tallyOutcomes,
+} from "@/lib/ranks";
+import { RankEvent, renamePlayer, requestReinstatement, rerollPlayerName, reviewWindow } from "@/lib/player";
+import { usePlayer } from "@/lib/use-player";
+import { playButtonClick, playVerifySuccess } from "@/lib/sound";
+import { LcarsPanel } from "@/components/LcarsShell";
+import { LcarsButton } from "@/components/LcarsButton";
+import { RankInsignia } from "@/components/RankInsignia";
+import { RankLadderModal } from "@/components/RankLadderModal";
+
+const OUTCOME_STYLE: Record<SurveyOutcome, { label: string; chip: string }> = {
+  confirmed: { label: "Confirmed", chip: "bg-lcars-teal text-black" },
+  retracted: { label: "Retracted", chip: "bg-lcars-red text-black" },
+  withdrawn: { label: "Withdrawn", chip: "bg-lcars-ice/70 text-black" },
+};
+
+const REASON_LABEL: Record<RankEvent["reason"], string> = {
+  commission: "Commissioned",
+  promotion: "Promoted",
+  demotion: "Demoted",
+  relieved: "Relieved of duty",
+  reinstatement: "Reinstated",
+};
+
+function formatDate(ts: number): string {
+  return new Date(ts).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export function ProfilePanel() {
+  const { player, commissioned } = usePlayer();
+  const [draftName, setDraftName] = useState<string | null>(null);
+  const [showLadder, setShowLadder] = useState(false);
+
+  if (!commissioned) {
+    // Pre-hydration and the first frame after it. Deliberately not a
+    // skeleton of the real layout - the profile is one screen, and a
+    // flash of the wrong officer would be worse than a beat of nothing.
+    return (
+      <LcarsPanel title="Personnel Record" accent="bg-lcars-lilac" className="h-full">
+        <p className="text-sm text-lcars-ice/50">Reading personnel file…</p>
+      </LcarsPanel>
+    );
+  }
+
+  const rank = rankAt(player.rank);
+  const relieved = player.rank === RELIEVED;
+  const windowOutcomes = reviewWindow(player);
+  const tally = tallyOutcomes(windowOutcomes);
+  const career = tallyOutcomes(player.outcomes.map((o) => o.outcome));
+
+  function commitName() {
+    if (draftName !== null && draftName.trim()) renamePlayer(draftName);
+    setDraftName(null);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {showLadder && (
+        <RankLadderModal currentRank={player.rank} onClose={() => setShowLadder(false)} />
+      )}
+
+      <LcarsPanel title="Personnel Record" accent="bg-lcars-lilac">
+        <div className="flex items-start gap-4">
+          <RankInsignia rank={player.rank} size={72} className="mt-0.5" />
+
+          <div className="flex-1 min-w-0">
+            {draftName !== null ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  autoFocus
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitName();
+                    if (e.key === "Escape") setDraftName(null);
+                  }}
+                  maxLength={40}
+                  aria-label="Officer name"
+                  className="min-w-0 flex-1 bg-black/40 rounded-lg px-3 py-1.5 text-lg font-semibold text-lcars-ice outline-none ring-1 ring-lcars-lilac/60 focus:ring-lcars-amber"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    playButtonClick();
+                    commitName();
+                  }}
+                  className="lcars-caps text-[11px] font-semibold rounded-full px-3 py-1 bg-lcars-teal text-black cursor-pointer hover:bg-lcars-ice transition-colors"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playButtonClick();
+                    setDraftName(rerollPlayerName());
+                  }}
+                  className="lcars-caps text-[11px] font-semibold rounded-full px-3 py-1 bg-lcars-violet text-black cursor-pointer hover:bg-lcars-lilac transition-colors"
+                >
+                  Reroll
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playButtonClick();
+                    setDraftName(null);
+                  }}
+                  className="lcars-caps text-[11px] font-semibold rounded-full px-3 py-1 bg-white/15 text-lcars-ice cursor-pointer hover:bg-white/25 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xl font-semibold text-lcars-ice leading-none">
+                  {player.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playButtonClick();
+                    setDraftName(player.name);
+                  }}
+                  className="lcars-caps text-[10px] font-semibold tracking-wide rounded-full px-2.5 py-0.5 bg-white/15 text-lcars-ice cursor-pointer hover:bg-white/25 transition-colors"
+                >
+                  Rename
+                </button>
+              </div>
+            )}
+
+            <div
+              className="lcars-caps text-sm font-semibold mt-2"
+              style={{ color: rankHex(player.rank) }}
+            >
+              {rankTitle(player.rank)}
+            </div>
+            <p className="text-xs text-lcars-ice/60 leading-relaxed mt-1 max-w-prose">
+              {relieved
+                ? "Off the survey roster pending reinstatement."
+                : rank?.blurb}
+            </p>
+            <p className="font-mono text-[11px] text-lcars-ice/40 mt-2">
+              Personnel file {player.serviceNumber} &middot; commissioned{" "}
+              {formatDate(player.commissionedAt)}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 mt-4">
+          <LcarsButton color="lilac" onClick={() => setShowLadder(true)} className="text-sm">
+            Rank Structure
+          </LcarsButton>
+          {relieved && (
+            <LcarsButton
+              color="teal"
+              className="text-sm"
+              onClick={() => {
+                if (requestReinstatement()) playVerifySuccess();
+              }}
+            >
+              Request Reinstatement
+            </LcarsButton>
+          )}
+        </div>
+      </LcarsPanel>
+
+      <LcarsPanel title="Standing" accent="bg-lcars-amber">
+        <RankLadderStrip current={player.rank} />
+
+        {relieved ? (
+          <div className="mt-4 rounded-lg bg-lcars-red/20 ring-1 ring-lcars-red/60 p-3">
+            <div className="lcars-caps text-xs font-semibold text-lcars-red">
+              Relieved of Survey Duty
+            </div>
+            <p className="text-xs text-lcars-ice/70 leading-relaxed mt-1.5">
+              Your filings are still recorded, but no review runs while you hold no rank. Request
+              reinstatement above to return as a Survey Technician with a clean window.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-2">
+              <span className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50">
+                Catalog Integrity Review
+              </span>
+              <span className="font-mono text-[11px] text-lcars-ice/40">
+                {tally.total} / {REVIEW_WINDOW} regions closed
+              </span>
+            </div>
+
+            <ReviewWindowStrip outcomes={windowOutcomes} />
+
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 font-mono text-[11px]">
+              <span className="text-lcars-teal">
+                {tally.confirmed} confirmed
+                <span className="text-lcars-ice/35"> / {PROMOTION_CONFIRMED} to promote</span>
+              </span>
+              <span className="text-lcars-red">
+                {tally.retracted} retracted
+                <span className="text-lcars-ice/35"> / {DEMOTION_RETRACTED} to demote</span>
+              </span>
+              <span className="text-lcars-ice/50">{tally.withdrawn} withdrawn</span>
+            </div>
+
+            <p className="text-xs text-lcars-ice/65 leading-relaxed mt-2">
+              {reviewOutlook(windowOutcomes)}
+            </p>
+          </div>
+        )}
+
+        <div className="mt-4 pt-3 border-t border-white/10 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] text-lcars-ice/45">
+          <span>Career: {player.outcomes.length} regions closed</span>
+          <span>{career.confirmed} confirmed</span>
+          <span>{career.retracted} retracted</span>
+          <span>{career.withdrawn} withdrawn</span>
+        </div>
+      </LcarsPanel>
+
+      <LcarsPanel title="Service History" accent="bg-lcars-violet">
+        {player.history.length === 0 ? (
+          <p className="text-sm text-lcars-ice/50">No entries.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {[...player.history].reverse().map((event, i) => (
+              <li key={`${event.at}-${i}`} className="flex items-center gap-3 rounded-lg bg-black/25 px-3 py-2">
+                <RankInsignia rank={event.to} size={30} title="" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold" style={{ color: rankHex(event.to) }}>
+                    {rankTitle(event.to)}
+                  </div>
+                  <div className="text-[11px] text-lcars-ice/45 font-mono">
+                    {REASON_LABEL[event.reason]}
+                    {event.reason !== "commission" && event.reason !== "reinstatement" && (
+                      <> from {rankTitle(event.from)}</>
+                    )}
+                    {" · "}
+                    {formatDate(event.at)}
+                  </div>
+                </div>
+                {(event.reason === "promotion" ||
+                  event.reason === "demotion" ||
+                  event.reason === "relieved") && (
+                  /* The window that produced the decision, so a demotion
+                     never reads as arbitrary. */
+                  <div className="font-mono text-[10px] text-lcars-ice/40 text-right shrink-0 leading-tight">
+                    <div className="text-lcars-teal/70">{event.confirmed} conf</div>
+                    <div className="text-lcars-red/70">{event.retracted} retr</div>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </LcarsPanel>
+    </div>
+  );
+}
+
+/** The ladder as a run of rungs, filled up to the officer's current rank. */
+function RankLadderStrip({ current }: { current: number }) {
+  return (
+    <div className="flex gap-1">
+      {RANKS.map((rank) => {
+        const held = current >= rank.index;
+        const isCurrent = current === rank.index;
+        return (
+          <div
+            key={rank.index}
+            title={rank.title}
+            className={`flex-1 min-w-0 rounded-md px-1.5 py-2 text-center ${
+              isCurrent ? "ring-1 ring-white/40" : ""
+            }`}
+            style={{
+              backgroundColor: held ? rank.hex : "rgba(255,255,255,0.06)",
+              color: held ? "#000" : "rgba(232,240,247,0.4)",
+            }}
+          >
+            <div className="lcars-caps text-[10px] font-bold leading-none">{rank.short}</div>
+            <div className="text-[9px] leading-tight mt-1 truncate">{rank.rung}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * The current review window as one slot per region, oldest first, with the
+ * unfilled slots left visible - seeing how many are left is most of the
+ * tension.
+ */
+function ReviewWindowStrip({ outcomes }: { outcomes: SurveyOutcome[] }) {
+  return (
+    <div className="flex gap-1">
+      {Array.from({ length: REVIEW_WINDOW }).map((_, i) => {
+        const outcome = outcomes[i];
+        return (
+          <div
+            key={i}
+            title={outcome ? OUTCOME_STYLE[outcome].label : "Not yet closed"}
+            className={`flex-1 h-6 rounded-md flex items-center justify-center ${
+              outcome ? OUTCOME_STYLE[outcome].chip : "bg-white/10"
+            }`}
+          >
+            <span className="lcars-caps text-[10px] font-bold">
+              {outcome ? OUTCOME_STYLE[outcome].label[0] : ""}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

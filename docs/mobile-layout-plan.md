@@ -137,12 +137,17 @@ gates which branch renders.
   never fires on touch, so it sits at `--` on a phone. Accepted as-is —
   tapping a cell places a signature, which is the real interaction.
 
-## Not verified
+## Verified on a real device
 
-Crossing the breakpoint *at runtime* (rotating a phone, dragging a desktop
-window across 1024px). Both cold-load paths are verified directly, and the
-panel resolution is pure (derived, not an effect) so it's correct by
-construction once a render happens — but the transition itself is untested.
+Rotating a phone across the breakpoint works (2026-07-30). That was the one
+thing this doc previously listed as untested — the cold-load paths at both
+widths were checked directly, and the panel resolution is pure (derived, not
+an effect) so it was correct by construction once a render happened, but the
+transition itself had only been reasoned about. It holds.
+
+What that pass *did* turn up is that the menu hub looks wrong on a phone —
+nine buttons stretched to fill the height read as fat and crude. Layout, not
+mechanics; logged in `backlog.md`.
 
 Worth knowing if you pick this up: a **minimized** Chrome window dispatches
 no `resize` or `matchMedia` `change` events at all, and starves React's
