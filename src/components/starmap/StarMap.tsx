@@ -405,6 +405,59 @@ export function StarMap({ region }: { region: Region | null }) {
             CTR
           </text>
 
+          {/* The grid, drawn once per line.
+
+              The cells below are fill-only. They can't carry the outline:
+              two cells inside a quadrant share a radial edge, so stroking
+              each cell painted that edge twice and it came out heavier than
+              the quadrant's real boundary - making the middle of a quadrant
+              look like its edge, which is the opposite of the point.
+
+              So each quadrant-ring block is outlined as one shape, with its
+              internal divider drawn separately as a single line. Drawn
+              before the cells so the dashed ghost-target outline, which is
+              still a per-cell stroke, lands on top rather than underneath. */}
+          {Array.from({ length: RING_COUNT }).flatMap((_, ring) =>
+            QUADRANTS.map((quadrant, q) => {
+              const r0 = INNER_HOLE + ring * RING_THICKNESS + RING_GAP / 2;
+              const r1 = INNER_HOLE + (ring + 1) * RING_THICKNESS - RING_GAP / 2;
+              const firstSeg = q * SEGMENTS_PER_QUADRANT;
+              return (
+                <g key={`grid-${ring}-${quadrant}`} style={{ pointerEvents: "none" }}>
+                  <path
+                    d={annularSegmentPath(
+                      CX,
+                      CY,
+                      r0,
+                      r1,
+                      cellStartAngle(firstSeg),
+                      cellEndAngle(firstSeg + SEGMENTS_PER_QUADRANT - 1)
+                    )}
+                    fill="none"
+                    stroke={CELL_LINE}
+                    strokeWidth={1}
+                  />
+                  {Array.from({ length: SEGMENTS_PER_QUADRANT - 1 }).map((__, k) => {
+                    const angle = (firstSeg + k + 1) * SEG_SPAN;
+                    const inner = polarPoint(CX, CY, r0, angle);
+                    const outer = polarPoint(CX, CY, r1, angle);
+                    return (
+                      <line
+                        key={k}
+                        x1={inner.x}
+                        y1={inner.y}
+                        x2={outer.x}
+                        y2={outer.y}
+                        stroke={CELL_LINE}
+                        strokeWidth={1}
+                      />
+                    );
+                  })}
+                </g>
+              );
+            })
+          )}
+
           {Array.from({ length: RING_COUNT }).flatMap((_, ring) =>
             Array.from({ length: SEGMENT_COUNT }).map((__, seg) => {
               const r0 = INNER_HOLE + ring * RING_THICKNESS + RING_GAP / 2;
@@ -430,7 +483,9 @@ export function StarMap({ region }: { region: Region | null }) {
                       ? RULED_OUT_TINT
                       : CELL_FILL
                   }
-                  stroke={isGhostTarget ? CELL_LINE_GHOST : CELL_LINE}
+                  /* No outline of its own - the grid layer above draws it,
+                     once. Only the armed-target hint is stroked here. */
+                  stroke={isGhostTarget ? CELL_LINE_GHOST : "none"}
                   strokeDasharray={isGhostTarget ? "2 2" : undefined}
                   strokeWidth={1}
                   className={closed ? "cursor-default" : "cursor-pointer transition-colors"}
