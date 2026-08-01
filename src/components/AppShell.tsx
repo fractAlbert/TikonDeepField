@@ -310,7 +310,15 @@ export function AppShell() {
           )}
           {panel === "briefing" &&
             (generating ? (
-              <LcarsPanel id="briefing-loading" className="h-full">
+              /* Titled to match the placeholder this replaces. Without the
+                 title bar the content box is ~30px taller and starts
+                 higher, which moved the emblem on the swap. */
+              <LcarsPanel
+                id="briefing-loading"
+                title="Active Assignment"
+                accent="bg-lcars-orange"
+                className="h-full"
+              >
                 <StationLoadingScreen />
               </LcarsPanel>
             ) : (
