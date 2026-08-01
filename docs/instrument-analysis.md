@@ -204,7 +204,52 @@ problems; they are two prices for the same solution.
 
 ---
 
-## Question 5 — what a pinpoint actually costs
+## Question 5 — unlimited scans, or a couple of targeted reveals?
+
+A natural way to frame the lifeline is as a choice between *lots of cheap
+information* and *a little expensive information*. Both name specific
+signatures, so they are genuine alternatives.
+
+Measured together, with the work cost from
+`scripts/measure-deduction-depth.ts`:
+
+| lifeline | unsolvable | work (eliminations) | chain depth (rounds) | unknowns left |
+| --- | ---: | ---: | ---: | ---: |
+| None (today) | 18.6% | 135 | 2.63 | 5.0 |
+| Ring census (free, unlimited) | 3.9% | 136 | 2.22 | 5.0 |
+| **1 ring scan** | **1.6%** | 111 | **2.43** | 5.0 |
+| 1 pinpoint reveal | 1.5% | 108 | 1.85 | 4.0 |
+| 2 pinpoint reveals | 0.1% | 81 | 1.31 | 3.0 |
+| Unlimited ring scans | 0.1% | **23** | **1.23** | 5.0 |
+
+**Targeted reveals beat unlimited scanning, decisively.** Two pinpoints
+reach the same 0.1% as unlimited scans while keeping 81 candidate
+eliminations instead of 23 — three and a half times the work preserved for
+identical solvability. Unlimited scanning is the weakest option on the
+table.
+
+**But a metered ring scan beats both.** Compare rows 3 and 4: one ring scan
+and one pinpoint are indistinguishable on solvability (1.6% vs 1.5%) and on
+work (111 vs 108), yet the ring scan holds chain depth at 2.43 rounds
+against 1.85.
+
+The last column explains it. A pinpoint **removes a signature from the
+puzzle** — five unknowns become four. A ring scan leaves all five in play:
+you learn how far out it sits and still have to place it. Same rescue rate,
+same cost, but one hands over an answer and the other hands over a
+constraint.
+
+So the ranking for a scarce lifeline is **1–2 ring scans > 1–2 pinpoint
+reveals > unlimited ring scans**, with the census underneath all of them
+costing nothing at all.
+
+> **Caveat on this table.** The unsolvable column assumes the scan is
+> *aimed well*; the work columns assume it is aimed blind, spent on the
+> first unplaced signature. They come from two scripts with different
+> assumptions. The ordering is robust, but the two halves are not one
+> experiment.
+
+## Question 6 — what a pinpoint actually costs
 
 A pinpoint hands over one of the answers outright. With regions running 6–8
 signatures, that is a large fraction of the puzzle:

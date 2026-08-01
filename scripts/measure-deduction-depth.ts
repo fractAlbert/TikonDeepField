@@ -51,6 +51,13 @@ interface Config {
    * matches the candidates left for them.
    */
   ringTotals?: boolean;
+  /**
+   * High-energy scan: exact sector for this many signatures, handed over
+   * before the player starts. Unlike a ring scan, which leaves the
+   * signature to be placed, a pinpoint removes it from the puzzle
+   * entirely - which is precisely the cost being measured here.
+   */
+  pinpointBudget?: number;
 }
 
 interface Outcome {
@@ -78,13 +85,18 @@ function solveByPropagation(region: Region, cfg: Config): Outcome {
     if (clue.kind === "quasar-quadrant") quadClue.set(clue.quasar, clue.quadrant);
   }
 
-  const unanchored = names.filter((n) => !fixed.has(n));
+  const allUnanchored = names.filter((n) => !fixed.has(n));
+  // Pinpointed signatures join the anchors: fully known, and no longer
+  // part of the puzzle at all.
+  const pinpointed = allUnanchored.slice(0, cfg.pinpointBudget ?? 0);
+  const unanchored = allUnanchored.slice(cfg.pinpointBudget ?? 0);
   const ringKnown = new Set<string>(
     cfg.ringBudget === "all" ? unanchored : unanchored.slice(0, cfg.ringBudget)
   );
 
   const known = new Map<string, Sector>();
   for (const [n, sid] of fixed) known.set(n, sectorLookup.get(sid)!);
+  for (const n of pinpointed) known.set(n, truth.get(n)!);
 
   // Initial candidate sets, before any distance reasoning: everything the
   // briefing and the Ring Survey allow.
@@ -160,6 +172,9 @@ const configs: Config[] = [
   { label: "By signature, budget of 2", ringBudget: 2 },
   { label: "By signature, budget of 3", ringBudget: 3 },
   { label: "By signature, unlimited", ringBudget: "all" },
+  { label: "Pinpoint reveal x1", ringBudget: 0, pinpointBudget: 1 },
+  { label: "Pinpoint reveal x2", ringBudget: 0, pinpointBudget: 2 },
+  { label: "Census + pinpoint x1", ringBudget: 0, pinpointBudget: 1, ringTotals: true },
 ];
 
 console.log(`Propagation depth over ${SAMPLES} regions per configuration.\n`);
