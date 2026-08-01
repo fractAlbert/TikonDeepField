@@ -16,7 +16,7 @@ import { BriefingPanel } from "@/components/panels/BriefingPanel";
 import { StarManifestPanel } from "@/components/panels/StarManifestPanel";
 import { StarMapPanel } from "@/components/panels/StarMapPanel";
 import { SweepScopePanel } from "@/components/panels/SweepScopePanel";
-import { QuadrantSurveyPanel } from "@/components/panels/QuadrantSurveyPanel";
+import { RingScanPanel } from "@/components/panels/RingScanPanel";
 import { LogPanel } from "@/components/panels/LogPanel";
 import { HelpPanel } from "@/components/panels/HelpPanel";
 import { PrototypesPanel } from "@/components/panels/PrototypesPanel";
@@ -36,7 +36,7 @@ type PanelId =
   | "briefing"
   | "manifest"
   | "sweep"
-  | "survey"
+  | "ringscan"
   | "log"
   | "help"
   | "prototypes"
@@ -51,7 +51,7 @@ const PRIMARY_NAV: NavItem[] = [
   { id: "briefing", label: "Briefing", color: "orange" },
   { id: "manifest", label: PANEL_LABELS.manifest, color: "lilac" },
   { id: "sweep", label: PANEL_LABELS.sweep, color: "violet" },
-  { id: "survey", label: PANEL_LABELS.survey, color: "salmon" },
+  { id: "ringscan", label: PANEL_LABELS.ringScan, color: "salmon" },
   { id: "log", label: "Log", color: "amber" },
 ];
 
@@ -310,7 +310,15 @@ export function AppShell() {
           )}
           {panel === "briefing" &&
             (generating ? (
-              <LcarsPanel id="briefing-loading" className="h-full">
+              /* Titled to match the placeholder this replaces. Without the
+                 title bar the content box is ~30px taller and starts
+                 higher, which moved the emblem on the swap. */
+              <LcarsPanel
+                id="briefing-loading"
+                title="Active Assignment"
+                accent="bg-lcars-orange"
+                className="h-full"
+              >
                 <StationLoadingScreen />
               </LcarsPanel>
             ) : (
@@ -344,13 +352,13 @@ export function AppShell() {
               <NoActiveAssignmentPanel onOpenStationInfo={openStationInfo} />
             </LcarsPanel>
           )}
-          {panel === "survey" &&
+          {panel === "ringscan" &&
             (noActiveAssignment ? (
-              <LcarsPanel id="survey-placeholder" title={PANEL_LABELS.survey} accent="bg-lcars-salmon" className="h-full">
+              <LcarsPanel id="ringscan-placeholder" title={PANEL_LABELS.ringScan} accent="bg-lcars-salmon" className="h-full">
                 <NoActiveAssignmentPanel onOpenStationInfo={openStationInfo} />
               </LcarsPanel>
             ) : (
-              <QuadrantSurveyPanel region={region} />
+              <RingScanPanel region={region} />
             ))}
           {panel === "station" && (
             <StationInfoPanel showHeader={!isMobile} onBack={() => selectPanel("briefing")} />
@@ -365,7 +373,9 @@ export function AppShell() {
           )}
           {panel === "profile" && <ProfilePanel />}
           {panel === "help" && <HelpPanel />}
-          {panel === "prototypes" && <PrototypesPanel />}
+          {panel === "prototypes" && (
+            <PrototypesPanel region={noActiveAssignment ? null : region} />
+          )}
           {isMobile && panel === "starmap" && starMapView}
         </main>
 

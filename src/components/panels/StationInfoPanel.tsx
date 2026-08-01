@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ButtonColor, SOLID_BG, runShape } from "@/lib/lcars-colors";
+import { ButtonColor, SOLID_BG } from "@/lib/lcars-colors";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { LcarsButton } from "@/components/LcarsButton";
+import { LcarsSegment } from "@/components/LcarsSegment";
 import { OutpostLogo } from "@/components/OutpostLogo";
 import { StationSchematic } from "@/components/StationSchematic";
 import { OUTPOST_NAME } from "@/lib/copy";
@@ -18,13 +19,26 @@ const SECTIONS: { id: SectionId; label: string; color: ButtonColor }[] = [
   { id: "schematic", label: "Schematic", color: "teal" },
 ];
 
-// Three per row is the widest that fits the longest labels ("Why It
-// Matters", "Survey Process") on a 390px screen without truncating.
-const SECTIONS_PER_ROW = 3;
-const SECTION_ROWS = Array.from(
-  { length: Math.ceil(SECTIONS.length / SECTIONS_PER_ROW) },
-  (_, i) => SECTIONS.slice(i * SECTIONS_PER_ROW, (i + 1) * SECTIONS_PER_ROW)
-);
+/**
+ * Corner rounding per slot, per layout. LCARS only rounds the *outer* ends
+ * of a touching run, so which slot is an end depends on how many columns
+ * there are - and that changes at the breakpoint. Written out as literal
+ * class names rather than built from `runShape`, because the shape is now
+ * a responsive property and `runShape` returns one answer for one row.
+ *
+ * Below `lg`: two rows of three, so slots 0 and 3 open a row and 2 and 5
+ * close one. At `lg`: a single row of five, so only 0 and 4 are ends and
+ * everything else is cut flat.
+ */
+const SLOT_SHAPES = [
+  "rounded-l-full lg:rounded-l-full",
+  "rounded-none",
+  "rounded-r-full lg:rounded-none",
+  "rounded-l-full lg:rounded-none",
+  "rounded-none lg:rounded-r-full",
+  // Slot 5 is the filler: only ever exists in the mobile grid.
+  "rounded-r-full",
+];
 
 export function StationInfoPanel({
   onBack,
@@ -70,32 +84,44 @@ export function StationInfoPanel({
         </LcarsPanel>
       )}
 
-      {/* Wrapped into rows rather than one scrolling run. Five labels never
-          fit across a phone, but they didn't fit on desktop either - `main`
-          is only ~452px at 1280px wide, against roughly 600px of buttons,
-          so the old flex-nowrap + overflow-x-auto was quietly scrolling
-          (with a visible scrollbar) at every width. Each row gets its own
-          caps so the LCARS run shape still reads correctly, and flex-1
-          divides each row evenly. */}
-      <div className="shrink-0 flex flex-col gap-1">
-        {SECTION_ROWS.map((row, rowIndex) => (
-          <div key={rowIndex} className="flex gap-1">
-            {row.map((s, i) => (
-              <LcarsButton
-                key={s.id}
-                color={s.color}
-                shape={runShape(i, row.length)}
-                orientation="horizontal"
-                onClick={() => selectSection(s.id)}
-                className={`flex-1 min-w-0 px-2 md:px-6 text-sm md:text-base whitespace-nowrap ${
-                  section === s.id ? "" : "opacity-55"
-                }`}
-              >
-                {s.label}
-              </LcarsButton>
-            ))}
-          </div>
+      {/* A grid rather than wrapped flex rows, so the column count is a
+          single responsive property: three across below `lg`, all five in
+          one row at `lg` and up. The sixth slot is an unlabelled filler
+          that keeps the phone layout two even rows of three rather than a
+          ragged 3+2, and is dropped entirely on desktop where one row
+          needs no padding out.
+
+          `whitespace-nowrap` is deliberately absent. Five labels do not fit
+          across `main` on one line - it is only ~500px at 1344px wide, the
+          Star Map sidebar and both rails having taken the rest - so the two
+          long ones wrap to a second line and the grid levels every button
+          to the same height. The previous layout wrapped into rows to solve
+          the same problem; this solves it inside the buttons instead. */}
+      <div className="shrink-0 grid grid-cols-3 lg:grid-cols-5 gap-1">
+        {SECTIONS.map((s, i) => (
+          <LcarsButton
+            key={s.id}
+            color={s.color}
+            shape="block"
+            orientation="horizontal"
+            onClick={() => selectSection(s.id)}
+            /* min-h-11 is the 44px touch floor from the project rules -
+               these tabs were 34px before, which was under it. Desktop is
+               taller than that anyway once the long labels wrap, so it only
+               bites on a phone. */
+            className={`min-w-0 min-h-11 px-1.5 md:px-3 text-sm leading-tight ${SLOT_SHAPES[i]} ${
+              section === s.id ? "" : "opacity-55"
+            }`}
+          >
+            {s.label}
+          </LcarsButton>
         ))}
+        <LcarsSegment
+          color="ice"
+          shape="block"
+          orientation="horizontal"
+          className={`min-h-11 opacity-25 lg:hidden ${SLOT_SHAPES[SECTIONS.length]}`}
+        />
       </div>
 
       <LcarsPanel title={current.label} accent={SOLID_BG[current.color]} className="flex-1 min-h-0">
@@ -194,9 +220,10 @@ function SurveyProcessSection() {
         Logged bearings are the closest thing to a direct hit - a sector fix, a quadrant, a
         confirmed type, or a confirmed relationship between two signatures. The Sweep Scope
         gives a relative-distance reading off a rotating single-line sensor pass, which is
-        mainly useful when nothing else pins a signature down. A Quadrant Survey is more of a
-        coarse census - how many signatures are in a region and what they&apos;re classified
-        as, without saying where exactly or which one is which.
+        mainly useful when nothing else pins a signature down. A Ring Scan is the one
+        instrument that answers a question directly - it locks onto a single signature and
+        returns the ring it sits in - but holding that resolution costs the array dearly, so
+        there are only ever a couple of them per region.
       </p>
       <p>
         No single instrument is enough on its own. Resolving a full region, getting every

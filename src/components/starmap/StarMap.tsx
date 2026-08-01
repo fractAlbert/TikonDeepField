@@ -2,7 +2,14 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Region } from "@/lib/puzzle-types";
-import { RING_COUNT, SEGMENT_COUNT, buildSectors, quadrantOf, sectorId } from "@/lib/grid";
+import {
+  QUADRANTS,
+  RING_COUNT,
+  SEGMENT_COUNT,
+  buildSectors,
+  quadrantOf,
+  sectorId,
+} from "@/lib/grid";
 import { annularSegmentPath, polarPoint } from "@/lib/polar-geometry";
 import { quasarColorHex } from "@/lib/quasar-colors";
 import { starMapStorageKey } from "@/lib/starmap-storage";
@@ -67,6 +74,22 @@ const SEG_GAP_DEG = 3;
 const RING_THICKNESS = (MAX_R - INNER_HOLE) / RING_COUNT;
 const SEG_SPAN = 360 / SEGMENT_COUNT;
 
+// A quadrant is a run of adjacent segments (grid.ts: two of the eight).
+// Cells inside one quadrant sit flush, sharing a single dividing line, so
+// the pair reads as one block; the gap is spent only where a quadrant
+// actually ends. Without this every boundary looked alike and the four
+// quadrants were invisible on the dial - which matters, because two of the
+// four briefing clues are quadrant clues.
+const SEGMENTS_PER_QUADRANT = SEGMENT_COUNT / QUADRANTS.length;
+const opensQuadrant = (seg: number) => seg % SEGMENTS_PER_QUADRANT === 0;
+const closesQuadrant = (seg: number) => seg % SEGMENTS_PER_QUADRANT === SEGMENTS_PER_QUADRANT - 1;
+
+/** Angular extent of one cell, gapped only at quadrant boundaries. */
+const cellStartAngle = (seg: number) =>
+  seg * SEG_SPAN + (opensQuadrant(seg) ? SEG_GAP_DEG / 2 : 0);
+const cellEndAngle = (seg: number) =>
+  (seg + 1) * SEG_SPAN - (closesQuadrant(seg) ? SEG_GAP_DEG / 2 : 0);
+
 // Ring/segment/centre labels. The size is in SVG user units, not pixels:
 // the viewBox is 440 wide and renders into 260px in the desktop sidebar,
 // so a label paints at size * 260/440 there (and correspondingly larger on
@@ -79,6 +102,26 @@ const SEG_SPAN = 360 / SEGMENT_COUNT;
 const LABEL_SIZE = 18;
 const LABEL_SIZE_CTR = 17;
 const LABEL_FILL = "rgba(198,203,211,0.45)";
+
+// Quadrant labels sit in the corners of the viewBox, which are empty: the
+// dial is a circle of radius 200 in a 440 box, so the diagonals have ~80
+// units of clearance the cardinal directions don't. That works because a
+// quadrant is two of the eight segments, which puts every quadrant's
+// midpoint exactly on a diagonal - 45, 135, 225, 315 degrees.
+//
+// Worth labelling at all because two of the four briefing clues are
+// quadrant clues, and until now the map never said which segments a
+// quadrant covered. See grid.ts: quadrant I is segments S1-S2, II is
+// S3-S4, and so on clockwise.
+const QUADRANT_LABEL_R = 236;
+// User units, like every other label here. The sidebar renders the 440-unit
+// viewBox at 260px, so this paints at ~10px - matching the ring and segment
+// labels, which the label-size trial in the Prototypes panel settled at
+// 10.6px after 5.9px proved unreadable. Going larger is what runs "QUAD III"
+// out of the corner; `scripts/check-quadrant-labels.ts` measures the margin.
+const QUADRANT_LABEL_SIZE = 17;
+const QUADRANT_FILL = "rgba(198,203,211,0.40)";
+const QUADRANT_LINE = "rgba(232,240,247,0.30)";
 
 // What each ending says once the region is closed. The wording matters:
 // "retracted" is the station pulling an entry before it reached anyone,
@@ -219,11 +262,46 @@ export function StarMap({ region }: { region: Region | null }) {
       const sector = byId.get(sid)!;
       const r0 = INNER_HOLE + sector.ring * RING_THICKNESS + RING_GAP / 2;
       const r1 = INNER_HOLE + (sector.ring + 1) * RING_THICKNESS - RING_GAP / 2;
-      const a0 = sector.seg * SEG_SPAN + SEG_GAP_DEG / 2;
-      const a1 = (sector.seg + 1) * SEG_SPAN - SEG_GAP_DEG / 2;
+      const a0 = cellStartAngle(sector.seg);
+      const a1 = cellEndAngle(sector.seg);
       return polarPoint(CX, CY, (r0 + r1) / 2, (a0 + a1) / 2);
     };
   }, [sectors]);
+
+  // Rule-out painting: press and sweep to mark or clear a run of cells
+  // instead of clicking each one. Non-null while a stroke is in progress,
+  // and holds the state being painted rather than "toggle" - so sweeping
+  // back over a cell you just marked leaves it marked, instead of
+  // flickering it on and off as the pointer crosses.
+  const [paintTarget, setPaintTarget] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (paintTarget === null) return;
+    // Listened for on the window, not the cell: a stroke very often ends
+    // with the pointer outside the dial entirely.
+    const end = () => setPaintTarget(null);
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+    return () => {
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+    };
+  }, [paintTarget]);
+
+  function applyRuleOut(sectorIdPainted: string, ruled: boolean) {
+    if (!armed) return;
+    // Read for the sound only. `ruledOut` can be a render behind during a
+    // fast sweep, which is harmless because the update below sets an
+    // absolute state rather than toggling - at worst a tick is skipped.
+    if ((ruledOut[armed]?.has(sectorIdPainted) ?? false) === ruled) return;
+    setRuledOut((r) => {
+      const next = new Set(r[armed] ?? []);
+      if (ruled) next.add(sectorIdPainted);
+      else next.delete(sectorIdPainted);
+      return { ...r, [armed]: next };
+    });
+    playRuleOut();
+  }
 
   const placedCount = quasars.filter((q) => placements[q.id]).length;
   const allPlaced = quasars.length > 0 && placedCount === quasars.length;
@@ -276,15 +354,32 @@ export function StarMap({ region }: { region: Region | null }) {
       });
       setArmed(null);
       playPlace();
-    } else {
-      setRuledOut((r) => {
-        const current = new Set(r[armed] ?? []);
-        if (current.has(sectorIdClicked)) current.delete(sectorIdClicked);
-        else current.add(sectorIdClicked);
-        return { ...r, [armed]: current };
-      });
-      playRuleOut();
     }
+    // Rule Out is not handled here. It runs off pointerdown instead, so a
+    // press can turn into a sweep across several cells - and going through
+    // click as well would toggle every cell a second time.
+  }
+
+  function handleCellPointerDown(
+    e: React.PointerEvent<SVGPathElement>,
+    sectorIdPressed: string,
+    occupied: boolean
+  ) {
+    if (closed || !armed || markMode !== "ruleout" || occupied) return;
+    // Touch gives the element the gesture started in an implicit pointer
+    // capture, which would stop pointerenter firing on the cells swept
+    // into afterwards. Releasing it is what makes this work on a phone.
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    const ruled = !(ruledOut[armed]?.has(sectorIdPressed) ?? false);
+    setPaintTarget(ruled);
+    applyRuleOut(sectorIdPressed, ruled);
+  }
+
+  function handleCellPointerEnter(sectorIdEntered: string, occupied: boolean) {
+    if (paintTarget === null || closed || !armed || markMode !== "ruleout" || occupied) return;
+    applyRuleOut(sectorIdEntered, paintTarget);
   }
 
   function handleReset() {
@@ -341,7 +436,14 @@ export function StarMap({ region }: { region: Region | null }) {
             full-width panel instead, so it's allowed to grow - and because
             the whole viewBox scales together, a bigger map buys bigger
             labels without crowding the dial any further. */}
-        <svg viewBox="0 0 440 440" className="w-full max-w-[260px] max-lg:max-w-[420px] h-auto">
+        <svg
+          viewBox="0 0 440 440"
+          className="w-full max-w-[260px] max-lg:max-w-[420px] h-auto"
+          /* Only while a rule-out sweep is actually possible. Left on
+             permanently it would swallow the page scroll on a phone, where
+             the map is tall enough that you need to scroll past it. */
+          style={{ touchAction: armed && markMode === "ruleout" ? "none" : undefined }}
+        >
           <defs>
             {/* Blurred glow halo behind a solid core - the same look Sweep
                 Scope's blips use, kept consistent so a quasar reads the
@@ -362,12 +464,65 @@ export function StarMap({ region }: { region: Region | null }) {
             CTR
           </text>
 
+          {/* The grid, drawn once per line.
+
+              The cells below are fill-only. They can't carry the outline:
+              two cells inside a quadrant share a radial edge, so stroking
+              each cell painted that edge twice and it came out heavier than
+              the quadrant's real boundary - making the middle of a quadrant
+              look like its edge, which is the opposite of the point.
+
+              So each quadrant-ring block is outlined as one shape, with its
+              internal divider drawn separately as a single line. Drawn
+              before the cells so the dashed ghost-target outline, which is
+              still a per-cell stroke, lands on top rather than underneath. */}
+          {Array.from({ length: RING_COUNT }).flatMap((_, ring) =>
+            QUADRANTS.map((quadrant, q) => {
+              const r0 = INNER_HOLE + ring * RING_THICKNESS + RING_GAP / 2;
+              const r1 = INNER_HOLE + (ring + 1) * RING_THICKNESS - RING_GAP / 2;
+              const firstSeg = q * SEGMENTS_PER_QUADRANT;
+              return (
+                <g key={`grid-${ring}-${quadrant}`} style={{ pointerEvents: "none" }}>
+                  <path
+                    d={annularSegmentPath(
+                      CX,
+                      CY,
+                      r0,
+                      r1,
+                      cellStartAngle(firstSeg),
+                      cellEndAngle(firstSeg + SEGMENTS_PER_QUADRANT - 1)
+                    )}
+                    fill="none"
+                    stroke={CELL_LINE}
+                    strokeWidth={1}
+                  />
+                  {Array.from({ length: SEGMENTS_PER_QUADRANT - 1 }).map((__, k) => {
+                    const angle = (firstSeg + k + 1) * SEG_SPAN;
+                    const inner = polarPoint(CX, CY, r0, angle);
+                    const outer = polarPoint(CX, CY, r1, angle);
+                    return (
+                      <line
+                        key={k}
+                        x1={inner.x}
+                        y1={inner.y}
+                        x2={outer.x}
+                        y2={outer.y}
+                        stroke={CELL_LINE}
+                        strokeWidth={1}
+                      />
+                    );
+                  })}
+                </g>
+              );
+            })
+          )}
+
           {Array.from({ length: RING_COUNT }).flatMap((_, ring) =>
             Array.from({ length: SEGMENT_COUNT }).map((__, seg) => {
               const r0 = INNER_HOLE + ring * RING_THICKNESS + RING_GAP / 2;
               const r1 = INNER_HOLE + (ring + 1) * RING_THICKNESS - RING_GAP / 2;
-              const a0 = seg * SEG_SPAN + SEG_GAP_DEG / 2;
-              const a1 = (seg + 1) * SEG_SPAN - SEG_GAP_DEG / 2;
+              const a0 = cellStartAngle(seg);
+              const a1 = cellEndAngle(seg);
               const id = sectorId(ring, seg);
               const occupantId = occupantBySector.get(id);
               const isRuledOutForArmed = armed ? (ruledOut[armed]?.has(id) ?? false) : false;
@@ -387,10 +542,14 @@ export function StarMap({ region }: { region: Region | null }) {
                       ? RULED_OUT_TINT
                       : CELL_FILL
                   }
-                  stroke={isGhostTarget ? CELL_LINE_GHOST : CELL_LINE}
+                  /* No outline of its own - the grid layer above draws it,
+                     once. Only the armed-target hint is stroked here. */
+                  stroke={isGhostTarget ? CELL_LINE_GHOST : "none"}
                   strokeDasharray={isGhostTarget ? "2 2" : undefined}
                   strokeWidth={1}
                   className={closed ? "cursor-default" : "cursor-pointer transition-colors"}
+                  onPointerDown={(e) => handleCellPointerDown(e, id, !!occupantId)}
+                  onPointerEnter={() => handleCellPointerEnter(id, !!occupantId)}
                   onMouseEnter={(e) => {
                     setHovered(id);
                     if (!occupantId && !closed) e.currentTarget.setAttribute("fill", CELL_FILL_HOVER);
@@ -444,6 +603,42 @@ export function StarMap({ region }: { region: Region | null }) {
               >
                 S{seg + 1}
               </text>
+            );
+          })}
+
+          {/* Quadrant boundaries and labels. The boundaries fall in the
+              gaps the segments already leave, so these lines sit in dead
+              space rather than over any cell - they just make the four
+              blocks legible as blocks. Drawn before the markers so a
+              signature is never underneath one. */}
+          {QUADRANTS.map((quadrant, q) => {
+            const boundary = q * 90;
+            const a = polarPoint(CX, CY, INNER_HOLE, boundary);
+            const b = polarPoint(CX, CY, MAX_R + 4, boundary);
+            const label = polarPoint(CX, CY, QUADRANT_LABEL_R, boundary + 45);
+            return (
+              <g key={`quad-${quadrant}`} style={{ pointerEvents: "none" }}>
+                <line
+                  x1={a.x}
+                  y1={a.y}
+                  x2={b.x}
+                  y2={b.y}
+                  stroke={QUADRANT_LINE}
+                  strokeWidth={1}
+                />
+                <text
+                  x={label.x}
+                  y={label.y}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize={QUADRANT_LABEL_SIZE}
+                  letterSpacing="0.12em"
+                  fill={QUADRANT_FILL}
+                  fontFamily="ui-monospace, monospace"
+                >
+                  QUAD {quadrant}
+                </text>
+              </g>
             );
           })}
 

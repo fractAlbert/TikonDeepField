@@ -23,6 +23,22 @@ export type SurveyOrigin = "builtin" | "generated";
  */
 export const FILING_LIMIT = 3;
 
+/**
+ * Targeted ring scans per region. Aim one at a signature and it returns
+ * that signature's ring - nothing else, and nothing about anyone else.
+ *
+ * Two, because that is where the numbers land (docs/instrument-analysis.md).
+ * Aimed well, two scans take the share of regions that cannot be solved at
+ * all from ~25% to ~1%; aimed carelessly, the same two only reach ~11%.
+ * That ten-point gap is the whole point of metering them rather than
+ * publishing a ring census: a census reads the same for everyone, while
+ * this makes the loss rate depend on whether the player understands which
+ * signature they are actually stuck on. One scan leaves a good player
+ * losing 1 region in 24 to something unwinnable; three starts washing the
+ * skill signal out.
+ */
+export const RING_SCAN_LIMIT = 2;
+
 export interface SurveyLogEntry {
   regionId: string;
   origin: SurveyOrigin;
@@ -46,6 +62,12 @@ export interface SurveyLogEntry {
    */
   outcome?: SurveyOutcome;
   closedAt?: number;
+  /**
+   * Quasar ids whose ring has been scanned, in the order they were spent.
+   * Persisted rather than held in the panel so a reload cannot refund
+   * them - a budget you can reset by pressing F5 is not a budget.
+   */
+  ringScans?: string[];
 }
 
 /** What one filing did, for the Star Map to render and announce. */
@@ -155,6 +177,38 @@ export function isClosed(entry: SurveyLogEntry): boolean {
 export function getEntry(regionId: string): SurveyLogEntry | undefined {
   if (typeof window === "undefined") return undefined;
   return getStore()[regionId];
+}
+
+export function ringScansUsed(entry: SurveyLogEntry): string[] {
+  return entry.ringScans ?? [];
+}
+
+export function ringScansRemaining(entry: SurveyLogEntry): number {
+  return Math.max(0, RING_SCAN_LIMIT - ringScansUsed(entry).length);
+}
+
+/**
+ * Spends one scan on `quasarId`, or no-ops if it has already been scanned.
+ *
+ * Re-reading a result you already paid for is deliberately free: the cost
+ * is the decision about where to aim, not the act of looking. Returns the
+ * full list of scanned ids so the caller can render without re-reading.
+ */
+export function recordRingScan(regionId: string, quasarId: string): string[] {
+  if (typeof window === "undefined") return [];
+  const store = { ...getStore() };
+  const existing = store[regionId];
+  if (!existing) return [];
+  const used = ringScansUsed(existing);
+  // A closed region has nothing left to scan for, and an exhausted budget
+  // is exhausted. Both are guarded here rather than only in the UI, so no
+  // caller can spend a scan that shouldn't exist.
+  if (used.includes(quasarId)) return used;
+  if (isClosed(existing) || used.length >= RING_SCAN_LIMIT) return used;
+  const next = [...used, quasarId];
+  store[regionId] = { ...existing, ringScans: next, lastActiveAt: Date.now() };
+  commit(store);
+  return next;
 }
 
 /**

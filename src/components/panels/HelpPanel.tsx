@@ -1,6 +1,6 @@
 import { LcarsPanel } from "@/components/LcarsShell";
 import { PANEL_LABELS } from "@/lib/copy";
-import { FILING_LIMIT } from "@/lib/survey-log";
+import { FILING_LIMIT, RING_SCAN_LIMIT } from "@/lib/survey-log";
 import { DEMOTION_RETRACTED, PROMOTION_CONFIRMED, REVIEW_WINDOW } from "@/lib/ranks";
 
 export function HelpPanel() {
@@ -30,10 +30,11 @@ export function HelpPanel() {
             crosses them, and the gaps between flashes are meaningful too.
           </li>
           <li>
-            Check <strong className="text-lcars-salmon">Quadrant Survey</strong>{" "}
-            for a census of any single quadrant &mdash; how many signatures sit in it and what
-            they&apos;re classified as, without giving away which ring, which
-            bearing, or which specific signature.
+            Stuck on one signature? <strong className="text-lcars-salmon">Ring Scan</strong>{" "}
+            aims the array at it and returns the ring it sits in &mdash; that and
+            nothing else. You get {RING_SCAN_LIMIT} per region, so spend them on
+            the signatures you genuinely cannot place: one aimed at a signature
+            you would have worked out anyway is wasted.
           </li>
           <li>
             Cross-reference all of the above to deduce each signature&apos;s

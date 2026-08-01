@@ -233,6 +233,47 @@ third anchor gives away a third of the puzzle to remove about 7 points of
 loss rate. Not recommended. The signed sweep below is a better trade: it
 removes ~12 points and gives away no answers.
 
+### The Ring Survey prototype is the strongest lever found so far
+
+Same diagnosis, different remedy. If the ambiguity is a signature sliding
+one ring out and one segment over, then simply *being told the ring* kills
+half the move. Measured, it does exactly that — and then some:
+
+| ring surveys allowed | unsolvable |
+| --- | --- |
+| 0 (today) | ~19% |
+| 1 | ~12.5% |
+| 2 | ~7.9% |
+| 3 | ~3.6% |
+| unlimited | ~0.1% |
+
+Unlimited use effectively ends the problem, which is precisely why it is a
+prototype (Prototypes panel) and not a panel. With every ring known, each
+pairwise distance reduces to a segment hop by subtraction: 90% of
+signatures then fall straight out of the two anchors with nothing chaining,
+and the work drops from 133 candidate eliminations per region to 23.
+
+A second variant avoids that entirely. **Ring Survey by type** — pick a
+type, see which rings hold one and how many, naming nobody, exactly as the
+Quadrant Survey does — takes unsolvable to **3.1%** with the eliminations
+*unchanged at 133* and chains intact (22% of regions still need three
+rounds). Being a global constraint it prunes dead ends instead of handing
+out naked singles, so it fixes the loss rate without removing any of the
+puzzle. That is the variant to ship, and unlike the by-signature one it
+needs no budget.
+
+See `backlog.md` for the full comparison and `measure-deduction-depth.ts`
+for the method. Chain depth, not determinism, is the axis that matters:
+Sudoku is fully deterministic and unique too, and is enjoyed for the grind.
+What hurts is a region arriving 90% filled in.
+
+Note this changes the calibration argument below. A ~19% floor is why
+withdrawal has to be rank-neutral — but if the floor drops to ~4%, that
+reasoning weakens and the promotion thresholds have more headroom than
+they were set against. Withdrawal should stay neutral regardless (a player
+still cannot tell an impossible region from one they misread), but the
+thresholds are worth revisiting if this ever ships.
+
 ### The scope already computes the sign and discards it
 
 That also explains the hypothetical last row of the table. The scope
@@ -273,7 +314,30 @@ Two caveats on the number:
    clue kinds are implemented and unused), that breakdown becomes live
    information and this number drops again.
 
-### Consequences for rank
+### Superseded 2026-08-01 — the floor is now ~1%, and skill-dependent
+
+Everything below was calibrated against a ~19% floor of regions nobody
+could solve. The **Ring Scan** (`instrument-analysis.md`) changed that: two
+metered scans per region take a careful player to **~1% unsolvable**, and a
+careless one to ~11%.
+
+Three consequences, and the third is the important one:
+
+1. Promotion thresholds have far more headroom than they were set against.
+   "5 of 8 confirmed" was chosen to sit under an ~81% ceiling; the ceiling
+   for careful play is now ~99%.
+2. Withdrawal still has to be rank-neutral. ~1% of regions remain
+   impossible, and misreading a solvable one is still the common failure.
+3. **The loss rate is now skill-dependent, which it never was before.** A
+   retraction increasingly reflects the player's judgment — chiefly whether
+   they spent their two scans on the signatures they were actually stuck on
+   — rather than the generator's luck. That is precisely what the review
+   window was built to measure, and it only became true with this change.
+
+The thresholds have not been re-tuned against the new numbers. They should
+be, once there is play data.
+
+### Consequences for rank (written against the old ~19% floor)
 
 A ~19% floor is the reason **withdrawal has to be rank-neutral and
 first-class**. A player cannot tell an unsolvable region from one they
