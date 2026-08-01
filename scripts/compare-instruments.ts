@@ -282,7 +282,54 @@ console.log("\n\nQUESTION 4 - do they overlap? (does one make the other pointles
   console.log(`  Beyond help from both:                      ${pct(neither)}%`);
 }
 
-console.log("\n\nQUESTION 5 - what the pinpoint scan costs you");
+// Does knowing the ring actually hand you the segment, or does it only
+// narrow it? Counts the candidate cells left for a single un-anchored
+// signature, with and without its ring, at three levels of reference.
+console.log("\n\nQUESTION 5 - what does knowing the ring actually buy?");
+console.log("(Mean candidate cells left for one un-anchored signature.)\n");
+{
+  const anchorsOf = (r: Region) =>
+    r.clues.filter((c) => c.kind === "quasar-sector").map((c) => (c as { quasar: string }).quasar);
+
+  const levels: [string, (r: Region, n: string) => string[]][] = [
+    ["one anchor", (r) => anchorsOf(r).slice(0, 1)],
+    ["both anchors", (r) => anchorsOf(r)],
+    ["every other signature", (r, n) => Object.keys(r.solution).filter((x) => x !== n)],
+  ];
+
+  for (const [label, refsOf] of levels) {
+    let sumBlind = 0;
+    let sumRing = 0;
+    let sumRingSegments = 0;
+    let n = 0;
+    let forcedByRing = 0;
+    for (const region of regions) {
+      const truth = new Map(
+        Object.keys(region.solution).map((k) => [k, sectorLookup.get(region.solution[k].sector)!])
+      );
+      for (const name of unanchored(region)) {
+        const refs = refsOf(region, name);
+        const fits = (cand: Sector) =>
+          refs.every((ref) => observed(cand, truth.get(ref)!) === observed(truth.get(name)!, truth.get(ref)!));
+        const blind = sectors.filter(fits);
+        const withRing = blind.filter((s) => s.ring === truth.get(name)!.ring);
+        sumBlind += blind.length;
+        sumRing += withRing.length;
+        sumRingSegments += new Set(withRing.map((s) => s.seg)).size;
+        if (withRing.length === 1) forcedByRing++;
+        n++;
+      }
+    }
+    console.log(
+      `  Against ${label.padEnd(22)} ring unknown: ${(sumBlind / n).toFixed(1).padStart(5)} cells   ` +
+        `ring known: ${(sumRing / n).toFixed(2).padStart(4)} cells ` +
+        `(${(sumRingSegments / n).toFixed(2)} segments)   ` +
+        `segment forced: ${((forcedByRing / n) * 100).toFixed(0)}%`
+    );
+  }
+}
+
+console.log("\n\nQUESTION 6 - what the pinpoint scan costs you");
 console.log("(A pinpoint hands over one of the answers. How much of the region is that?)\n");
 {
   const sigCounts = new Map<number, number>();

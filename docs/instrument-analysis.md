@@ -127,11 +127,35 @@ thinking about it). That gap is the skill in the mechanic.
 **A ring scan and a pinpoint scan are equally powerful. One scan, aimed
 well: 1.6% versus 1.5%.** They are the same number.
 
-That is not a coincidence, and it follows directly from the diagonal. When
-you are stuck on a signature, **the ring is the only part you were missing**
-— you could already work out the segment from the distance readings. The
-pinpoint hands you the segment as well, and the segment was never the
-problem. You are paying for information you did not need.
+That is not a coincidence, and it follows directly from the diagonal — but
+the reason is worth stating carefully, because the obvious version of it is
+wrong.
+
+**It is not that you could already work out the segment.** You can't. A
+single distance reading barely constrains the segment at all: at distance 4
+from a reference, the split between rings crossed and segments hopped could
+be 0+4, 1+3, 2+2, 3+1 or 4+0, and each hop count `k` allows `Δseg = ±k`.
+That is consistent with essentially every segment on the field.
+
+What is true is that **the ring is the binding constraint, and the segment
+falls out of readings you already have once it is supplied.** Measured over
+1500 regions — mean candidate cells left for one un-anchored signature:
+
+| references used | ring unknown | ring known | segment forced? |
+| --- | ---: | ---: | ---: |
+| One anchor | 7.2 cells | **2.01 cells** | 21% |
+| Both anchors | 2.6 cells | 1.16 cells | 84% |
+| Every other signature | 1.1 cells | 1.00 cells | **100%** |
+
+Read the middle column down. Knowing the ring turns one reading into
+**exactly two candidates** — the `±k` pair, and 2.01 is that pair almost
+every time. The second anchor then picks between them 84% of the time, and
+the full set of readings gets there 100% of the time.
+
+So the pinpoint's extra information — the segment — is the part your
+existing readings were *already capable of* resolving. They just could not
+resolve the ring, because the diagonal hides it. You are paying a whole
+answer for the half you did not need.
 
 So the answer to "does the pinpoint scan preclude the ring scan?" is: **no,
 it is the other way round.** They rescue the same regions, but:
@@ -262,7 +286,8 @@ to avoid.
   becomes sharper and needs re-measuring.
 - **Sample noise is about ±1.5 points** at 2500 regions. Differences of a
   point or two are not real; the 13-point gap between quadrants and rings
-  very much is.
+  very much is. The candidate-count table in Question 2 was run separately
+  over 1500 regions.
 
 ## Related
 
