@@ -48,11 +48,9 @@ export function StarManifestPanel({ region }: { region: Region }) {
           Map.
         </p>
         <p className="text-xs text-lcars-ice/50 leading-relaxed mb-4">
-          Each entry carries whatever the briefing already pins down &mdash; an
-          exact sector, or the quadrant it sits in.{" "}
-          <span className="text-lcars-amber font-semibold">DEDUCE</span>{" "}
-          marks the rest: nothing on file, so they have to be worked out from
-          the instruments.
+          Entries the briefing pins down carry what it says &mdash; an exact
+          sector, or the quadrant it sits in. The rest have nothing on file and
+          have to be worked out from the instruments.
         </p>
 
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -68,21 +66,19 @@ export function StarManifestPanel({ region }: { region: Region }) {
                     style={{ backgroundColor: color, boxShadow: `0 0 10px 2px ${color}66` }}
                   />
                   <span className="text-sm font-mono text-lcars-ice">{q.designation}</span>
+                  {/* Only signatures the briefing says something about get a
+                      chip. The rest are left blank rather than tagged: an
+                      absent chip already says "nothing on file", and a
+                      label saying so on most of the roster was noise. */}
                   <span className="ml-auto flex flex-wrap justify-end gap-1">
-                    {facts.length === 0 ? (
-                      <span className="lcars-caps text-[10px] font-semibold tracking-wide text-black bg-lcars-amber rounded-full px-2 py-0.5">
-                        Deduce
+                    {facts.map((fact) => (
+                      <span
+                        key={fact.label}
+                        className={`lcars-caps text-[10px] font-semibold tracking-wide text-black rounded-full px-2 py-0.5 ${fact.chip}`}
+                      >
+                        {fact.label}
                       </span>
-                    ) : (
-                      facts.map((fact) => (
-                        <span
-                          key={fact.label}
-                          className={`lcars-caps text-[10px] font-semibold tracking-wide text-black rounded-full px-2 py-0.5 ${fact.chip}`}
-                        >
-                          {fact.label}
-                        </span>
-                      ))
-                    )}
+                    ))}
                   </span>
                 </span>
               </li>
