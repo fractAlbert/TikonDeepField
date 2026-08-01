@@ -268,6 +268,41 @@ export function StarMap({ region }: { region: Region | null }) {
     };
   }, [sectors]);
 
+  // Rule-out painting: press and sweep to mark or clear a run of cells
+  // instead of clicking each one. Non-null while a stroke is in progress,
+  // and holds the state being painted rather than "toggle" - so sweeping
+  // back over a cell you just marked leaves it marked, instead of
+  // flickering it on and off as the pointer crosses.
+  const [paintTarget, setPaintTarget] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (paintTarget === null) return;
+    // Listened for on the window, not the cell: a stroke very often ends
+    // with the pointer outside the dial entirely.
+    const end = () => setPaintTarget(null);
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+    return () => {
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+    };
+  }, [paintTarget]);
+
+  function applyRuleOut(sectorIdPainted: string, ruled: boolean) {
+    if (!armed) return;
+    // Read for the sound only. `ruledOut` can be a render behind during a
+    // fast sweep, which is harmless because the update below sets an
+    // absolute state rather than toggling - at worst a tick is skipped.
+    if ((ruledOut[armed]?.has(sectorIdPainted) ?? false) === ruled) return;
+    setRuledOut((r) => {
+      const next = new Set(r[armed] ?? []);
+      if (ruled) next.add(sectorIdPainted);
+      else next.delete(sectorIdPainted);
+      return { ...r, [armed]: next };
+    });
+    playRuleOut();
+  }
+
   const placedCount = quasars.filter((q) => placements[q.id]).length;
   const allPlaced = quasars.length > 0 && placedCount === quasars.length;
 
@@ -319,15 +354,32 @@ export function StarMap({ region }: { region: Region | null }) {
       });
       setArmed(null);
       playPlace();
-    } else {
-      setRuledOut((r) => {
-        const current = new Set(r[armed] ?? []);
-        if (current.has(sectorIdClicked)) current.delete(sectorIdClicked);
-        else current.add(sectorIdClicked);
-        return { ...r, [armed]: current };
-      });
-      playRuleOut();
     }
+    // Rule Out is not handled here. It runs off pointerdown instead, so a
+    // press can turn into a sweep across several cells - and going through
+    // click as well would toggle every cell a second time.
+  }
+
+  function handleCellPointerDown(
+    e: React.PointerEvent<SVGPathElement>,
+    sectorIdPressed: string,
+    occupied: boolean
+  ) {
+    if (closed || !armed || markMode !== "ruleout" || occupied) return;
+    // Touch gives the element the gesture started in an implicit pointer
+    // capture, which would stop pointerenter firing on the cells swept
+    // into afterwards. Releasing it is what makes this work on a phone.
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    const ruled = !(ruledOut[armed]?.has(sectorIdPressed) ?? false);
+    setPaintTarget(ruled);
+    applyRuleOut(sectorIdPressed, ruled);
+  }
+
+  function handleCellPointerEnter(sectorIdEntered: string, occupied: boolean) {
+    if (paintTarget === null || closed || !armed || markMode !== "ruleout" || occupied) return;
+    applyRuleOut(sectorIdEntered, paintTarget);
   }
 
   function handleReset() {
@@ -384,7 +436,14 @@ export function StarMap({ region }: { region: Region | null }) {
             full-width panel instead, so it's allowed to grow - and because
             the whole viewBox scales together, a bigger map buys bigger
             labels without crowding the dial any further. */}
-        <svg viewBox="0 0 440 440" className="w-full max-w-[260px] max-lg:max-w-[420px] h-auto">
+        <svg
+          viewBox="0 0 440 440"
+          className="w-full max-w-[260px] max-lg:max-w-[420px] h-auto"
+          /* Only while a rule-out sweep is actually possible. Left on
+             permanently it would swallow the page scroll on a phone, where
+             the map is tall enough that you need to scroll past it. */
+          style={{ touchAction: armed && markMode === "ruleout" ? "none" : undefined }}
+        >
           <defs>
             {/* Blurred glow halo behind a solid core - the same look Sweep
                 Scope's blips use, kept consistent so a quasar reads the
@@ -489,6 +548,8 @@ export function StarMap({ region }: { region: Region | null }) {
                   strokeDasharray={isGhostTarget ? "2 2" : undefined}
                   strokeWidth={1}
                   className={closed ? "cursor-default" : "cursor-pointer transition-colors"}
+                  onPointerDown={(e) => handleCellPointerDown(e, id, !!occupantId)}
+                  onPointerEnter={() => handleCellPointerEnter(id, !!occupantId)}
                   onMouseEnter={(e) => {
                     setHovered(id);
                     if (!occupantId && !closed) e.currentTarget.setAttribute("fill", CELL_FILL_HOVER);
