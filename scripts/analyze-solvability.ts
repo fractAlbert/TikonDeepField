@@ -30,7 +30,7 @@
 //
 // Usage: npx tsx scripts/analyze-solvability.ts [samples]
 
-import { buildSectors, orthogonalDistanceSigned, quadrantOf } from "../src/lib/grid";
+import { RING_COUNT, buildSectors, orthogonalDistanceSigned, quadrantOf } from "../src/lib/grid";
 import { generateRegion } from "../src/lib/generate-region";
 import { Quadrant, Region, Sector } from "../src/lib/puzzle-types";
 
@@ -71,6 +71,19 @@ interface Channels {
    * what a player who understands the instrument would do.
    */
   rings?: boolean | number;
+  /**
+   * Ring Survey, type-based variant: select a *type* and see which rings
+   * hold one, the way the Quadrant Survey names no individual signature.
+   *
+   * Modelled as anonymous per-ring totals, and that reduction is exact.
+   * Nothing observable links a name to a type today (generation emits no
+   * `quasar-type` clues), so a candidate assignment only has to admit
+   * *some* type labelling reproducing the per-(type, ring) counts. Types
+   * may be permuted freely between names, so the only surviving constraint
+   * is that each ring holds the right number of signatures. Which makes
+   * this the Quadrant Survey's exact counterpart for rings.
+   */
+  ringTotals?: boolean;
 }
 
 /**
@@ -111,6 +124,9 @@ function countConsistent(region: Region, ch: Channels, cap = 2): number {
   const trueQuadTotals = [0, 0, 0, 0];
   for (const n of names) trueQuadTotals[QUADRANTS.indexOf(quadrantOf(truth.get(n)!))]++;
 
+  const trueRingTotals = new Array(RING_COUNT).fill(0) as number[];
+  for (const n of names) trueRingTotals[truth.get(n)!.ring]++;
+
   // Anchored signatures first, then the rest - pruning bites earliest that way.
   const order = [...names].sort(
     (a, b) => (fixed.has(b) ? 1 : 0) - (fixed.has(a) ? 1 : 0)
@@ -127,6 +143,11 @@ function countConsistent(region: Region, ch: Channels, cap = 2): number {
         const totals = [0, 0, 0, 0];
         for (const s of assigned.values()) totals[QUADRANTS.indexOf(quadrantOf(s))]++;
         if (totals.some((t, k) => t !== trueQuadTotals[k])) return;
+      }
+      if (ch.ringTotals) {
+        const totals = new Array(RING_COUNT).fill(0) as number[];
+        for (const s of assigned.values()) totals[s.ring]++;
+        if (totals.some((t, k) => t !== trueRingTotals[k])) return;
       }
       found++;
       return;
@@ -260,7 +281,11 @@ const scenarios: { label: string; ch: Channels; canonical?: boolean }[] = [
     ch: { distances: true, quadrantTotals: true, signed: true },
   },
   {
-    label: "  [prototype] Ring Survey, unlimited",
+    label: "  [prototype] Ring Survey by type",
+    ch: { distances: true, quadrantTotals: true, ringTotals: true },
+  },
+  {
+    label: "  [prototype] Ring Survey by signature",
     ch: { distances: true, quadrantTotals: true, rings: true },
   },
 ];

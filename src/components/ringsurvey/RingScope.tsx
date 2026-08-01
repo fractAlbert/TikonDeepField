@@ -2,13 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RING_COUNT } from "@/lib/grid";
-import { playButtonClick, playSweepPing } from "@/lib/sound";
+import { playSweepPing } from "@/lib/sound";
 
-export interface RingSignature {
-  id: string;
-  label: string;
-  color: string;
+/** A ring the gate will light, and how many signatures it holds there. */
+export interface RingTarget {
   ring: number;
+  count: number;
 }
 
 // Geometry, in SVG user units. Deliberately the same shape as the Star
@@ -28,7 +27,7 @@ function ringRadius(ring: number): number {
 
 // How far either side of a ring's mid-radius the return is still visible.
 // A little under half a band, so two adjacent rings never glow at once and
-// the reading is never ambiguous.
+// a reading is never ambiguous.
 const FADE_RADIUS = RING_THICKNESS * 0.45;
 
 // The gate overshoots the outermost ring before wrapping, so R5 gets a
@@ -39,52 +38,48 @@ const GATE_COLOR = "rgba(210,216,224,0.55)";
 const RING_LINE = "rgba(232,240,247,0.18)";
 
 /**
- * Ring Survey: a range gate walks outward from the field's centre, and the
- * ring holding the selected signature lights as it passes.
+ * A range gate walks outward from the field's centre; the rings named by
+ * `targets` light as it crosses them, then fade.
  *
- * It reports a **ring and nothing else** - no segment, no bearing - which
- * is what makes it a distinct instrument rather than a second Star Map.
- * That one number turns out to be worth an enormous amount: the dominant
- * failure mode in this field is a signature that can sit one ring out and
- * one segment over with every distance reading unchanged (see
- * docs/win-conditions.md), and knowing the ring kills the ring half of
- * that move outright. It takes the share of regions that cannot be
- * resolved at all from ~19% to ~0%.
+ * Deliberately agnostic about *what* was selected. The caller decides
+ * whether a target means "the ring holding this signature" or "a ring
+ * holding one of this type" - which is the whole comparison the prototype
+ * exists to make, and the two variants are far apart in what they cost the
+ * puzzle (see docs/backlog.md).
  *
  * Animation is a `requestAnimationFrame` loop writing straight to SVG
  * attributes, the same approach the Sweep Scope uses - React never
- * re-renders per frame. Unlike the Sweep Scope this one is free to restart
- * on every visit, since there is no cross-panel clock to preserve: you
- * want to catch a sweep from the beginning, not walk in halfway through.
+ * re-renders per frame.
  */
 export function RingScope({
-  signatures,
+  targets,
+  color,
+  /** Changing this clears the latched readout - it belonged to the old selection. */
+  selectionKey,
+  showCounts = false,
   visible,
 }: {
-  signatures: RingSignature[];
+  targets: RingTarget[];
+  color: string;
+  selectionKey: string;
+  showCounts?: boolean;
   visible: boolean;
 }) {
   const gateRef = useRef<SVGCircleElement>(null);
   const spokeRef = useRef<SVGLineElement>(null);
   const tipRef = useRef<SVGCircleElement>(null);
-  const targetRef = useRef<SVGCircleElement>(null);
-  const readoutRef = useRef<HTMLSpanElement>(null);
+  const ringEls = useRef<(SVGCircleElement | null)[]>([]);
+  const countEls = useRef<(SVGTextElement | null)[]>([]);
 
-  const [selectedId, setSelectedId] = useState(signatures[0]?.id ?? "");
   const [periodMs, setPeriodMs] = useState(5000);
   // Latched so the answer survives the fade. Watching for the flash is the
   // instrument's character; making you keep watching to remember what it
   // said would just be a memory test.
-  const [lastReturn, setLastReturn] = useState<number | null>(null);
-
-  // Recomputed each render rather than reset on region change, same as the
-  // Sweep Scope's reference: if the stored id no longer matches anyone,
-  // fall back to the first signature and there is no state to sync.
-  const selected = signatures.find((s) => s.id === selectedId) ?? signatures[0];
+  const [lastReturn, setLastReturn] = useState<RingTarget[] | null>(null);
 
   const periodRef = useRef(periodMs);
   const visibleRef = useRef(visible);
-  const targetRingRef = useRef(selected?.ring ?? 0);
+  const targetsRef = useRef(targets);
   const pingedThisCycle = useRef(false);
   const lastCycle = useRef(-1);
 
@@ -95,17 +90,15 @@ export function RingScope({
     visibleRef.current = visible;
   }, [visible]);
   useEffect(() => {
-    targetRingRef.current = selected?.ring ?? 0;
-  }, [selected]);
+    targetsRef.current = targets;
+  }, [targets]);
 
-  // Changing the selection invalidates the latched reading - it belonged to
-  // the signature you were looking at before.
   useEffect(() => {
     /* eslint-disable-next-line react-hooks/set-state-in-effect -- clearing a
-       cached readout in response to a prop-derived change, not deriving
-       render output. */
+       cached readout in response to a changed selection, not deriving
+       render output from props. */
     setLastReturn(null);
-  }, [selected]);
+  }, [selectionKey]);
 
   useEffect(() => {
     const start = performance.now();
@@ -123,30 +116,33 @@ export function RingScope({
       }
 
       const gateR = t * SWEEP_END;
-      const targetR = ringRadius(targetRingRef.current);
-      const strength = Math.max(0, 1 - Math.abs(gateR - targetR) / FADE_RADIUS);
-
       if (gateRef.current) gateRef.current.setAttribute("r", String(Math.max(0.1, gateR)));
       if (spokeRef.current) spokeRef.current.setAttribute("y2", String(CY - gateR));
       if (tipRef.current) tipRef.current.setAttribute("cy", String(CY - gateR));
-      if (targetRef.current) {
-        const el = targetRef.current;
-        el.setAttribute("r", String(targetR));
-        el.setAttribute("opacity", String(strength));
-        el.setAttribute("stroke-width", String(2 + strength * 7));
-      }
-      if (readoutRef.current) {
-        readoutRef.current.textContent = `R${Math.min(
-          RING_COUNT,
-          Math.floor((gateR - INNER_HOLE) / RING_THICKNESS) + 1
-        )}`.replace(/^R0$/, "--");
+
+      let peak = 0;
+      for (let ring = 0; ring < RING_COUNT; ring++) {
+        const hit = targetsRef.current.find((tgt) => tgt.ring === ring);
+        const strength = hit
+          ? Math.max(0, 1 - Math.abs(gateR - ringRadius(ring)) / FADE_RADIUS)
+          : 0;
+        peak = Math.max(peak, strength);
+        const el = ringEls.current[ring];
+        if (el) {
+          el.setAttribute("opacity", String(strength));
+          el.setAttribute("stroke-width", String(2 + strength * 7));
+        }
+        const label = countEls.current[ring];
+        if (label) label.setAttribute("opacity", String(Math.min(1, strength * 1.3)));
       }
 
-      if (strength > 0.9 && !pingedThisCycle.current) {
+      if (peak > 0.9 && !pingedThisCycle.current) {
         pingedThisCycle.current = true;
         if (visibleRef.current) playSweepPing();
-        setLastReturn(targetRingRef.current);
       }
+      // Latch once the gate has run past everything, so a multi-ring return
+      // is recorded whole rather than one ring at a time.
+      if (t > 0.97 && targetsRef.current.length > 0) setLastReturn(targetsRef.current);
 
       raf = requestAnimationFrame(frame);
     }
@@ -157,36 +153,10 @@ export function RingScope({
 
   const rings = useMemo(() => Array.from({ length: RING_COUNT }, (_, i) => i), []);
 
-  if (!selected) return null;
-
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-1.5">
-        {signatures.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => {
-              playButtonClick();
-              setSelectedId(s.id);
-            }}
-            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs cursor-pointer transition-colors ${
-              s.id === selected.id
-                ? "bg-lcars-teal text-black font-semibold"
-                : "bg-lcars-panel text-lcars-ice hover:bg-white/10"
-            }`}
-          >
-            <span
-              className="w-2 h-2 rounded-full shrink-0"
-              style={{ backgroundColor: s.color }}
-            />
-            {s.label}
-          </button>
-        ))}
-      </div>
-
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-center">
-        <svg viewBox="0 0 320 320" className="w-full max-w-[320px] h-auto">
+        <svg viewBox="0 0 320 320" className="w-full max-w-[300px] h-auto">
           <defs>
             <filter id="ring-glow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="4" />
@@ -205,45 +175,50 @@ export function RingScope({
               stroke={RING_LINE}
             />
           ))}
+          {/* Labels on the left radius and counts on the right, because the
+              gate's bar walks straight up the vertical axis and would sit
+              on top of anything placed there. */}
           {rings.map((i) => (
             <text
               key={`label-${i}`}
-              x={CX}
-              y={CY - ringRadius(i) + 4}
+              x={CX - ringRadius(i)}
+              y={CY + 4}
               textAnchor="middle"
-              fontSize={10}
+              /* User units, not pixels: the 320-unit viewBox renders around
+                 300px here, so this paints at roughly 12px. The Star Map
+                 hit the same trap with a value of 10 - see the label-size
+                 trial in this panel. */
+              fontSize={13}
               fontFamily="ui-monospace, monospace"
-              fill="rgba(198,203,211,0.35)"
+              fill="rgba(198,203,211,0.45)"
             >
               R{i + 1}
             </text>
           ))}
 
-          {/* The return, drawn under the gate so the gate stays readable
-              as it crosses it. */}
-          <circle
-            ref={targetRef}
-            cx={CX}
-            cy={CY}
-            r={ringRadius(selected.ring)}
-            fill="none"
-            stroke={selected.color}
-            strokeWidth={2}
-            opacity={0}
-            filter="url(#ring-glow)"
-          />
-          <circle
-            cx={CX}
-            cy={CY}
-            r={ringRadius(selected.ring)}
-            fill="none"
-            stroke="none"
-          />
+          {/* One highlight per ring, all present and all at zero opacity -
+              the loop just turns them up. Keeping them mounted means the
+              rAF loop never touches the DOM structure, only attributes. */}
+          {rings.map((i) => (
+            <circle
+              key={`hit-${i}`}
+              ref={(el) => {
+                ringEls.current[i] = el;
+              }}
+              cx={CX}
+              cy={CY}
+              r={ringRadius(i)}
+              fill="none"
+              stroke={color}
+              strokeWidth={2}
+              opacity={0}
+              filter="url(#ring-glow)"
+            />
+          ))}
 
-          {/* The range gate: a bar walking outward from the centre, with a
+          {/* The range gate: a bar walking outward from the centre, plus a
               faint circle at its current radius so the ring it is crossing
-              is unambiguous all the way round rather than only under the
-              bar itself. */}
+              is unambiguous all the way round, not just under the bar. */}
           <circle
             ref={gateRef}
             cx={CX}
@@ -266,33 +241,54 @@ export function RingScope({
           />
           <circle ref={tipRef} cx={CX} cy={CY} r={3.5} fill="#e8f0f7" />
           <circle cx={CX} cy={CY} r={2} fill="rgba(232,240,247,0.5)" />
+
+          {/* Return counts, only meaningful when a ring can hold more than
+              one of what was selected. */}
+          {showCounts &&
+            rings.map((i) => {
+              const hit = targets.find((t) => t.ring === i);
+              return (
+                <text
+                  key={`count-${i}`}
+                  ref={(el) => {
+                    countEls.current[i] = el;
+                  }}
+                  x={CX + ringRadius(i)}
+                  y={CY + 4}
+                  textAnchor="middle"
+                  fontSize={13}
+                  fontFamily="ui-monospace, monospace"
+                  fontWeight="bold"
+                  fill={color}
+                  opacity={0}
+                >
+                  {hit ? `x${hit.count}` : ""}
+                </text>
+              );
+            })}
         </svg>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         <div>
-          <div className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50 mb-1">
-            Gate radius
-          </div>
-          <span ref={readoutRef} className="font-mono text-lg text-lcars-ice/70 tabular-nums">
-            --
-          </span>
-        </div>
-        <div>
-          <div className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50 mb-1">
+          <div className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50 mb-0.5">
             Last return
           </div>
           <span
-            className="font-mono text-lg tabular-nums"
-            style={{ color: lastReturn === null ? "rgba(204,230,255,0.25)" : selected.color }}
+            className="font-mono text-sm tabular-nums"
+            style={{ color: lastReturn === null ? "rgba(204,230,255,0.25)" : color }}
           >
-            {lastReturn === null ? "--" : `R${lastReturn + 1}`}
+            {lastReturn === null || lastReturn.length === 0
+              ? "--"
+              : lastReturn
+                  .slice()
+                  .sort((a, b) => a.ring - b.ring)
+                  .map((t) => `R${t.ring + 1}${showCounts && t.count > 1 ? `x${t.count}` : ""}`)
+                  .join("  ")}
           </span>
         </div>
         <label className="flex items-center gap-2 text-xs text-lcars-ice/60">
-          <span className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50">
-            Sweep period
-          </span>
+          <span className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50">Period</span>
           <input
             type="range"
             min={2000}
@@ -300,7 +296,7 @@ export function RingScope({
             step={250}
             value={periodMs}
             onChange={(e) => setPeriodMs(Number(e.target.value))}
-            className="accent-lcars-teal"
+            className="accent-lcars-teal w-24"
           />
           <span className="font-mono tabular-nums">{(periodMs / 1000).toFixed(1)}s</span>
         </label>
