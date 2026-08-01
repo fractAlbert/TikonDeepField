@@ -155,6 +155,8 @@ function solveByPropagation(region: Region, cfg: Config): Outcome {
 const configs: Config[] = [
   { label: "Today (no ring survey)", ringBudget: 0 },
   { label: "By type (per-ring totals, names nobody)", ringBudget: 0, ringTotals: true },
+  { label: "By signature, budget of 1", ringBudget: 1 },
+  { label: "Census + by signature, budget of 1", ringBudget: 1, ringTotals: true },
   { label: "By signature, budget of 2", ringBudget: 2 },
   { label: "By signature, budget of 3", ringBudget: 3 },
   { label: "By signature, unlimited", ringBudget: "all" },

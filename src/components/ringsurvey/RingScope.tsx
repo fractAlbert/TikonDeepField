@@ -64,11 +64,20 @@ export function RingScope({
   color,
   mode,
   visible,
+  /**
+   * False for a targeted scan, where the ring lighting up *is* the answer
+   * and a "1" beside it would only be noise.
+   */
+  showCounts = true,
+  /** Hidden for a targeted scan, which has its own readout. */
+  showReadout = true,
 }: {
   counts: number[];
   color: string;
   mode: RingScopeMode;
   visible: boolean;
+  showCounts?: boolean;
+  showReadout?: boolean;
 }) {
   const gateRef = useRef<SVGCircleElement>(null);
   const spokeRef = useRef<SVGLineElement>(null);
@@ -256,7 +265,7 @@ export function RingScope({
           />
           <circle cx={CX} cy={CY} r={2} fill="rgba(232,240,247,0.5)" />
 
-          {rings.map((i) => (
+          {showCounts && rings.map((i) => (
             <text
               key={`count-${i}`}
               ref={(el) => {
@@ -278,6 +287,7 @@ export function RingScope({
       </div>
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        {showReadout && (
         <div>
           <div className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50 mb-0.5">
             Census
@@ -289,6 +299,7 @@ export function RingScope({
           </span>
           <span className="font-mono text-sm text-lcars-ice/40 ml-2">{total} total</span>
         </div>
+        )}
         {mode !== "static" && (
           <label className="flex items-center gap-2 text-xs text-lcars-ice/60">
             <span className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50">Period</span>

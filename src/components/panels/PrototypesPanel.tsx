@@ -12,6 +12,7 @@ import {
   RingScope,
   RingScopeMode,
 } from "@/components/ringsurvey/RingScope";
+import { TargetedScanPrototype } from "@/components/ringsurvey/TargetedScanPrototype";
 import { RING_COUNT } from "@/lib/grid";
 
 const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
@@ -63,6 +64,7 @@ export function PrototypesPanel({
   return (
     <div className="flex flex-col gap-4">
       <RingSurveyPrototype region={region} />
+      <TargetedScanPrototype region={region} />
 
       <LcarsPanel title="Prototype Archive" accent="bg-lcars-teal">
         <p className="text-sm text-lcars-ice/70 leading-relaxed mb-4">

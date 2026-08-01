@@ -150,12 +150,29 @@ comparison; the short version is that it takes unsolvable regions from
 deduction unchanged, because it prunes dead ends rather than answering
 anything.
 
-**Rejected: the by-signature variant.** Aiming the scan at a named
-signature and learning its ring is far too strong - unlimited use drops the
-work from 133 candidate eliminations per region to 23, with 90% of
-signatures then falling straight out of the two anchors. It would need a
-budget of about 2 to be viable, and the census version needs no such guard,
-which is the whole argument for it.
+**Not rejected: the by-signature variant, if it is metered.** An earlier
+version of this entry called it too strong outright, which overstated the
+case - that is true of *unlimited* use, not of a budget. The work cost of a
+single targeted scan is modest:
+
+| | unsolvable (aimed well) | eliminations/region |
+| --- | ---: | ---: |
+| No lifeline | 18.6% | 134 |
+| 1 scan | 1.6% | 113 |
+| 2 scans | 0.2% | 90 |
+| Unlimited | 0.1% | 23 |
+
+One scan buys 17 points of solvability for about 16% of the work, which is
+a real trade rather than a giveaway. Unlimited is the thing to avoid: 90%
+of signatures then fall straight out of the two anchors with nothing
+chaining.
+
+The two are complementary in *feel*, not just in numbers. The census is
+always-on and read as routine, like the Sweep Scope; the targeted scan is a
+decision you make when stuck, and choosing the target is itself a deduction
+step - aimed blind, one scan only reaches 11.7% rather than 1.6%, so
+aiming it well is worth about 7x. Both are prototyped
+(`TargetedScanPrototype.tsx` for the metered one).
 
 The axis that matters here is **chain depth, not determinism**. Sudoku is
 fully deterministic and unique and is enjoyed for the grind; what separates
