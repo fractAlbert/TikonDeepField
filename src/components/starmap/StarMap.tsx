@@ -2,7 +2,14 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Region } from "@/lib/puzzle-types";
-import { RING_COUNT, SEGMENT_COUNT, buildSectors, quadrantOf, sectorId } from "@/lib/grid";
+import {
+  QUADRANTS,
+  RING_COUNT,
+  SEGMENT_COUNT,
+  buildSectors,
+  quadrantOf,
+  sectorId,
+} from "@/lib/grid";
 import { annularSegmentPath, polarPoint } from "@/lib/polar-geometry";
 import { quasarColorHex } from "@/lib/quasar-colors";
 import { starMapStorageKey } from "@/lib/starmap-storage";
@@ -67,6 +74,22 @@ const SEG_GAP_DEG = 3;
 const RING_THICKNESS = (MAX_R - INNER_HOLE) / RING_COUNT;
 const SEG_SPAN = 360 / SEGMENT_COUNT;
 
+// A quadrant is a run of adjacent segments (grid.ts: two of the eight).
+// Cells inside one quadrant sit flush, sharing a single dividing line, so
+// the pair reads as one block; the gap is spent only where a quadrant
+// actually ends. Without this every boundary looked alike and the four
+// quadrants were invisible on the dial - which matters, because two of the
+// four briefing clues are quadrant clues.
+const SEGMENTS_PER_QUADRANT = SEGMENT_COUNT / QUADRANTS.length;
+const opensQuadrant = (seg: number) => seg % SEGMENTS_PER_QUADRANT === 0;
+const closesQuadrant = (seg: number) => seg % SEGMENTS_PER_QUADRANT === SEGMENTS_PER_QUADRANT - 1;
+
+/** Angular extent of one cell, gapped only at quadrant boundaries. */
+const cellStartAngle = (seg: number) =>
+  seg * SEG_SPAN + (opensQuadrant(seg) ? SEG_GAP_DEG / 2 : 0);
+const cellEndAngle = (seg: number) =>
+  (seg + 1) * SEG_SPAN - (closesQuadrant(seg) ? SEG_GAP_DEG / 2 : 0);
+
 // Ring/segment/centre labels. The size is in SVG user units, not pixels:
 // the viewBox is 440 wide and renders into 260px in the desktop sidebar,
 // so a label paints at size * 260/440 there (and correspondingly larger on
@@ -79,6 +102,26 @@ const SEG_SPAN = 360 / SEGMENT_COUNT;
 const LABEL_SIZE = 18;
 const LABEL_SIZE_CTR = 17;
 const LABEL_FILL = "rgba(198,203,211,0.45)";
+
+// Quadrant labels sit in the corners of the viewBox, which are empty: the
+// dial is a circle of radius 200 in a 440 box, so the diagonals have ~80
+// units of clearance the cardinal directions don't. That works because a
+// quadrant is two of the eight segments, which puts every quadrant's
+// midpoint exactly on a diagonal - 45, 135, 225, 315 degrees.
+//
+// Worth labelling at all because two of the four briefing clues are
+// quadrant clues, and until now the map never said which segments a
+// quadrant covered. See grid.ts: quadrant I is segments S1-S2, II is
+// S3-S4, and so on clockwise.
+const QUADRANT_LABEL_R = 236;
+// User units, like every other label here. The sidebar renders the 440-unit
+// viewBox at 260px, so this paints at ~10px - matching the ring and segment
+// labels, which the label-size trial in the Prototypes panel settled at
+// 10.6px after 5.9px proved unreadable. Going larger is what runs "QUAD III"
+// out of the corner; `scripts/check-quadrant-labels.ts` measures the margin.
+const QUADRANT_LABEL_SIZE = 17;
+const QUADRANT_FILL = "rgba(198,203,211,0.40)";
+const QUADRANT_LINE = "rgba(232,240,247,0.30)";
 
 // What each ending says once the region is closed. The wording matters:
 // "retracted" is the station pulling an entry before it reached anyone,
@@ -219,8 +262,8 @@ export function StarMap({ region }: { region: Region | null }) {
       const sector = byId.get(sid)!;
       const r0 = INNER_HOLE + sector.ring * RING_THICKNESS + RING_GAP / 2;
       const r1 = INNER_HOLE + (sector.ring + 1) * RING_THICKNESS - RING_GAP / 2;
-      const a0 = sector.seg * SEG_SPAN + SEG_GAP_DEG / 2;
-      const a1 = (sector.seg + 1) * SEG_SPAN - SEG_GAP_DEG / 2;
+      const a0 = cellStartAngle(sector.seg);
+      const a1 = cellEndAngle(sector.seg);
       return polarPoint(CX, CY, (r0 + r1) / 2, (a0 + a1) / 2);
     };
   }, [sectors]);
@@ -366,8 +409,8 @@ export function StarMap({ region }: { region: Region | null }) {
             Array.from({ length: SEGMENT_COUNT }).map((__, seg) => {
               const r0 = INNER_HOLE + ring * RING_THICKNESS + RING_GAP / 2;
               const r1 = INNER_HOLE + (ring + 1) * RING_THICKNESS - RING_GAP / 2;
-              const a0 = seg * SEG_SPAN + SEG_GAP_DEG / 2;
-              const a1 = (seg + 1) * SEG_SPAN - SEG_GAP_DEG / 2;
+              const a0 = cellStartAngle(seg);
+              const a1 = cellEndAngle(seg);
               const id = sectorId(ring, seg);
               const occupantId = occupantBySector.get(id);
               const isRuledOutForArmed = armed ? (ruledOut[armed]?.has(id) ?? false) : false;
@@ -444,6 +487,42 @@ export function StarMap({ region }: { region: Region | null }) {
               >
                 S{seg + 1}
               </text>
+            );
+          })}
+
+          {/* Quadrant boundaries and labels. The boundaries fall in the
+              gaps the segments already leave, so these lines sit in dead
+              space rather than over any cell - they just make the four
+              blocks legible as blocks. Drawn before the markers so a
+              signature is never underneath one. */}
+          {QUADRANTS.map((quadrant, q) => {
+            const boundary = q * 90;
+            const a = polarPoint(CX, CY, INNER_HOLE, boundary);
+            const b = polarPoint(CX, CY, MAX_R + 4, boundary);
+            const label = polarPoint(CX, CY, QUADRANT_LABEL_R, boundary + 45);
+            return (
+              <g key={`quad-${quadrant}`} style={{ pointerEvents: "none" }}>
+                <line
+                  x1={a.x}
+                  y1={a.y}
+                  x2={b.x}
+                  y2={b.y}
+                  stroke={QUADRANT_LINE}
+                  strokeWidth={1}
+                />
+                <text
+                  x={label.x}
+                  y={label.y}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize={QUADRANT_LABEL_SIZE}
+                  letterSpacing="0.12em"
+                  fill={QUADRANT_FILL}
+                  fontFamily="ui-monospace, monospace"
+                >
+                  QUAD {quadrant}
+                </text>
+              </g>
             );
           })}
 
