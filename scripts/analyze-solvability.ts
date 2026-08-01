@@ -60,6 +60,17 @@ interface Channels {
   quadrantTotals: boolean;
   /** Hypothetical: Sweep Scope reveals direction as well as magnitude. */
   signed?: boolean;
+  /**
+   * Ring Survey: pick a signature, watch a bar sweep outward, read off the
+   * ring it lights on.
+   *
+   * `true` means every signature's ring is known, which is what an
+   * unlimited panel gives you - cycling the selection costs nothing. A
+   * number caps how many signatures may be surveyed, modelling a budget.
+   * The budget is spent on signatures with no exact-sector clue, which is
+   * what a player who understands the instrument would do.
+   */
+  rings?: boolean | number;
 }
 
 /**
@@ -77,6 +88,14 @@ function countConsistent(region: Region, ch: Channels, cap = 2): number {
     if (clue.kind === "quasar-sector") fixed.set(clue.quasar, clue.sector);
     if (clue.kind === "quasar-quadrant") quadClue.set(clue.quasar, clue.quadrant);
   }
+
+  // Which signatures have been surveyed for ring. A budget is spent on the
+  // ones with no exact-sector clue - surveying an anchor would tell you
+  // something the briefing already said.
+  const ringKnown = new Set<string>();
+  if (ch.rings === true) for (const n of names) ringKnown.add(n);
+  else if (typeof ch.rings === "number")
+    for (const n of names.filter((n) => !fixed.has(n)).slice(0, ch.rings)) ringKnown.add(n);
 
   // True observations to reproduce. Stored DIRECTED: the signed metric is
   // antisymmetric (orthogonalDistanceSigned(a,b) === -orthogonalDistanceSigned(b,a)
@@ -121,6 +140,7 @@ function countConsistent(region: Region, ch: Channels, cap = 2): number {
     for (const cand of candidates) {
       if (used.has(cand.id)) continue;
       if (quadClue.has(name) && quadrantOf(cand) !== quadClue.get(name)) continue;
+      if (ringKnown.has(name) && cand.ring !== truth.get(name)!.ring) continue;
       if (ch.distances) {
         let ok = true;
         for (const [other, otherSector] of assigned) {
@@ -223,13 +243,25 @@ function anchorDistance(region: Region): number | null {
 
 // ---------------------------------------------------------------------
 
-const scenarios: { label: string; ch: Channels }[] = [
+// `canonical` marks the row the breakdowns below report on. It is an
+// explicit flag rather than a test on the channel bits because that test
+// has now silently picked the wrong row twice - every scenario added since
+// has also had `distances` and `quadrantTotals` set.
+const scenarios: { label: string; ch: Channels; canonical?: boolean }[] = [
   { label: "Briefing clues only", ch: { distances: false, quadrantTotals: false } },
   { label: "+ Sweep Scope", ch: { distances: true, quadrantTotals: false } },
-  { label: "+ Quadrant Survey (all channels)", ch: { distances: true, quadrantTotals: true } },
+  {
+    label: "+ Quadrant Survey (shipped set)",
+    ch: { distances: true, quadrantTotals: true },
+    canonical: true,
+  },
   {
     label: "  [hypothetical] signed sweep",
     ch: { distances: true, quadrantTotals: true, signed: true },
+  },
+  {
+    label: "  [prototype] Ring Survey, unlimited",
+    ch: { distances: true, quadrantTotals: true, rings: true },
   },
 ];
 
@@ -249,10 +281,7 @@ for (let i = 0; i < SAMPLES; i++) {
   for (const r of results) {
     const unique = countConsistent(region, r.ch) === 1;
     if (unique) r.unique++;
-    // Must exclude the signed hypothetical, which also has distances +
-    // totals set - otherwise the breakdowns below silently report the
-    // hypothetical rather than the shipped configuration.
-    if (r.ch.distances && r.ch.quadrantTotals && !r.ch.signed) fullyUnique = unique;
+    if (r.canonical) fullyUnique = unique;
   }
 
   const qn = region.quasars.length;
@@ -314,6 +343,24 @@ for (const extra of [0, 1, 2, 3]) {
   }
   console.log(
     `  ${2 + extra} known points   ${(100 - (unique / ANCH) * 100).toFixed(1).padStart(5)}% unsolvable`
+  );
+}
+
+// How much of the Ring Survey's effect survives a budget? Unlimited use
+// solves everything, which is the question the prototype has to answer:
+// how few surveys still rescue the regions that are otherwise impossible.
+console.log("\n[prototype] Ring Survey budget (rings spent on un-anchored signatures):");
+const RING = Math.min(SAMPLES, 1500);
+for (const budget of [0, 1, 2, 3, 4]) {
+  let unique = 0;
+  for (let i = 0; i < RING; i++) {
+    const region = generateRegion();
+    if (countConsistent(region, { distances: true, quadrantTotals: true, rings: budget }) === 1)
+      unique++;
+  }
+  console.log(
+    `  ${budget} ring survey${budget === 1 ? " " : "s"}   ` +
+      `${(100 - (unique / RING) * 100).toFixed(1).padStart(5)}% unsolvable`
   );
 }
 

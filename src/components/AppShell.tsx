@@ -365,7 +365,9 @@ export function AppShell() {
           )}
           {panel === "profile" && <ProfilePanel />}
           {panel === "help" && <HelpPanel />}
-          {panel === "prototypes" && <PrototypesPanel />}
+          {panel === "prototypes" && (
+            <PrototypesPanel region={noActiveAssignment ? null : region} />
+          )}
           {isMobile && panel === "starmap" && starMapView}
         </main>
 

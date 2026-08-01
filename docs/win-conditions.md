@@ -233,6 +233,39 @@ third anchor gives away a third of the puzzle to remove about 7 points of
 loss rate. Not recommended. The signed sweep below is a better trade: it
 removes ~12 points and gives away no answers.
 
+### The Ring Survey prototype is the strongest lever found so far
+
+Same diagnosis, different remedy. If the ambiguity is a signature sliding
+one ring out and one segment over, then simply *being told the ring* kills
+half the move. Measured, it does exactly that — and then some:
+
+| ring surveys allowed | unsolvable |
+| --- | --- |
+| 0 (today) | ~19% |
+| 1 | ~12.5% |
+| 2 | ~7.9% |
+| 3 | ~3.6% |
+| unlimited | ~0.1% |
+
+Unlimited use effectively ends the problem, which is precisely why it is a
+prototype (Prototypes panel) and not a panel. With every ring known, each
+pairwise distance reduces to a segment hop by subtraction and the puzzle
+collapses from deduction to arithmetic — a difficulty decision far too
+large to make by adding a nav entry.
+
+A **budget** is the interesting version, and it is the same shape as the
+sensor allocation: with two or three surveys per region, choosing which
+signature to spend them on is itself a deduction, and the instrument turns
+a dead end into a decision rather than a formality. That is the natural
+place to fold it in.
+
+Note this changes the calibration argument below. A ~19% floor is why
+withdrawal has to be rank-neutral — but if the floor drops to ~4%, that
+reasoning weakens and the promotion thresholds have more headroom than
+they were set against. Withdrawal should stay neutral regardless (a player
+still cannot tell an impossible region from one they misread), but the
+thresholds are worth revisiting if this ever ships.
+
 ### The scope already computes the sign and discards it
 
 That also explains the hypothetical last row of the table. The scope
