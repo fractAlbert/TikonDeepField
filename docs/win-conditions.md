@@ -314,7 +314,30 @@ Two caveats on the number:
    clue kinds are implemented and unused), that breakdown becomes live
    information and this number drops again.
 
-### Consequences for rank
+### Superseded 2026-08-01 — the floor is now ~1%, and skill-dependent
+
+Everything below was calibrated against a ~19% floor of regions nobody
+could solve. The **Ring Scan** (`instrument-analysis.md`) changed that: two
+metered scans per region take a careful player to **~1% unsolvable**, and a
+careless one to ~11%.
+
+Three consequences, and the third is the important one:
+
+1. Promotion thresholds have far more headroom than they were set against.
+   "5 of 8 confirmed" was chosen to sit under an ~81% ceiling; the ceiling
+   for careful play is now ~99%.
+2. Withdrawal still has to be rank-neutral. ~1% of regions remain
+   impossible, and misreading a solvable one is still the common failure.
+3. **The loss rate is now skill-dependent, which it never was before.** A
+   retraction increasingly reflects the player's judgment — chiefly whether
+   they spent their two scans on the signatures they were actually stuck on
+   — rather than the generator's luck. That is precisely what the review
+   window was built to measure, and it only became true with this change.
+
+The thresholds have not been re-tuned against the new numbers. They should
+be, once there is play data.
+
+### Consequences for rank (written against the old ~19% floor)
 
 A ~19% floor is the reason **withdrawal has to be rank-neutral and
 first-class**. A player cannot tell an unsolvable region from one they

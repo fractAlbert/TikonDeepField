@@ -42,10 +42,10 @@ export function StarManifestPanel({ region }: { region: Region }) {
     <div className="flex flex-col gap-4">
       <LcarsPanel title={`${PANEL_LABELS.manifest} — ${region.name}`} accent="bg-lcars-lilac">
         <p className="text-sm text-lcars-ice/70 leading-relaxed mb-4">
-          Every signature logged in this region, by name and color. Clues and
-          Quadrant Survey talk about <em>types</em>; this is what ties a name
-          mentioned there back to what you actually see flash on the Sweep
-          Scope or sit on the Star Map.
+          Every signature logged in this region, by name and color. Clues talk
+          about <em>types</em>; this is what ties a name mentioned there back
+          to what you actually see flash on the Sweep Scope or sit on the Star
+          Map.
         </p>
         <p className="text-xs text-lcars-ice/50 leading-relaxed mb-4">
           Each entry carries whatever the briefing already pins down &mdash; an

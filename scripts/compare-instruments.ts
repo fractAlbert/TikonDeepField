@@ -285,6 +285,40 @@ console.log("\n\nQUESTION 4 - do they overlap? (does one make the other pointles
 // Does knowing the ring actually hand you the segment, or does it only
 // narrow it? Counts the candidate cells left for a single un-anchored
 // signature, with and without its ring, at three levels of reference.
+// The configuration where the Quadrant Survey panel is retired outright
+// and metered targeted scans take its place. Nothing anonymous survives -
+// the only census left is whatever the briefing's two quadrant clues say -
+// so this is the "make the player choose" design in full.
+console.log("\n\nQUESTION 4b - retire the census entirely, meter the scans instead");
+console.log("(Sweep Scope only. Briefing quadrant *clues* still apply; the survey panel is gone.)\n");
+{
+  const SWEEP_ONLY: Channels = { distances: true };
+  console.log(row("No census, no scans", unsolvable(SWEEP_ONLY)));
+  for (const budget of [1, 2, 3]) {
+    let aimed = 0;
+    let blind = 0;
+    for (const r of regions) {
+      const pool = unanchored(r);
+      if (
+        combinations(pool, Math.min(budget, pool.length)).some(
+          (pick) => countConsistent(r, { ...SWEEP_ONLY, ringKnown: new Set(pick) }) === 1
+        )
+      )
+        aimed++;
+      if (
+        countConsistent(r, { ...SWEEP_ONLY, ringKnown: new Set(pool.slice(0, budget)) }) === 1
+      )
+        blind++;
+    }
+    const aimedPct = 100 - (aimed / SAMPLES) * 100;
+    console.log(
+      row(`  + ${budget} targeted scan${budget === 1 ? " " : "s"} aimed well`, aimedPct) +
+        `   (aimed blind: ${(100 - (blind / SAMPLES) * 100).toFixed(1)}%` +
+        `, skill spread: ${((100 - (blind / SAMPLES) * 100) - aimedPct).toFixed(1)}pp)`
+    );
+  }
+}
+
 console.log("\n\nQUESTION 5 - what does knowing the ring actually buy?");
 console.log("(Mean candidate cells left for one un-anchored signature.)\n");
 {

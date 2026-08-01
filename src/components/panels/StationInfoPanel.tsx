@@ -194,9 +194,10 @@ function SurveyProcessSection() {
         Logged bearings are the closest thing to a direct hit - a sector fix, a quadrant, a
         confirmed type, or a confirmed relationship between two signatures. The Sweep Scope
         gives a relative-distance reading off a rotating single-line sensor pass, which is
-        mainly useful when nothing else pins a signature down. A Quadrant Survey is more of a
-        coarse census - how many signatures are in a region and what they&apos;re classified
-        as, without saying where exactly or which one is which.
+        mainly useful when nothing else pins a signature down. A Ring Scan is the one
+        instrument that answers a question directly - it locks onto a single signature and
+        returns the ring it sits in - but holding that resolution costs the array dearly, so
+        there are only ever a couple of them per region.
       </p>
       <p>
         No single instrument is enough on its own. Resolving a full region, getting every

@@ -45,14 +45,17 @@ const RING_LINE = "rgba(232,240,247,0.18)";
 const LABEL_FILL = "rgba(198,203,211,0.45)";
 
 /**
- * Ring Survey: how many signatures sit in each ring of the field.
+ * The dial itself: a range gate walking outward, lighting the rings named
+ * by `counts`.
  *
- * This is a census, not a targeted scan. It names no individual signature,
- * exactly as the Quadrant Survey doesn't - which is what makes it safe.
- * Measured (docs/instrument-analysis.md), counting per ring rather than per
- * quadrant takes unsolvable regions from ~19% to ~6% while leaving the
- * amount of deduction unchanged, because the failure mode it attacks is a
- * signature sliding one ring out and one segment over.
+ * Shared by two callers with opposite meanings, which is why it takes
+ * counts rather than anything semantic. `RingScanPanel` (shipped) passes a
+ * single ring and hides the numbers - a targeted return. The census
+ * prototype passes a headcount per ring. Only the first survived the
+ * design call on 2026-08-01: a census reads identically for every player,
+ * so it lowers the loss rate for everyone and measures nothing, while two
+ * metered scans leave a careful player at ~1% unsolvable and a careless
+ * one at ~11%. See docs/instrument-analysis.md.
  *
  * Animation is a `requestAnimationFrame` loop writing straight to SVG
  * attributes, the same approach the Sweep Scope uses - React never

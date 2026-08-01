@@ -267,7 +267,59 @@ fix**.
 
 ---
 
-## Recommendation
+## Decided (2026-08-01): metered targeted scans, census retired
+
+The census and the metered scan look like two settings of one instrument.
+They are not, and the deciding argument is not in any of the tables above.
+
+**A census reads the same for everyone.** It takes no judgment to read five
+numbers, so it lowers the loss rate uniformly — every player lands on 3.9%
+regardless of how well they understand the field. A metered targeted scan
+does the opposite: the player has to work out *which* signature they are
+actually stuck on, and that decision shows up in the result.
+
+Measured on the shipped configuration — Sweep Scope and briefing clues
+only, no census panel at all:
+
+| | aimed well | aimed blind | skill spread |
+| --- | ---: | ---: | ---: |
+| No scans | 24.6% | 24.6% | — |
+| 1 scan | 4.1% | 16.6% | 12.5pp |
+| **2 scans (shipped)** | **0.9%** | 11.4% | **10.5pp** |
+| 3 scans | 0.6% | 7.1% | 6.5pp |
+
+A careful player almost never meets an unwinnable region; a careless one
+loses better than one in nine. **That ten-point gap is player judgment**,
+and it is what gives the rank ladder something to grade. It is also worth
+noting that retiring the census *widens* the spread (12.5pp at one scan,
+against 10.1pp with a census kept), so the two decisions reinforce each
+other.
+
+Two scans rather than one or three: one leaves a good player losing 1
+region in 24 to something unwinnable, which reads as unfair; three starts
+washing the skill signal out.
+
+The census remains measured and documented here because it is the better
+*fairness fix* in isolation — it costs the puzzle nothing at all, 136
+candidate eliminations against today's 135. It was rejected for being a
+worse *mechanic*, not a worse instrument.
+
+### Consequence for rank
+
+`win-conditions.md` calibrated its thresholds against a ~19% floor of
+regions nobody could solve, and argued that withdrawal must stay
+rank-neutral because a player cannot tell an impossible region from one
+they merely misread. Both still hold, but the numbers move:
+
+- The floor for careful play is now **~1%**, not ~19%. Promotion
+  thresholds have far more headroom than they were set against.
+- The loss rate is now **skill-dependent**, which it never was before.
+  Retractions increasingly reflect judgment rather than the generator —
+  which is precisely what the review window was supposed to measure.
+- Withdrawal stays neutral. ~1% of regions are still impossible, and
+  misreading a solvable one is still the common case.
+
+## Recommendation (superseded by the decision above)
 
 **1. Change the census from quadrants to rings — or report both.**
 

@@ -23,7 +23,13 @@ export const OUTPOST_NAME = "Tikon Research Station";
 export const PANEL_LABELS = {
   manifest: "Star Manifest",
   sweep: "Sweep Scope",
-  survey: "Quadrant Survey",
+  /**
+   * Replaced the Quadrant Survey on 2026-08-01. A quadrant spans all five
+   * rings, so counting signatures per quadrant said almost nothing about
+   * how far out anything was - see docs/instrument-analysis.md. Quadrant
+   * *clues* in the briefing are untouched; only the panel is gone.
+   */
+  ringScan: "Ring Scan",
   surveyNewRegion: "Survey New Region",
 } as const;
 
