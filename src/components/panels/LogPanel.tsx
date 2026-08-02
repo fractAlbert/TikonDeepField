@@ -54,8 +54,16 @@ export function LogPanel({
   /** Make this survey the active one and go to its briefing. */
   onResumeRegion: (region: Region) => void;
 }) {
-  const entries = useSyncExternalStore(subscribeSurveyLog, getSurveyLog, () => EMPTY_LOG);
+  const allEntries = useSyncExternalStore(subscribeSurveyLog, getSurveyLog, () => EMPTY_LOG);
   const [page, setPage] = useState(0);
+  // The two views are exclusive rather than additive: archiving is how you
+  // get a survey out of the way, so folding archived entries back into the
+  // default list would undo the only thing archiving does here.
+  const [showArchived, setShowArchived] = useState(false);
+
+  const activeCount = allEntries.filter((e) => !e.archived).length;
+  const archivedCount = allEntries.length - activeCount;
+  const entries = allEntries.filter((e) => e.archived === showArchived);
 
   const totalPages = Math.max(1, Math.ceil(entries.length / ENTRIES_PER_PAGE));
   const clampedPage = Math.min(page, totalPages - 1);
@@ -63,6 +71,15 @@ export function LogPanel({
     clampedPage * ENTRIES_PER_PAGE,
     clampedPage * ENTRIES_PER_PAGE + ENTRIES_PER_PAGE
   );
+
+  function selectView(archived: boolean) {
+    playButtonClick();
+    setShowArchived(archived);
+    // The lists are different lengths, so page 3 of one is often past the
+    // end of the other. clampedPage would cover it, but landing on the last
+    // page of a list you just switched to reads as a glitch.
+    setPage(0);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -75,10 +92,34 @@ export function LogPanel({
           panel&apos;s selection row without deleting its history here.
         </p>
 
+        <div className="flex gap-1 bg-black/30 rounded-full p-1 w-fit mb-4">
+          {([
+            [false, "Current", activeCount],
+            [true, "Archived", archivedCount],
+          ] as [boolean, string, number][]).map(([archived, label, count]) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => selectView(archived)}
+              className={`lcars-caps text-[11px] px-3 py-1 rounded-full cursor-pointer transition-colors ${
+                showArchived === archived
+                  ? "bg-lcars-amber text-black font-semibold"
+                  : "text-lcars-ice/60 hover:text-lcars-ice"
+              }`}
+            >
+              {label}
+              <span className="font-mono ml-1.5 opacity-70">{count}</span>
+            </button>
+          ))}
+        </div>
+
         {entries.length === 0 ? (
           <p className="text-sm text-lcars-ice/50">
-            No surveys begun yet. Select a region on the Briefing panel, or
-            generate a new one, to start your log.
+            {showArchived
+              ? "Nothing archived. Archiving a survey moves it here and out of the Briefing panel's selection row."
+              : allEntries.length === 0
+              ? "No surveys begun yet. Select a region on the Briefing panel, or generate a new one, to start your log."
+              : "Every survey is archived. Switch to Archived above to see them."}
           </p>
         ) : (
           <>
