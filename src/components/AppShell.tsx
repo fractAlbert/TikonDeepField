@@ -5,7 +5,14 @@ import { regions as builtInRegions } from "@/data/regions";
 import { generateRegion } from "@/lib/generate-region";
 import { Region } from "@/lib/puzzle-types";
 import { BUTTON_COLORS, ButtonColor } from "@/lib/lcars-colors";
-import { EMPTY_LOG, getSurveyLog, subscribeSurveyLog, touchSurvey } from "@/lib/survey-log";
+import {
+  EMPTY_LOG,
+  getSurveyLog,
+  setArchived,
+  subscribeSurveyLog,
+  touchSurvey,
+} from "@/lib/survey-log";
+import { loadActiveRegionId, saveActiveRegionId } from "@/lib/active-region";
 import { unlockAudio } from "@/lib/sound";
 import { BELOW_LG, useMediaQuery } from "@/lib/use-media-query";
 import { NavRail, NavItem } from "@/components/NavRail";
@@ -146,6 +153,41 @@ export function AppShell() {
     setMounted(true);
   }, []);
 
+  // Generated regions used to exist only in the state above, so a refresh
+  // stranded whichever survey you were in the middle of - it stayed in the
+  // Log, viewable but no longer selectable. Nothing was actually lost: the
+  // log carries a full snapshot of every generated region, which is what
+  // lets the Log panel render them at all. This puts them back on the
+  // roster and re-selects the one that was active.
+  //
+  // It also makes Archive mean what it says. The Briefing picker is meant
+  // to list your unarchived surveys, but generated ones vanished on reload
+  // regardless, so archiving them changed nothing.
+  const [restoredRoster, setRestoredRoster] = useState(false);
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- one-time restore
+       from localStorage on mount; the server has no storage to read. */
+    const saved = getSurveyLog()
+      .filter((e) => e.origin === "generated" && e.region)
+      .map((e) => e.region!);
+    if (saved.length > 0) {
+      setRegions((prev) => {
+        const known = new Set(prev.map((r) => r.id));
+        return [...prev, ...saved.filter((r) => !known.has(r.id))];
+      });
+    }
+    const lastActive = loadActiveRegionId();
+    if (lastActive) setRegionId(lastActive);
+    setRestoredRoster(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
+
+  // Held back until the restore has run, or the first commit would persist
+  // the default built-in id straight over whatever was actually saved.
+  useEffect(() => {
+    if (restoredRoster) saveActiveRegionId(regionId);
+  }, [regionId, restoredRoster]);
+
   // Prime the sound engine's AudioContext ahead of the first real sound
   // effect. Constructing it here (no gesture required for that part) pays
   // most of the one-time setup cost before anyone's clicked anything; the
@@ -204,6 +246,23 @@ export function AppShell() {
 
   function openStationInfo() {
     selectPanel("station");
+  }
+
+  /**
+   * Pick a survey back up from the Log. Distinct from previewing it, which
+   * is what clicking the card does and deliberately leaves the active
+   * survey alone.
+   *
+   * Un-archives on the way through, because archived means "hidden from
+   * the Briefing picker" and that is also what `noActiveAssignment` keys
+   * off - resuming an archived region without this would make it active
+   * and then show the no-assignment placeholder instead of it.
+   */
+  function resumeRegion(target: Region) {
+    setArchived(target.id, false);
+    setRegionId(target.id);
+    setLogPreviewRegion(null);
+    selectPanel("briefing");
   }
 
   // Archiving the active region leaves nothing meaningful to show it as -
@@ -369,6 +428,7 @@ export function AppShell() {
               activeRegionId={region.id}
               previewRegionId={logPreviewRegion?.id ?? null}
               onPreviewRegion={setLogPreviewRegion}
+              onResumeRegion={resumeRegion}
             />
           )}
           {panel === "profile" && <ProfilePanel />}

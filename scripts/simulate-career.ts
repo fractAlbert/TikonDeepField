@@ -10,7 +10,16 @@
 //
 // Usage: npx tsx scripts/simulate-career.ts
 
-import { RELIEVED, STARTING_RANK, SurveyOutcome, rankTitle } from "../src/lib/ranks";
+import {
+  DEMOTION_RETRACTED,
+  PROMOTION_CONFIRMED,
+  PROMOTION_MAX_RETRACTED,
+  RELIEVED,
+  REVIEW_WINDOW,
+  STARTING_RANK,
+  SurveyOutcome,
+  rankTitle,
+} from "../src/lib/ranks";
 import * as player from "../src/lib/player";
 
 // player.ts is a browser store - it early-returns on `typeof window ===
@@ -88,29 +97,57 @@ scenario("A clean run of 8 promotes exactly once", () => {
   expectHistoryLength("history", 2); // commission + promotion
 });
 
-scenario("5 confirmed and 3 withdrawn still promotes", () => {
-  feed([C, W, C, W, C, W, C, C]);
-  expectRank("5 confirmed, 3 withdrawn", STARTING_RANK + 1);
+/**
+ * A full window with a given make-up, padded with withdrawals. Built from
+ * the thresholds rather than hard-coded, so tuning a constant does not mean
+ * hand-editing every scenario below - the boundaries stay the boundaries.
+ */
+function windowOf(confirmed: number, retracted: number): SurveyOutcome[] {
+  const w = [
+    ...Array<SurveyOutcome>(confirmed).fill(C),
+    ...Array<SurveyOutcome>(retracted).fill(R),
+  ];
+  while (w.length < REVIEW_WINDOW) w.push(W);
+  return w.slice(0, REVIEW_WINDOW);
+}
+
+scenario("Exactly the confirmation quota, rest withdrawn, promotes", () => {
+  feed(windowOf(PROMOTION_CONFIRMED, 0));
+  expectRank(`${PROMOTION_CONFIRMED} confirmed`, STARTING_RANK + 1);
 });
 
-scenario("4 confirmed is not enough", () => {
-  feed([C, W, C, W, C, W, C, W]);
-  expectRank("4 confirmed, 4 withdrawn", STARTING_RANK);
+scenario("One short of the quota is not enough", () => {
+  feed(windowOf(PROMOTION_CONFIRMED - 1, 0));
+  expectRank(`${PROMOTION_CONFIRMED - 1} confirmed`, STARTING_RANK);
 });
 
-scenario("One retraction still allows promotion, two does not", () => {
-  feed([C, C, C, C, C, R, W, W]);
-  expectRank("5 confirmed, 1 retracted", STARTING_RANK + 1);
+scenario("The quota survives the maximum allowed retractions", () => {
+  feed(windowOf(PROMOTION_CONFIRMED, PROMOTION_MAX_RETRACTED));
+  expectRank(
+    `${PROMOTION_CONFIRMED} confirmed, ${PROMOTION_MAX_RETRACTED} retracted`,
+    STARTING_RANK + 1
+  );
 });
 
-scenario("Two retractions block promotion", () => {
-  feed([C, C, C, C, C, R, R, W]);
-  expectRank("5 confirmed, 2 retracted", STARTING_RANK);
+scenario("One retraction over the allowance blocks promotion", () => {
+  feed(windowOf(PROMOTION_CONFIRMED, PROMOTION_MAX_RETRACTED + 1));
+  expectRank(
+    `${PROMOTION_CONFIRMED} confirmed, ${PROMOTION_MAX_RETRACTED + 1} retracted`,
+    STARTING_RANK
+  );
 });
 
-scenario("3 retractions demote", () => {
-  feed([R, C, R, C, R, C, C, C]);
-  expectRank("5 confirmed but 3 retracted - demotion wins", STARTING_RANK - 1);
+scenario("Demotion beats promotion when a window qualifies for both", () => {
+  // Only reachable if the two thresholds can be met at once; skip if the
+  // window is too small to hold both.
+  if (PROMOTION_CONFIRMED + DEMOTION_RETRACTED <= REVIEW_WINDOW) {
+    feed(windowOf(PROMOTION_CONFIRMED, DEMOTION_RETRACTED));
+    expectRank("quota met but demotion threshold reached", STARTING_RANK - 1);
+  } else {
+    // Otherwise just check the demotion threshold on its own.
+    feed(windowOf(0, DEMOTION_RETRACTED));
+    expectRank(`${DEMOTION_RETRACTED} retracted`, STARTING_RANK - 1);
+  }
 });
 
 scenario("Withdrawing everything holds rank forever", () => {

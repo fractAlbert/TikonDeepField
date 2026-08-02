@@ -254,6 +254,10 @@ export function StarMap({ region }: { region: Region | null }) {
   }, [placements]);
 
   const hoveredSector = hovered ? sectors.find((s) => s.id === hovered) ?? null : null;
+  // Which signature the cursor is over, if any. Markers don't take pointer
+  // events - the cell underneath does - so this comes from the hovered
+  // sector rather than from the marker itself.
+  const hoveredQuasarId = hovered ? occupantBySector.get(hovered) : undefined;
 
   /** Centre point of a sector's cell, in SVG user units. */
   const centerOf = useMemo(() => {
@@ -817,6 +821,12 @@ export function StarMap({ region }: { region: Region | null }) {
           <div className="flex flex-wrap gap-1.5">
             {quasars.map((q) => {
               const sid = placements[q.id];
+              // Hovering a marker on the dial outlines its chip here, which
+              // is the only way to tell which signature a dot is without
+              // placing or lifting it. Placed chips are dimmed to fade into
+              // the background; the hovered one drops that too, or the
+              // outline would be sitting on something half-faded.
+              const isHovered = hoveredQuasarId === q.id;
               return (
                 <button
                   key={q.id}
@@ -832,7 +842,9 @@ export function StarMap({ region }: { region: Region | null }) {
                     armed === q.id
                       ? "bg-lcars-amber text-black font-semibold"
                       : `bg-lcars-panel text-lcars-ice ${closed ? "" : "hover:bg-white/10"}`
-                  } ${sid && !closed ? "opacity-60" : ""}`}
+                  } ${sid && !closed && !isHovered ? "opacity-60" : ""} ${
+                    isHovered ? "ring-2 ring-lcars-ice" : ""
+                  }`}
                 >
                   <span
                     className="w-2 h-2 rounded-full shrink-0"
