@@ -28,6 +28,9 @@ Retire a number when its item ships rather than renumbering the rest.
 | 10 | Log/Help/Prototypes flick-scroll on a phone — accepted | Design |
 | 11 | Star Map hover readout dead on touch — accepted | Interaction |
 | 12 | No `quasar-type` clues are ever emitted | Gameplay |
+| 13 | Cap active assignments at 3 | Gameplay |
+| 14 | Star Map 50% wider | Design |
+| 15 | Maximize the Star Map (desktop only) | Design |
 
 ## Design
 
@@ -161,6 +164,43 @@ its easiest setting, so building one gets the other most of the way.
 next to the officer profile, and it should be skippable and replayable. Do
 not gate it behind "has never played": people re-read tutorials.
 
+### 14 - Star Map 50% wider
+
+Raised 2026-08-02. The sidebar is `w-[360px]` and the dial inside it is
+capped at `max-w-[260px]`, which is what makes the ring and segment labels
+paint at ~10px and left no room for the quadrant labels to grow past 17
+user units.
+
+The catch is where the width comes from. `main` is only ~500px at 1344px
+wide once the sidebar and both rails have taken their share; another 180px
+of sidebar leaves it around 320px, which is narrower than the Log cards and
+the Station Info tab row are built for. So this is not a one-number change
+— either the rails give up width too, or the panels that live in `main`
+have to cope with less.
+
+Item 15 is the other half of the answer: if the map can be maximised on
+demand, the docked size matters less.
+
+### 15 - Maximize the Star Map (desktop only)
+
+Raised 2026-08-02. A button that expands the Star Map to fill `main`, with
+the dial drawn much larger, and a Back control to return to the docked
+view. Desktop only — below `lg` the map is already a full-width panel of
+its own, so there is nothing to maximise.
+
+Notes for whoever builds it:
+
+- The map must not be **remounted** when it expands. `StarMap` owns
+  placement state and writes it to localStorage; two live instances would
+  fight over the same key, which is the same hazard `useMediaQuery` exists
+  to avoid (see `use-media-query.ts`). Move the existing node, or hide the
+  sidebar and render into `main` from the same place in the tree.
+- The dial scales with its container — `viewBox` is fixed at 440 units, and
+  every label size is in user units — so a larger box makes the labels
+  larger for free. That is the actual point of the feature.
+- The nav rails should stay reachable; maximising the map should not become
+  a mode you can get stuck in.
+
 ### 10 - Log, Help and Prototypes flick-scroll on a phone
 
 They overflow 390x844 by 85px, 41px and 42px and fall back to the
@@ -218,6 +258,32 @@ mechanic - see `instrument-analysis.md`. Short version: a census reads the
 same for everyone, so it lowers the loss rate uniformly and measures
 nothing, while two metered scans leave a careful player at ~1% unsolvable
 and a careless one at ~11%. That spread is what the rank ladder grades.
+
+### 13 - Cap active assignments at 3
+
+Raised 2026-08-02. You can have any number of surveys on the go. Capping it
+at three means starting a fourth requires finishing or letting go of one,
+which is the pressure the filing budget and the rank ladder are already
+built around — a survey you never close costs you nothing today.
+
+It also fixes a problem this session created. Generated regions now survive
+a refresh (`5ebfa7d`), so the Briefing picker lists every unarchived
+survey rather than just the current session's; a cap keeps that list to
+three by construction instead of relying on the player to archive.
+
+Decisions it needs:
+
+- **What counts as active.** Cleanest is "unarchived and not closed" —
+  confirmed, retracted and withdrawn regions are done and should not
+  occupy a slot. That makes the cap a limit on *unfinished* work, which is
+  the thing worth limiting.
+- **What happens at the cap.** Survey New Region should refuse with a
+  reason rather than silently doing nothing, and point at the way out
+  (close one, or withdraw it). Withdrawal already exists as the honest
+  escape and is rank-neutral, so the cap gives it a second job.
+- **Existing saves are over the cap.** Most players will already have more
+  than three open. Do not delete or auto-archive anything — block *new*
+  surveys until they are back under, and say so.
 
 ### 8 - The Star Manifest carries no information
 
