@@ -27,7 +27,7 @@ says it means today.
 | 8 | Mobile menu hub is a wall of fat buttons | Design |
 | 9 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
 | 10 | Star Map hover readout dead on touch, accepted | Interaction |
-| 11 | Quasar science pages in Station Info | Design |
+| 11 | Station Info is unreachable while a survey is active | Interaction |
 
 ## Design
 
@@ -260,23 +260,24 @@ Decisions it needs:
 
 ## Interaction
 
-### 11 - Quasar science pages in Station Info
+### 11 - Station Info is unreachable while a survey is active
 
-Raised 2026-08-02. Station Info explains the station; it says nothing about
-what the station is *for*. Add the science: what a quasar is, why a fixed
-point at that distance is worth anything, and what each of the six
-classifications in `TYPE_CATALOG` actually denotes.
+Found 2026-08-02 while building the quasar science pages. `openStationInfo`
+is handed to `BriefingPanel`, but the only control wired to it lives in
+`NoActiveAssignmentPanel` - so Station Info can be opened only when no
+survey is running. The moment you pick up an assignment, the whole section
+disappears from the app until you file or withdraw.
 
-A few sub-tabs rather than one wall - the panel already wraps its tabs into
-a responsive grid (one row of five on desktop, two of three on a phone),
-and adding entries means revisiting that split rather than just appending.
+That was tolerable when the pages were station lore you read once. It is
+not now: the quasar classifications are reference material, and the moment
+you want them is mid-survey, looking at a type you do not recognise. The
+science pages are currently readable only when you have no reason to want
+them.
 
-Worth getting right because the types are the one part of the fiction the
-mechanics do not currently use: no `quasar-type` clue is ever emitted (item
-3), so a player never learns any signature's type. Prose that explains what
-"Redshift Anomaly" means is the cheapest way to make the catalog feel like
-a catalog while that stays true - and if type clues ever ship, the pages
-are already there to be read.
+Needs a persistent entry point. The right rail already carries Officer,
+Help and Prototypes, which are all non-survey destinations that stay
+available throughout - Station Info belongs in exactly that group, and
+there is room for it.
 
 ### 10 - The star map hover readout is dead on touch
 

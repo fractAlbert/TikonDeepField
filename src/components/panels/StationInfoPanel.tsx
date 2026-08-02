@@ -1,21 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { ButtonColor, SOLID_BG } from "@/lib/lcars-colors";
+import { ButtonColor, SOLID_BG, runShape } from "@/lib/lcars-colors";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { LcarsButton } from "@/components/LcarsButton";
-import { LcarsSegment } from "@/components/LcarsSegment";
 import { OutpostLogo } from "@/components/OutpostLogo";
 import { StationSchematic } from "@/components/StationSchematic";
 import { OUTPOST_NAME } from "@/lib/copy";
 
-type SectionId = "overview" | "size" | "value" | "survey" | "schematic";
+type SectionId = "overview" | "size" | "value" | "survey" | "quasars" | "schematic";
 
 const SECTIONS: { id: SectionId; label: string; color: ButtonColor }[] = [
   { id: "overview", label: "Overview", color: "orange" },
   { id: "size", label: "Size & Crew", color: "amber" },
   { id: "value", label: "Why It Matters", color: "violet" },
   { id: "survey", label: "Survey Process", color: "lilac" },
+  { id: "quasars", label: "Quasars", color: "salmon" },
   { id: "schematic", label: "Schematic", color: "teal" },
 ];
 
@@ -27,16 +27,19 @@ const SECTIONS: { id: SectionId; label: string; color: ButtonColor }[] = [
  * a responsive property and `runShape` returns one answer for one row.
  *
  * Below `lg`: two rows of three, so slots 0 and 3 open a row and 2 and 5
- * close one. At `lg`: a single row of five, so only 0 and 4 are ends and
+ * close one. At `lg`: a single row of six, so only 0 and 5 are ends and
  * everything else is cut flat.
+ *
+ * Six sections divides evenly by three, which is why the unlabelled filler
+ * that used to pad the phone layout is gone - the rows are even on their
+ * own now.
  */
 const SLOT_SHAPES = [
-  "rounded-l-full lg:rounded-l-full",
+  "rounded-l-full",
   "rounded-none",
   "rounded-r-full lg:rounded-none",
   "rounded-l-full lg:rounded-none",
-  "rounded-none lg:rounded-r-full",
-  // Slot 5 is the filler: only ever exists in the mobile grid.
+  "rounded-none",
   "rounded-r-full",
 ];
 
@@ -85,19 +88,17 @@ export function StationInfoPanel({
       )}
 
       {/* A grid rather than wrapped flex rows, so the column count is a
-          single responsive property: three across below `lg`, all five in
-          one row at `lg` and up. The sixth slot is an unlabelled filler
-          that keeps the phone layout two even rows of three rather than a
-          ragged 3+2, and is dropped entirely on desktop where one row
-          needs no padding out.
+          single responsive property: three across below `lg`, all six in
+          one row at `lg` and up. Six divides evenly by three, so the phone
+          layout is two even rows with no filler slot needed.
 
-          `whitespace-nowrap` is deliberately absent. Five labels do not fit
+          `whitespace-nowrap` is deliberately absent. Six labels do not fit
           across `main` on one line - it is only ~500px at 1344px wide, the
-          Star Map sidebar and both rails having taken the rest - so the two
+          Star Map sidebar and both rails having taken the rest - so the
           long ones wrap to a second line and the grid levels every button
           to the same height. The previous layout wrapped into rows to solve
           the same problem; this solves it inside the buttons instead. */}
-      <div className="shrink-0 grid grid-cols-3 lg:grid-cols-5 gap-1">
+      <div className="shrink-0 grid grid-cols-3 lg:grid-cols-6 gap-1">
         {SECTIONS.map((s, i) => (
           <LcarsButton
             key={s.id}
@@ -116,12 +117,6 @@ export function StationInfoPanel({
             {s.label}
           </LcarsButton>
         ))}
-        <LcarsSegment
-          color="ice"
-          shape="block"
-          orientation="horizontal"
-          className={`min-h-11 opacity-25 lg:hidden ${SLOT_SHAPES[SECTIONS.length]}`}
-        />
       </div>
 
       <LcarsPanel title={current.label} accent={SOLID_BG[current.color]} className="flex-1 min-h-0">
@@ -130,6 +125,7 @@ export function StationInfoPanel({
           {section === "size" && <SizeCrewSection />}
           {section === "value" && <WhyItMattersSection />}
           {section === "survey" && <SurveyProcessSection />}
+          {section === "quasars" && <QuasarSection />}
           {section === "schematic" && <SchematicSection key={schematicVisit} />}
         </div>
       </LcarsPanel>
@@ -232,6 +228,163 @@ function SurveyProcessSection() {
         position still exists instead of being handed off to an automated logging system.
       </p>
     </Prose>
+  );
+}
+
+/**
+ * The six classifications in `TYPE_CATALOG` (generate-region.ts), written
+ * out. Kept beside the prose rather than imported from the generator on
+ * purpose: the generator's list is data the puzzle draws from, and this is
+ * editorial copy about it. If a type is ever added there without a note
+ * here, the sub-tab list below simply won't offer it - a visible gap
+ * rather than a crash.
+ *
+ * The names are the station's own working taxonomy, not formal
+ * astrophysics, and the copy says so. What is real: quasars are the
+ * luminous cores of distant galaxies powered by matter falling onto a
+ * supermassive black hole, they are far enough away that their apparent
+ * positions do not measurably shift, and that is exactly why real
+ * astronomers use them to define celestial reference frames.
+ */
+const QUASAR_CLASSES: { id: string; name: string; blurb: string; body: string[] }[] = [
+  {
+    id: "pulsar",
+    name: "Pulsar-Class",
+    blurb: "Output varies on a regular, short cycle.",
+    body: [
+      "A source whose brightness rises and falls on a repeating cycle short enough to catch inside a single observing run. The variation comes from the accretion disc itself - matter piling up and falling in unevenly - not from anything rotating.",
+      "The name is a misnomer and everyone knows it. An actual pulsar is a neutron star, a completely different object on a completely different scale. The label stuck from an early catalogue that guessed wrong, and renaming a classification means reissuing every chart that references it, so it has never been worth the trouble.",
+    ],
+  },
+  {
+    id: "binary",
+    name: "Binary-Class",
+    blurb: "Logs as one source, resolves as two.",
+    body: [
+      "Two sources close enough together that a coarse survey records a single return. Sometimes that is genuinely two active cores in a merging pair of galaxies. More often it is one quasar whose light has been bent around an intervening mass and arrives twice, from slightly different directions - a gravitational lens.",
+      "This is the classification most likely to cause an error in the catalogue rather than in the sky. A double logged as one entry, or one logged as two, propagates to everybody downstream. It is the reason confirmation work exists.",
+    ],
+  },
+  {
+    id: "redshift",
+    name: "Redshift Anomaly",
+    blurb: "A distance estimate that does not fit its neighbours.",
+    body: [
+      "Distance to a quasar is inferred from redshift: the further away it is, the further its light has been stretched toward the red end of the spectrum on the way here. A Redshift Anomaly is a source whose figure does not sit comfortably with everything around it.",
+      "Almost always the explanation is dull - gas between here and there imprinting absorption lines that skew the reading, or a measurement taken through too much interference. Occasionally it is not dull, and those are the entries that get looked at twice.",
+    ],
+  },
+  {
+    id: "rogue",
+    name: "Rogue Emission",
+    blurb: "Strong output, no host anyone can find.",
+    body: [
+      "A source putting out plenty of energy with no identifiable galaxy around it in any imagery on file. Quasars sit at the centre of galaxies, so a quasar without one is a contradiction in terms.",
+      "Usually the host is simply too faint against the glare of its own core, which outshines everything else in the galaxy combined. The classification is an admission of ignorance more than a description - it means the paperwork is incomplete, not that the object is strange.",
+    ],
+  },
+  {
+    id: "relic",
+    name: "Ancient Relic",
+    blurb: "Among the oldest light the station handles.",
+    body: [
+      "Very high redshift, which is to say very far away, which is to say very long ago. The light logged from an Ancient Relic left its source before most of the structure in the surrounding sky had finished forming.",
+      "They are faint and they are difficult, and they are also the most useful reference points there are. A fixed mark is worth more the further off it sits, and nothing on file sits further off than these.",
+    ],
+  },
+  {
+    id: "dormant",
+    name: "Dormant Core",
+    blurb: "The engine has largely stopped.",
+    body: [
+      "The black hole has run out of convenient matter to fall into it and the core has faded. Strictly it is no longer a quasar at all - what remains is the galaxy and a very massive, very quiet object at its centre.",
+      "They stay in the catalogue because position is what the catalogue is for, and the position has not changed. A dormant core is still exactly where it was; it is simply harder to find again if anyone ever loses it.",
+    ],
+  },
+];
+
+function QuasarSection() {
+  const [openClass, setOpenClass] = useState<string | null>(null);
+  const current = QUASAR_CLASSES.find((c) => c.id === openClass) ?? null;
+
+  return (
+    <div className="flex flex-col gap-4 max-w-3xl">
+      <Prose>
+        <p>
+          A quasar is the core of a distant galaxy with a supermassive black hole at the
+          middle of it, pulling in matter fast enough that the infalling material heats and
+          blazes. The result outshines every star in the surrounding galaxy put together,
+          which is the only reason anything this far away is visible at all.
+        </p>
+        <p>
+          Distance is the whole point. These objects are so remote that nothing a ship, a
+          station or a planet can do produces any measurable shift in where they appear to
+          sit. Move across a system, across a sector, across a decade &mdash; a quasar stays
+          put. A
+          nearby star will not do that. That is what makes a confirmed quasar useful as a
+          fixed mark to measure against, and it is why the catalogue is worth the trouble of
+          maintaining.
+        </p>
+        <p>
+          The classifications below are Tikon&apos;s own working taxonomy, not formal
+          astrophysics. They describe how a source behaves and what tends to go wrong when
+          logging it. Assigning one is spectroscopic work done elsewhere; when it has been
+          done, it arrives with the briefing. Your job is the position.
+        </p>
+      </Prose>
+
+      {/* Sub-tabs rather than six more headings: the classifications are
+          reference material you look one thing up in, not a passage read
+          straight through.
+
+          Shaped as a touching run with per-row caps, same as the section
+          tabs above - but held at three columns at *every* width, and at a
+          smaller scale, so it never lines up as a second peer row of six on
+          desktop. Hierarchy comes from size and from all six sharing the
+          section's own salmon rather than each carrying its own colour,
+          which is the reference image's habit of letting colour encode
+          grouping. */}
+      <div className="grid grid-cols-3 gap-1">
+        {QUASAR_CLASSES.map((c, i) => (
+          <LcarsButton
+            key={c.id}
+            color="salmon"
+            shape={runShape(i % 3, 3)}
+            orientation="horizontal"
+            onClick={() => setOpenClass(openClass === c.id ? null : c.id)}
+            className={`min-w-0 min-h-11 px-1.5 md:px-2 text-xs leading-tight ${
+              openClass === c.id ? "" : "opacity-45"
+            }`}
+          >
+            {c.name}
+          </LcarsButton>
+        ))}
+      </div>
+
+      {current ? (
+        /* Nested black sub-panel - the reference image's way of showing
+           that a block belongs to the composition around it rather than
+           sitting beside it. */
+        <div className="rounded-lg bg-black/30 p-4">
+          <div className="lcars-caps text-sm font-bold text-lcars-salmon">{current.name}</div>
+          <div className="text-xs text-lcars-ice/50 mt-0.5 mb-3">{current.blurb}</div>
+          <div className="flex flex-col gap-3 text-sm text-lcars-ice/85 leading-relaxed">
+            {current.body.map((para, i) => (
+              <p key={i}>{para}</p>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-1.5">
+          {QUASAR_CLASSES.map((c) => (
+            <li key={c.id} className="flex flex-wrap gap-x-3 text-sm">
+              <span className="lcars-caps text-lcars-salmon/80 w-36 shrink-0">{c.name}</span>
+              <span className="text-lcars-ice/60 leading-relaxed">{c.blurb}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
