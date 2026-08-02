@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { Region } from "@/lib/puzzle-types";
-import { quasarColorHex } from "@/lib/quasar-colors";
+import { resolveQuasarColor, getQuasarColors } from "@/lib/quasar-colors";
 import { loadStarMapSave } from "@/lib/starmap-storage";
 import {
   EMPTY_LOG,
@@ -276,7 +276,7 @@ function LogEntryCard({
             >
               <span
                 className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: quasarColorHex(i) }}
+                style={{ backgroundColor: resolveQuasarColor(getQuasarColors(), entry.regionId, q.id, i) }}
               />
               {q.designation}
               {outcome && (

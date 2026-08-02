@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Region } from "@/lib/puzzle-types";
 import { buildSectors } from "@/lib/grid";
-import { quasarColorHex } from "@/lib/quasar-colors";
+import { useQuasarColor } from "@/lib/use-quasar-colors";
 import { PANEL_LABELS } from "@/lib/copy";
 import { recordReference } from "@/lib/observations";
 import { LcarsPanel } from "@/components/LcarsShell";
@@ -14,6 +14,7 @@ import { RelativeDistanceScope, ScopeSignature } from "@/components/sweep/Relati
 const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
 
 export function SweepScopePanel({ region, visible }: { region: Region; visible: boolean }) {
+  const colorOf = useQuasarColor(region.id);
   const signatures: ScopeSignature[] = useMemo(
     () =>
       region.quasars.map((q, i) => {
@@ -21,12 +22,12 @@ export function SweepScopePanel({ region, visible }: { region: Region; visible: 
         return {
           id: q.designation,
           label: q.designation,
-          color: quasarColorHex(i),
+          color: colorOf(q.id, i),
           ring: sector.ring,
           seg: sector.seg,
         };
       }),
-    [region]
+    [region, colorOf]
   );
 
   return (

@@ -32,6 +32,7 @@ import { NoActiveAssignmentPanel } from "@/components/NoActiveAssignmentPanel";
 import { StationInfoPanel } from "@/components/panels/StationInfoPanel";
 import { ProfilePanel } from "@/components/panels/ProfilePanel";
 import { OfficerBadge } from "@/components/OfficerBadge";
+import { StationEmblem } from "@/components/StationEmblem";
 import { StationLoadingScreen } from "@/components/StationLoadingScreen";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { GAME_NAME, OUTPOST_NAME, PANEL_LABELS } from "@/lib/copy";
@@ -454,14 +455,20 @@ export function AppShell() {
         )}
 
         {!isMobile && (
-          <NavRail
-            id="nav-rail-utility"
-            items={UTILITY_NAV}
-            activeId={panel}
-            onSelect={handleNavSelect}
-            indicatorSide="left"
-            className="w-28 md:w-36 shrink-0 ml-[48px] max-lg:hidden"
-          />
+          <div className="w-28 md:w-36 shrink-0 min-h-0 flex flex-col ml-[48px] max-lg:hidden">
+            <NavRail
+              id="nav-rail-utility"
+              items={UTILITY_NAV}
+              activeId={panel}
+              onSelect={handleNavSelect}
+              indicatorSide="left"
+              className="shrink-0"
+            />
+            {/* Only with a survey open - on the placeholder the same emblem
+                is already the centrepiece of `main`, and two of them reads
+                as a mistake. */}
+            {!noActiveAssignment && <StationEmblem />}
+          </div>
         )}
       </div>
     </div>

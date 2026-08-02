@@ -3,7 +3,8 @@
 import { useState, useSyncExternalStore } from "react";
 import { Region } from "@/lib/puzzle-types";
 import { buildSectors, orthogonalDistanceSigned } from "@/lib/grid";
-import { quasarColorHex } from "@/lib/quasar-colors";
+import { QUASAR_PALETTE, setQuasarColor } from "@/lib/quasar-colors";
+import { useQuasarColor } from "@/lib/use-quasar-colors";
 import { PANEL_LABELS } from "@/lib/copy";
 import {
   getObservations,
@@ -104,7 +105,9 @@ export function StarManifestPanel({ region }: { region: Region }) {
     () => getObservations(region.id),
     getServerObservations
   );
+  const colorOf = useQuasarColor(region.id);
   const [editing, setEditing] = useState<string | null>(null);
+  const [recolouring, setRecolouring] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
 
   const designationOf = (id: string) =>
@@ -131,7 +134,7 @@ export function StarManifestPanel({ region }: { region: Region }) {
 
         <ul className="flex flex-col gap-2">
           {region.quasars.map((q, i) => {
-            const color = quasarColorHex(i);
+            const color = colorOf(q.id, i);
             const facts = knownFacts(region, q.id);
             // A ring scan is an answer the player paid for, so it sits with
             // the briefing facts rather than with the sweep readings. Only
@@ -177,18 +180,78 @@ export function StarManifestPanel({ region }: { region: Region }) {
                         swept
                       </span>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        playButtonClick();
-                        setDraft(note);
-                        setEditing(isEditing ? null : q.id);
-                      }}
-                      className="ml-auto lcars-caps text-[10px] font-semibold tracking-wide text-lcars-ice bg-white/15 hover:bg-white/25 rounded-full px-2.5 py-0.5 cursor-pointer transition-colors"
-                    >
-                      {note ? "Edit note" : "Note"}
-                    </button>
+                    <span className="ml-auto flex items-center gap-1.5">
+                      {/* Recolour. Two palette entries can land close enough
+                          to be hard to tell apart at blip size - cyan
+                          against sky blue, orange against yellow - and
+                          which pair a region gets is luck. Changing one
+                          here lands everywhere the signature is drawn. */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playButtonClick();
+                          setRecolouring(recolouring === q.id ? null : q.id);
+                        }}
+                        title={`Change the colour of ${q.designation}`}
+                        className={`w-5 h-5 rounded-full shrink-0 cursor-pointer transition-transform hover:scale-110 ${
+                          recolouring === q.id ? "ring-2 ring-lcars-ice" : "ring-1 ring-white/25"
+                        }`}
+                        style={{ backgroundColor: color }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playButtonClick();
+                          setDraft(note);
+                          setEditing(isEditing ? null : q.id);
+                        }}
+                        className="lcars-caps text-[10px] font-semibold tracking-wide text-lcars-ice bg-white/15 hover:bg-white/25 rounded-full px-2.5 py-0.5 cursor-pointer transition-colors"
+                      >
+                        {note ? "Edit note" : "Note"}
+                      </button>
+                    </span>
                   </div>
+
+                  {recolouring === q.id && (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      {QUASAR_PALETTE.map((hex) => {
+                        // Taken by another signature in this region - still
+                        // offered, since two greens the player chose on
+                        // purpose is their business, but marked so the
+                        // clash is not a surprise.
+                        const clash = region.quasars.some(
+                          (other, j) => other.id !== q.id && colorOf(other.id, j) === hex
+                        );
+                        return (
+                          <button
+                            key={hex}
+                            type="button"
+                            title={clash ? "Already used in this region" : undefined}
+                            onClick={() => {
+                              playButtonClick();
+                              setQuasarColor(region.id, q.id, hex);
+                              setRecolouring(null);
+                            }}
+                            className={`w-5 h-5 rounded-full cursor-pointer transition-transform hover:scale-110 ${
+                              hex === color ? "ring-2 ring-lcars-ice" : "ring-1 ring-white/20"
+                            } ${clash ? "opacity-40" : ""}`}
+                            style={{ backgroundColor: hex }}
+                          />
+                        );
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playButtonClick();
+                          setQuasarColor(region.id, q.id, null);
+                          setRecolouring(null);
+                        }}
+                        className="lcars-caps text-[10px] font-semibold tracking-wide text-lcars-ice bg-white/15 hover:bg-white/25 rounded-full px-2.5 py-0.5 cursor-pointer transition-colors"
+                      >
+                        Default
+                      </button>
+                    </div>
+                  )}
 
                   {readings.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-2">

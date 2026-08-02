@@ -11,7 +11,7 @@ import {
   sectorId,
 } from "@/lib/grid";
 import { annularSegmentPath, polarPoint } from "@/lib/polar-geometry";
-import { quasarColorHex } from "@/lib/quasar-colors";
+import { useQuasarColor } from "@/lib/use-quasar-colors";
 import { starMapStorageKey } from "@/lib/starmap-storage";
 import {
   EMPTY_LOG,
@@ -161,16 +161,17 @@ const RULED_OUT_TINT = "rgba(255,107,107,0.05)";
 
 export function StarMap({ region }: { region: Region | null }) {
   const sectors = useMemo(() => buildSectors(), []);
+  const colorOf = useQuasarColor(region?.id ?? "");
   const quasars = useMemo(
     () =>
       region
         ? region.quasars.map((q, i) => ({
             id: q.id,
             designation: q.designation,
-            color: quasarColorHex(i),
+            color: colorOf(q.id, i),
           }))
         : [],
-    [region]
+    [region, colorOf]
   );
 
   const [placements, setPlacements] = useState<Placements>({});

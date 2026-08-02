@@ -16,6 +16,94 @@ const QUASAR_HEX = [
   "#ff9e7a", // coral
 ];
 
+/** The palette itself, for the recolour picker in the Star Manifest. */
+export const QUASAR_PALETTE: readonly string[] = QUASAR_HEX;
+
 export function quasarColorHex(index: number): string {
   return QUASAR_HEX[index % QUASAR_HEX.length];
+}
+
+// ---------------------------------------------------------------------
+// Player overrides
+//
+// The palette above is assigned by position in the region's quasar list, so
+// which colours a region gets is luck. Ten entries against 6-8 signatures
+// means collisions never happen, but *adjacency* does: cyan next to sky
+// blue, or orange next to yellow, is hard to tell apart at blip size - and
+// if those two are the ones you are cross-referencing, the instrument is
+// harder to read than the puzzle warrants.
+//
+// Overrides live here rather than being threaded through as props on
+// purpose. A signature is drawn in seven components; a prop would be
+// forgotten in one of them, and a colour that changes everywhere except the
+// Sweep Scope is worse than not offering the feature.
+
+const STORAGE_KEY = "quasar-isolinear:colors";
+
+/** regionId -> quasarId -> hex */
+type ColorOverrides = Record<string, Record<string, string>>;
+
+const EMPTY: ColorOverrides = Object.freeze({});
+
+let cached: ColorOverrides | null = null;
+const listeners = new Set<() => void>();
+
+function read(): ColorOverrides {
+  if (typeof window === "undefined") return EMPTY;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as ColorOverrides) : EMPTY;
+  } catch {
+    return EMPTY;
+  }
+}
+
+export function subscribeQuasarColors(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+/** Stable reference until an override actually changes. */
+export function getQuasarColors(): ColorOverrides {
+  if (typeof window === "undefined") return EMPTY;
+  if (!cached) cached = read();
+  return cached;
+}
+
+export function getServerQuasarColors(): ColorOverrides {
+  return EMPTY;
+}
+
+/** Pass `null` to drop back to the palette default. */
+export function setQuasarColor(regionId: string, quasarId: string, hex: string | null) {
+  if (typeof window === "undefined") return;
+  const current = getQuasarColors();
+  const forRegion = { ...(current[regionId] ?? {}) };
+  if (hex) forRegion[quasarId] = hex;
+  else delete forRegion[quasarId];
+
+  const next: ColorOverrides = { ...current };
+  if (Object.keys(forRegion).length) next[regionId] = forRegion;
+  else delete next[regionId];
+
+  cached = next;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Storage full or blocked - the session keeps working from cache.
+  }
+  listeners.forEach((fn) => fn());
+}
+
+/**
+ * The colour a signature should be drawn in: the player's choice if they
+ * made one, otherwise its position in the palette.
+ */
+export function resolveQuasarColor(
+  overrides: ColorOverrides,
+  regionId: string,
+  quasarId: string,
+  index: number
+): string {
+  return overrides[regionId]?.[quasarId] ?? quasarColorHex(index);
 }

@@ -27,7 +27,7 @@ says it means today.
 | 8 | Mobile menu hub is a wall of fat buttons | Design |
 | 9 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
 | 10 | Star Map hover readout dead on touch, accepted | Interaction |
-| 11 | Let a player recolour a signature | Interaction |
+| 11 | Quasar science pages in Station Info | Design |
 
 ## Design
 
@@ -260,26 +260,23 @@ Decisions it needs:
 
 ## Interaction
 
-### 11 - Let a player recolour a signature
+### 11 - Quasar science pages in Station Info
 
-Raised 2026-08-02, from play. Colours are assigned by position in the
-region's quasar list, so which two a region gets is luck — and two close
-shades on the signatures you happen to be cross-referencing makes the Sweep
-Scope harder to read than the puzzle warrants. Being able to change one
-when it matters costs the design nothing.
+Raised 2026-08-02. Station Info explains the station; it says nothing about
+what the station is *for*. Add the science: what a quasar is, why a fixed
+point at that distance is worth anything, and what each of the six
+classifications in `TYPE_CATALOG` actually denotes.
 
-The palette is ten entries (`quasar-colors.ts`) against 6-8 signatures per
-region, so collisions are not the problem; adjacency is. `#6fd0e8` cyan and
-`#7ab8ff` sky blue, or `#ffb454` orange and `#f5d35c` yellow, are hard to
-tell apart at blip size.
+A few sub-tabs rather than one wall - the panel already wraps its tabs into
+a responsive grid (one row of five on desktop, two of three on a phone),
+and adding entries means revisiting that split rather than just appending.
 
-Shape it should take: an override store keyed by region and quasar, and a
-single `colorFor(regionId, quasarId, index)` that every call site uses.
-`quasarColorHex(index)` is currently called directly in seven components
-(Star Map, Sweep Scope, Manifest, Log, Ring Scan and both prototypes), so
-the work is routing them through one helper — after which a change lands
-everywhere at once, which is the requirement. Do not thread a colour prop
-down; that is the version that gets missed in one place.
+Worth getting right because the types are the one part of the fiction the
+mechanics do not currently use: no `quasar-type` clue is ever emitted (item
+3), so a player never learns any signature's type. Prose that explains what
+"Redshift Anomaly" means is the cheapest way to make the catalog feel like
+a catalog while that stays true - and if type clues ever ship, the pages
+are already there to be read.
 
 ### 10 - The star map hover readout is dead on touch
 
