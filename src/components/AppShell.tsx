@@ -70,6 +70,17 @@ const PRIMARY_NAV: NavItem[] = [
 // rail's onSelect below.
 const UTILITY_NAV: NavItem[] = [
   { id: "profile", label: "Officer", color: "lilac" },
+  // Station Info used to be reachable only through the emblem on the
+  // no-assignment placeholder, which meant it vanished the moment you
+  // picked up a survey. Fine when the pages were lore you read once; not
+  // fine now they carry the quasar classifications, since the moment you
+  // want those is mid-survey, looking at a type you don't recognise.
+  //
+  // Violet because every colour is already spoken for somewhere, so the
+  // goal is distance from the twin rather than uniqueness: it puts four
+  // slots between this and Sweep Scope in the phone menu's single run, and
+  // leaves the desktop utility rail five distinct colours.
+  { id: "station", label: "Station", color: "violet" },
   { id: "help", label: "Help", color: "ice" },
   { id: "prototypes", label: "Prototypes", color: "teal" },
   { id: "generate", label: PANEL_LABELS.surveyNewRegion, color: "orange" },
@@ -95,9 +106,12 @@ const STARMAP_NAV: NavItem = { id: "starmap", label: "Star Map", color: "amber" 
 const MOBILE_NAV: NavItem[] = [PRIMARY_NAV[0], STARMAP_NAV, ...PRIMARY_NAV.slice(1), ...UTILITY_NAV];
 
 // Panel titles for the phone panel bar. Everything reachable from the menu
-// is titled by the menu entry that opened it, so the two can't drift; only
-// Station Info needs its own, since you get there from Briefing's emblem
-// rather than from the menu.
+// is titled by the menu entry that opened it, so the two can't drift.
+//
+// Station Info is the one deliberate override. It is in the menu now, but
+// the rail has room for "Station" and the panel bar has room for the whole
+// station name - and the emblem on the no-assignment placeholder still
+// opens it too, where the full name is what you'd expect to land on.
 const MOBILE_TITLES: Record<string, string> = {
   ...Object.fromEntries(MOBILE_NAV.map((item) => [item.id, item.label])),
   station: OUTPOST_NAME,
