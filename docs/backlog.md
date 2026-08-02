@@ -8,9 +8,30 @@ place.
 Fixed things don't live here. They go in the doc for the work that fixed
 them (`mobile-comments.md`, `mobile-layout-plan.md`).
 
+## Index
+
+Numbers are stable handles for talking about an item ("let's do 6"). They
+are not a priority order — where one is recommended, the entry says so.
+Retire a number when its item ships rather than renumbering the rest.
+
+| # | item | where |
+| --- | --- | --- |
+| 1 | Distance-matrix view or Star Map scratchpad | Interaction |
+| 2 | Re-tune rank thresholds against the new ~1% floor | `win-conditions.md` |
+| 3 | `generateRegion()` reads rank, so promotion changes the work | Gameplay |
+| 4 | Meter Sweep Scope passes — the rest of the sensor allocation | Gameplay |
+| 5 | Record solvability at generation time | `win-conditions.md` |
+| 6 | Remove the default region (`region` becomes nullable) | Design |
+| 7 | First-run welcome, tutorial region, walk-through | Design |
+| 8 | Star Manifest: give it thematic content or drop it | Gameplay |
+| 9 | Mobile menu hub is a wall of fat buttons | Design |
+| 10 | Log/Help/Prototypes flick-scroll on a phone — accepted | Design |
+| 11 | Star Map hover readout dead on touch — accepted | Interaction |
+| 12 | No `quasar-type` clues are ever emitted | Gameplay |
+
 ## Design
 
-### The mobile menu hub is a wall of fat buttons
+### 9 - The mobile menu hub is a wall of fat buttons
 
 Raised 2026-07-30, on a real phone.
 
@@ -38,7 +59,7 @@ Constraints a redesign has to keep:
 - The panel it leads to is reached by `handleNavSelect`; nothing about the
   navigation model needs to change, only the presentation.
 
-### No default region, with the Log as the way back in
+### 6 - No default region, with the Log as the way back in
 
 Direction agreed 2026-08-01. The app ships with a built-in region as the
 initial active assignment; eventually it should ship with none. A player
@@ -79,7 +100,7 @@ Worth keeping: `noActiveAssignment` already exists and already forces every
 panel to a placeholder, so the states are half-built. But the placeholder
 is not where a new player should land — see below.
 
-### First-run welcome, with a generated tutorial region
+### 7 - First-run welcome, with a generated tutorial region
 
 Direction agreed 2026-08-01, for once the game settles. A first-time
 welcome page: enough to get started, then it generates the opening survey —
@@ -140,7 +161,7 @@ its easiest setting, so building one gets the other most of the way.
 next to the officer profile, and it should be skippable and replayable. Do
 not gate it behind "has never played": people re-read tutorials.
 
-### Log, Help and Prototypes flick-scroll on a phone
+### 10 - Log, Help and Prototypes flick-scroll on a phone
 
 They overflow 390x844 by 85px, 41px and 42px and fall back to the
 hidden-scrollbar scroll inside `main`. That's allowed by the project rules —
@@ -150,7 +171,7 @@ or pagination the way the Survey Log does it) rather than layout.
 
 ## Gameplay
 
-### Win/lose, rank, and the sensor allocation
+### 2, 3, 4, 5 - Win/lose, rank, and the sensor allocation
 
 Lives in **`win-conditions.md`** — the whole design, its build order, and
 the two generation constraints (anchor separation, solvability) it depends
@@ -198,7 +219,7 @@ same for everyone, so it lowers the loss rate uniformly and measures
 nothing, while two metered scans leave a careful player at ~1% unsolvable
 and a careless one at ~11%. That spread is what the rank ladder grades.
 
-### The Star Manifest carries no information
+### 8 - The Star Manifest carries no information
 
 Raised 2026-08-01. It lists every signature by name and colour, and now
 also whatever the briefing pins down (sector, quadrant) after the
@@ -251,7 +272,36 @@ bearing on the shipped scan, but it would change any future census.
 
 ## Interaction
 
-### The star map hover readout is dead on touch
+### 1 — Nowhere to write anything down
+
+**Recommended first.** Solving a region means cross-referencing a 6-8 x 6-8
+distance matrix, and the only way to read it is to cycle the Sweep Scope
+through every reference one at a time and hold the numbers in your head.
+There is nowhere in the app to note anything.
+
+This is the half of "the game is punishing" that no instrument fixed. The
+Ring Scan removed the unwinnable regions; it did nothing about the mental
+load of the winnable ones. A distance-matrix view, or a scratchpad on the
+Star Map, would make the game markedly less punishing **without changing
+the difficulty at all** — which is a claim none of the instrument work
+could make.
+
+Two shapes worth considering:
+
+- **A matrix view.** Signatures down and across, distances in the cells,
+  filled in as you observe them. Closest to what a player is actually
+  building in their head. Risk: it does the bookkeeping *for* you, so it
+  should probably only show readings you have taken rather than the whole
+  true matrix.
+- **A scratchpad on the Star Map.** Free-form notes per region, persisted
+  beside the placements. Less structured, no risk of handing anything
+  over, and much less work.
+
+The Rule Out marks already do a small version of this and are the reason
+the Star Map is usable at all — this is the same idea applied to distances
+rather than positions.
+
+### 11 — The star map hover readout is dead on touch
 
 `StarMap`'s readout uses `onMouseEnter`, which never fires on a touch device,
 so it sits at `--` on a phone for the whole session. Accepted as-is: tapping
