@@ -29,6 +29,7 @@ Retire a number when its item ships rather than renumbering the rest.
 | 11 | Star Map hover readout dead on touch — accepted | Interaction |
 | 12 | No `quasar-type` clues are ever emitted | Gameplay |
 | 13 | Cap active assignments at 3 | Gameplay |
+| 16 | ~~Restart the sweep when the reference changes~~ done 2026-08-02 | Interaction |
 | 14 | Star Map 50% wider | Design |
 | 15 | Maximize the Star Map (desktop only) | Design |
 
