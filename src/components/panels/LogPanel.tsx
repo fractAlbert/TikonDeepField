@@ -2,11 +2,11 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { Region } from "@/lib/puzzle-types";
-import { quasarColorHex } from "@/lib/quasar-colors";
+import { resolveQuasarColor, getQuasarColors } from "@/lib/quasar-colors";
 import { loadStarMapSave } from "@/lib/starmap-storage";
 import {
   EMPTY_LOG,
-  FILING_LIMIT,
+  currentFilingLimit,
   SurveyLogEntry,
   entryOutcome,
   filingsUsed,
@@ -276,7 +276,7 @@ function LogEntryCard({
             >
               <span
                 className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: quasarColorHex(i) }}
+                style={{ backgroundColor: resolveQuasarColor(getQuasarColors(), entry.regionId, q.id, i) }}
               />
               {q.designation}
               {outcome && (
@@ -292,13 +292,29 @@ function LogEntryCard({
           ))}
         </div>
 
+        {/* Only once the region is closed. While it is open, "nobody could
+            have solved this" would decide the survey for the player - the
+            whole point of withdrawal is that they cannot tell. */}
+        {outcome && region.solvability && !region.solvability.withBestScans && (
+          <p className="text-[11px] text-lcars-red/80 mb-1.5">
+            This region could not be resolved. Two positions matched every
+            reading, so no amount of work would have separated them.
+          </p>
+        )}
+        {outcome && region.solvability?.withBestScans === true &&
+          region.solvability.withoutScans === false && (
+            <p className="text-[11px] text-lcars-salmon/70 mb-1.5">
+              This region needed a ring scan aimed at the right signature.
+            </p>
+          )}
+
         <p className="text-[11px] text-lcars-ice/40 font-mono">
           {/* Written as an explicit string because the plain version lost
               its leading space and rendered "3filings used". The original
               "verify attempts" line this replaced had the same bug, so
               it's worth recognising: it shows up when a JSX text node
               wraps across lines and contains an entity like &middot;. */}
-          {placedCount} / {region.quasars.length} placed &middot; {spent} of {FILING_LIMIT}
+          {placedCount} / {region.quasars.length} placed &middot; {spent} of {currentFilingLimit()}
           {" filings used"} &middot; first surveyed {formatDate(entry.firstSurveyedAt)}
           {outcome && entry.closedAt && (
             <>

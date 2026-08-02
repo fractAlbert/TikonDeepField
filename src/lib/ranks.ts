@@ -38,6 +38,18 @@ export interface Rank {
   blurb: string;
   /** What actually changes about the work. */
   duty: string;
+  /**
+   * Filings allowed on a region at this rank. Descending on purpose: a
+   * senior officer gets fewer chances to correct a mistake than a junior
+   * one, so the same care converts to fewer confirmations the higher you
+   * go. See FILINGS_BY_RANK below for why the numbers are these.
+   */
+  filings: number;
+  /**
+   * Whether a filing circles the signatures it got right. Training wheels:
+   * on for everyone except the top of the ladder, where you file blind.
+   */
+  filingMarks: boolean;
 }
 
 export const RANKS: Rank[] = [
@@ -51,6 +63,8 @@ export const RANKS: Rank[] = [
     blurb:
       "Instrument operator. You run the passes and hand the readings to someone else to sign off on.",
     duty: "Draws the station's smallest, most heavily briefed regions - the ones nobody is worried about getting wrong.",
+    filings: 4,
+    filingMarks: true,
   },
   {
     index: 1,
@@ -62,6 +76,8 @@ export const RANKS: Rank[] = [
     blurb:
       "Trusted to classify, not yet trusted to be the only one who did. Your filings are reviewed on the way out.",
     duty: "Regions still run small, with the full briefing allocation.",
+    filings: 4,
+    filingMarks: true,
   },
   {
     index: 2,
@@ -73,6 +89,8 @@ export const RANKS: Rank[] = [
     blurb:
       "The post the station is actually built around. Your signature is the last one a catalog entry gets before it goes out to every ship in the region.",
     duty: "Standard survey load. The rank you were commissioned at.",
+    filings: 3,
+    filingMarks: true,
   },
   {
     index: 3,
@@ -84,6 +102,8 @@ export const RANKS: Rank[] = [
     blurb:
       "You get the regions that came back ambiguous the first time. Nobody double-checks you any more.",
     duty: "Draws larger, thinner-briefed regions - more signatures to place, less handed to you.",
+    filings: 2,
+    filingMarks: true,
   },
   {
     index: 4,
@@ -95,6 +115,8 @@ export const RANKS: Rank[] = [
     blurb:
       "You set what the station works on. The catalog's accuracy is your name on it, region by region.",
     duty: "Draws the fields nobody else has resolved. Full instrument allocation, minimum briefing.",
+    filings: 2,
+    filingMarks: false,
   },
 ];
 
@@ -140,6 +162,48 @@ export const PROMOTION_MAX_RETRACTED = 1;
 export const DEMOTION_RETRACTED = 3;
 
 export const TOP_RANK = RANKS.length - 1;
+
+/**
+ * Filings per rank, lowest first: 4, 4, 3, 2, 2.
+ *
+ * This is the lever the rank ladder was missing. Simulated over 4000
+ * careers (`scripts/tune-rank-thresholds.ts`), a flat budget of 3 let an
+ * average player reach Chief of Survey 84% of the time - barely different
+ * from a careful one at 100% - because nothing about the work changed as
+ * you rose. Scaling the budget separates them (53% against 100%) and is
+ * *more* forgiving at the bottom, taking a careless player's chance of
+ * being relieved from 82% to 62%. The two lowest ranks get four because
+ * they are the ranks you fall to, and the design wants demotion to be a
+ * recovery path rather than a spiral.
+ *
+ * Not 1 at the top, tempting as it sounds. A single filing removes the
+ * cross-check entirely - you would learn the discrepancy count only after
+ * being retracted by it - which deletes a mechanic rather than tightening
+ * one. Two keeps it: one probe, one correction.
+ */
+export function filingsForRank(rank: number): number {
+  // A relieved officer files as a technician would; they are on their way
+  // back to that rung anyway.
+  return rankAt(rank)?.filings ?? RANKS[0].filings;
+}
+
+/**
+ * Does a filing at this rank say *which* signatures were right, or only how
+ * many were wrong?
+ *
+ * On below the top rank. This is the oracle the 2026-07-30 filing rework
+ * removed, reintroduced deliberately and bounded three ways: filings are
+ * budgeted now, the marks come from a frozen snapshot so they cannot be
+ * walked (see StarMap.tsx), and a Chief of Survey does not get them at all.
+ *
+ * It is also more self-limiting than it looks. A board you have not
+ * reasoned about circles almost nothing - 8 signatures across 8 of 40 cells
+ * is about 0.2 expected hits - so filing early to harvest marks costs a
+ * filing and buys noise. They only pay once the work is mostly done.
+ */
+export function showsFilingMarks(rank: number): boolean {
+  return rankAt(rank)?.filingMarks ?? true;
+}
 
 export function rankAt(index: number): Rank | null {
   return RANKS[index] ?? null;

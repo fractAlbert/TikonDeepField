@@ -6,8 +6,8 @@
 // just its id, or it would have nothing left to point to after a refresh.
 
 import { Region } from "./puzzle-types";
-import { SurveyOutcome } from "./ranks";
-import { RankEvent, recordOutcome } from "./player";
+import { SurveyOutcome, filingsForRank } from "./ranks";
+import { RankEvent, getPlayer, recordOutcome } from "./player";
 
 export type SurveyOrigin = "builtin" | "generated";
 
@@ -21,7 +21,23 @@ export type SurveyOrigin = "builtin" | "generated";
  * signatures over 40 sectors, guessing your way in on three tries is not a
  * strategy. Spend all three without confirming and the region is retracted.
  */
-export const FILING_LIMIT = 3;
+export const DEFAULT_FILING_LIMIT = 3;
+
+/**
+ * Filings allowed on a region right now, which depends on the officer's
+ * rank - see `filingsForRank`. A senior officer gets fewer chances to
+ * correct a mistake; a junior one is more easily forgiven.
+ *
+ * Read at the moment it is needed rather than stored on the region. Rank
+ * only changes when a region *closes*, so it cannot move underneath the
+ * region you are filing on. It can differ between two surveys left open
+ * across a promotion, which is correct: the budget is the station's
+ * current expectation of you, not a property of the field.
+ */
+export function currentFilingLimit(): number {
+  if (typeof window === "undefined") return DEFAULT_FILING_LIMIT;
+  return filingsForRank(getPlayer().rank);
+}
 
 /**
  * Targeted ring scans per region. Aim one at a signature and it returns
@@ -156,7 +172,7 @@ export function filingsUsed(entry: SurveyLogEntry): number {
 }
 
 export function filingsRemaining(entry: SurveyLogEntry): number {
-  return Math.max(0, FILING_LIMIT - filingsUsed(entry));
+  return Math.max(0, currentFilingLimit() - filingsUsed(entry));
 }
 
 /**
@@ -265,12 +281,19 @@ export function recordFiling(region: Region, discrepancies: number): FilingResul
   let outcome: SurveyOutcome | null = null;
   let rankEvent: RankEvent | null = null;
   if (solved) outcome = "confirmed";
-  else if (filings >= FILING_LIMIT) outcome = "retracted";
+  else if (filings >= currentFilingLimit()) outcome = "retracted";
 
   if (outcome) ({ rankEvent } = closeEntry(store, spent, region, outcome, now));
 
   commit(store);
-  return { discrepancies, solved, filings, remaining: FILING_LIMIT - filings, outcome, rankEvent };
+  return {
+    discrepancies,
+    solved,
+    filings,
+    remaining: Math.max(0, currentFilingLimit() - filings),
+    outcome,
+    rankEvent,
+  };
 }
 
 /**

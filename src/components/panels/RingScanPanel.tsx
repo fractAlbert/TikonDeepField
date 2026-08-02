@@ -3,7 +3,7 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { Region } from "@/lib/puzzle-types";
 import { RING_COUNT, buildSectors } from "@/lib/grid";
-import { quasarColorHex } from "@/lib/quasar-colors";
+import { useQuasarColor } from "@/lib/use-quasar-colors";
 import { PANEL_LABELS } from "@/lib/copy";
 import {
   EMPTY_LOG,
@@ -37,6 +37,7 @@ const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
  * stuck on is itself the deduction step.
  */
 export function RingScanPanel({ region }: { region: Region }) {
+  const colorOf = useQuasarColor(region.id);
   const log = useSyncExternalStore(subscribeSurveyLog, getSurveyLog, () => EMPTY_LOG);
   const entry = log.find((e) => e.regionId === region.id);
   const scanned = entry ? ringScansUsed(entry) : [];
@@ -48,10 +49,10 @@ export function RingScanPanel({ region }: { region: Region }) {
       region.quasars.map((q, i) => ({
         id: q.id,
         label: q.designation,
-        color: quasarColorHex(i),
+        color: colorOf(q.id, i),
         ring: sectorLookup.get(region.solution[q.id].sector)!.ring,
       })),
-    [region]
+    [region, colorOf]
   );
 
   // Which return is on the dial right now. Never persisted - it is a view

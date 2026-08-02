@@ -54,6 +54,29 @@ The viewport shell never scrolls, at any width. More specifically:
   `runShape` per row, so each row reads as its own bracket. Wrapping a
   single flat run leaves square ends mid-air where the break lands.
 
+### A sub-run is the same run, held smaller and at a fixed column count
+
+When a section needs tabs of its own inside a panel that already has a tab
+run, use the same touching-run language rather than inventing a second
+control style — but distinguish the level three ways:
+
+- **Fixed columns.** The parent run is responsive (three up, six at `lg`).
+  A sub-run stays at three at every width, so it can never line up as a
+  second peer row of six on desktop.
+- **Smaller.** Down a text step, tighter padding. Still `min-h-11`, since
+  the touch floor is not negotiable.
+- **One colour for the whole group**, the section's own accent, with
+  unselected slots dimmed. The reference image uses colour to encode
+  grouping, so six colours here would read as six unrelated destinations
+  instead of one set of siblings.
+
+Per-row caps still apply — `runShape(i % 3, 3)` gives each row its own
+bracket. The expanded body below goes in a black rounded container, which
+is the reference image's nested-sub-panel move and says "this belongs to
+the block above" without drawing a border.
+
+Station Info's Quasars section is the worked example.
+
 ### Below `lg`, navigation is a hub
 
 Phones get a menu of every destination plus a Back button on each panel,
@@ -80,6 +103,9 @@ Implemented:
   one `flex-nowrap` run with `overflow-x-auto`, which scrolled (with a
   visible scrollbar) even on desktop, since `main` is only ~452px at 1280px
   wide against roughly 600px of buttons. Now wrapped into rows of three.
+- Nested sub-runs - Station Info's Quasars section tabs its six
+  classifications with a smaller, fixed-three-column run in the section's
+  own salmon, over a black nested sub-panel. See Project rules above.
 
 Not adopted (deliberately):
 - Terse two/three-letter code labeling convention for nav - would hurt

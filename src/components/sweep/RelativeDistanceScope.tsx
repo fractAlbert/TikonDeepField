@@ -55,11 +55,18 @@ interface PositionedBlip {
 export function RelativeDistanceScope({
   signatures,
   visible,
+  onReference,
 }: {
   signatures: ScopeSignature[];
   /** Whether this scope is actually on screen right now - the sweep clock
       keeps running while hidden (background panel), but sound should not. */
   visible: boolean;
+  /**
+   * Fired for whichever signature is the current reference, including the
+   * one picked by default - every distance from it is on screen, so it
+   * counts as observed whether or not the player clicked to get there.
+   */
+  onReference?: (id: string) => void;
 }) {
   const scopeRef = useRef<HTMLDivElement>(null);
   const sweepLineRef = useRef<HTMLDivElement>(null);
@@ -90,6 +97,28 @@ export function RelativeDistanceScope({
   // fresh each render, so there's no state to keep in sync and no need to
   // "reset" anything when the region changes.
   const ref = signatures.find((s) => s.id === refId) ?? signatures[0];
+
+  // Held in a ref because callers pass an inline arrow, so its identity
+  // changes every render - depending on it directly would fire the effect
+  // below on every render rather than on an actual reference change.
+  const onReferenceRef = useRef(onReference);
+  useEffect(() => {
+    onReferenceRef.current = onReference;
+  }, [onReference]);
+
+  const refId2 = ref?.id;
+  useEffect(() => {
+    if (!refId2) return;
+    onReferenceRef.current?.(refId2);
+    // Restart the sweep from the left on every new reference. Picking a
+    // reference is asking for a reading, and walking in halfway through one
+    // means waiting out the rest of a pass that was measuring something
+    // else. This is the same reasoning AppShell already applies by deferring
+    // the scope's first mount until you actually visit the panel.
+    startTime.current = performance.now();
+    lastCycle.current = -1;
+    pingedThisCycle.current.clear();
+  }, [refId2]);
 
   const blips: PositionedBlip[] = useMemo(() => {
     if (!ref) return [];

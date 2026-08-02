@@ -92,4 +92,13 @@ export interface Region {
   quasars: Quasar[];
   solution: Solution;
   clues: Clue[];
+  /**
+   * Whether the region could be solved at all, assessed once at generation
+   * (see solvability.ts). Optional because built-in regions and anything
+   * generated before this existed have no verdict.
+   *
+   * Never shown while a survey is open - "this one is impossible" would
+   * decide the game for the player. It is for the Log, after the fact.
+   */
+  solvability?: { withoutScans: boolean; withBestScans: boolean };
 }

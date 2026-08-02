@@ -11,11 +11,11 @@ import {
   sectorId,
 } from "@/lib/grid";
 import { annularSegmentPath, polarPoint } from "@/lib/polar-geometry";
-import { quasarColorHex } from "@/lib/quasar-colors";
+import { useQuasarColor } from "@/lib/use-quasar-colors";
 import { starMapStorageKey } from "@/lib/starmap-storage";
 import {
   EMPTY_LOG,
-  FILING_LIMIT,
+  currentFilingLimit,
   entryOutcome,
   filingsUsed,
   getSurveyLog,
@@ -25,7 +25,15 @@ import {
   withdrawSurvey,
 } from "@/lib/survey-log";
 import { RankEvent } from "@/lib/player";
-import { RELIEVED, REVIEW_WINDOW, SurveyOutcome, rankHex, rankTitle } from "@/lib/ranks";
+import {
+  RELIEVED,
+  REVIEW_WINDOW,
+  SurveyOutcome,
+  rankHex,
+  rankTitle,
+  showsFilingMarks,
+} from "@/lib/ranks";
+import { usePlayer } from "@/lib/use-player";
 import { RankInsignia } from "@/components/RankInsignia";
 import {
   playButtonClick,
@@ -153,16 +161,17 @@ const RULED_OUT_TINT = "rgba(255,107,107,0.05)";
 
 export function StarMap({ region }: { region: Region | null }) {
   const sectors = useMemo(() => buildSectors(), []);
+  const colorOf = useQuasarColor(region?.id ?? "");
   const quasars = useMemo(
     () =>
       region
         ? region.quasars.map((q, i) => ({
             id: q.id,
             designation: q.designation,
-            color: quasarColorHex(i),
+            color: colorOf(q.id, i),
           }))
         : [],
-    [region]
+    [region, colorOf]
   );
 
   const [placements, setPlacements] = useState<Placements>({});
@@ -183,7 +192,8 @@ export function StarMap({ region }: { region: Region | null }) {
   const outcome = entry ? entryOutcome(entry) : null;
   const closed = outcome !== null;
   const filingsSpent = entry ? filingsUsed(entry) : 0;
-  const filingsLeft = Math.max(0, FILING_LIMIT - filingsSpent);
+  const filingLimit = currentFilingLimit();
+  const filingsLeft = Math.max(0, filingLimit - filingsSpent);
 
   // A rank change is announced on the filing that caused it, which is the
   // one moment it's guaranteed to be looked at. The profile panel is the
@@ -277,6 +287,10 @@ export function StarMap({ region }: { region: Region | null }) {
   // and holds the state being painted rather than "toggle" - so sweeping
   // back over a cell you just marked leaves it marked, instead of
   // flickering it on and off as the pointer crosses.
+  // Rank decides whether a filing names the signatures it got right.
+  const { player } = usePlayer();
+  const rank = player.rank;
+
   const [paintTarget, setPaintTarget] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -651,13 +665,28 @@ export function StarMap({ region }: { region: Region | null }) {
             const sid = placements[q.id];
             if (!sid) return null;
             const p = centerOf(sid);
-            // Confirmation rings only ever appear on a solved region, where
-            // every marker is correct and the ring tells you nothing you
-            // don't already know. Marking them per-signature on a *failed*
-            // filing is what made the map an oracle: it answered "is this
-            // one right?" for each cell independently, which is the whole
-            // puzzle. A failed filing returns a count and nothing else.
-            const confirmed = currentFiling?.solved ?? false;
+            // A ring means "this one was right in the filing you made".
+            //
+            // On a solved region that is every marker, and says nothing you
+            // don't know. On a failed one it is the concession added on
+            // 2026-08-02: below the top rank, a filing tells you which
+            // signatures it got right, not just how many it got wrong.
+            //
+            // What keeps it from being the old oracle is where the answer
+            // comes from. `filing` is a frozen snapshot, and a mark is only
+            // drawn while that signature still sits where the snapshot left
+            // it - so moving a marker drops its own mark and cannot make a
+            // new one appear. You cannot walk a marker around and watch the
+            // verdict follow; the only way to re-test is to spend another
+            // filing. Markers you have *not* touched keep their verdict,
+            // which is the part that makes it usable.
+            const markedRight =
+              !!filing &&
+              showsFilingMarks(rank) &&
+              placements[q.id] === filing.placements[q.id] &&
+              !!region &&
+              filing.placements[q.id] === region.solution[q.id]?.sector;
+            const confirmed = (currentFiling?.solved ?? false) || markedRight;
             return (
               <g key={q.id} style={{ pointerEvents: "none" }}>
                 <circle cx={p.x} cy={p.y} r={7} fill={q.color} filter="url(#quasar-glow)" />
@@ -915,7 +944,7 @@ export function StarMap({ region }: { region: Region | null }) {
               <>
                 {" · "}
                 <span className={filingsLeft === 1 ? "text-lcars-salmon" : undefined}>
-                  {filingsLeft} of {FILING_LIMIT} filings left
+                  {filingsLeft} of {filingLimit} filings left
                 </span>
               </>
             )}

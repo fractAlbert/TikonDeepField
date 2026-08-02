@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { regions as builtInRegions } from "@/data/regions";
 import { generateRegion } from "@/lib/generate-region";
+import { assessSolvability } from "@/lib/solvability";
 import { Region } from "@/lib/puzzle-types";
 import { BUTTON_COLORS, ButtonColor } from "@/lib/lcars-colors";
 import {
@@ -31,6 +32,7 @@ import { NoActiveAssignmentPanel } from "@/components/NoActiveAssignmentPanel";
 import { StationInfoPanel } from "@/components/panels/StationInfoPanel";
 import { ProfilePanel } from "@/components/panels/ProfilePanel";
 import { OfficerBadge } from "@/components/OfficerBadge";
+import { StationEmblem } from "@/components/StationEmblem";
 import { StationLoadingScreen } from "@/components/StationLoadingScreen";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { GAME_NAME, OUTPOST_NAME, PANEL_LABELS } from "@/lib/copy";
@@ -231,7 +233,11 @@ export function AppShell() {
     if (id === "generate") {
       // Generate immediately (it's fast either way) but hold the reveal
       // behind a deliberate delay - the loading screen is purely flavor.
-      const generated = generateRegion();
+      // Assessed here rather than inside generateRegion: the analysis
+      // scripts generate regions precisely to measure solvability, so
+      // handing them a verdict would be circular. Costs about 0.4ms.
+      const raw = generateRegion();
+      const generated: Region = { ...raw, solvability: assessSolvability(raw) };
       setGenerating(true);
       selectPanel("briefing");
       setTimeout(() => {
@@ -449,14 +455,20 @@ export function AppShell() {
         )}
 
         {!isMobile && (
-          <NavRail
-            id="nav-rail-utility"
-            items={UTILITY_NAV}
-            activeId={panel}
-            onSelect={handleNavSelect}
-            indicatorSide="left"
-            className="w-28 md:w-36 shrink-0 ml-[48px] max-lg:hidden"
-          />
+          <div className="w-28 md:w-36 shrink-0 min-h-0 flex flex-col ml-[48px] max-lg:hidden">
+            <NavRail
+              id="nav-rail-utility"
+              items={UTILITY_NAV}
+              activeId={panel}
+              onSelect={handleNavSelect}
+              indicatorSide="left"
+              className="shrink-0"
+            />
+            {/* Only with a survey open - on the placeholder the same emblem
+                is already the centrepiece of `main`, and two of them reads
+                as a mistake. */}
+            {!noActiveAssignment && <StationEmblem />}
+          </div>
         )}
       </div>
     </div>

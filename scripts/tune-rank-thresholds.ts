@@ -80,38 +80,67 @@ function assertMatchesShipped() {
 interface Player {
   label: string;
   unsolvable: number;
-  solveRate: number;
+  /**
+   * Chance of getting the whole board right on *one* filing attempt, given
+   * the region is solvable. The chance of confirming a region is then
+   * 1-(1-accuracy)^filings, which is what makes the filing budget a lever:
+   * fewer attempts means fewer chances to correct a near-miss.
+   *
+   * Chosen so that at the current flat budget of 3 these reproduce the
+   * solve rates the earlier version of this script assumed - 0.55, 0.75
+   * and 0.92 - so the two are comparable.
+   */
+  accuracy: number;
   discipline: number;
 }
 
 const PLAYERS: Player[] = [
-  { label: "careless", unsolvable: 0.11, solveRate: 0.55, discipline: 0.3 },
-  { label: "average", unsolvable: 0.05, solveRate: 0.75, discipline: 0.6 },
-  { label: "careful", unsolvable: 0.01, solveRate: 0.92, discipline: 0.85 },
+  { label: "careless", unsolvable: 0.11, accuracy: 0.234, discipline: 0.3 },
+  { label: "average", unsolvable: 0.05, accuracy: 0.37, discipline: 0.6 },
+  { label: "careful", unsolvable: 0.01, accuracy: 0.57, discipline: 0.85 },
 ];
 
 /**
- * How much harder a region gets per rank above the starting one, if rank
- * ever drives generation (backlog item 3). Zero reproduces today, where a
- * Chief of Survey draws exactly the same regions as a technician.
+ * Filings allowed at each rank, index 0 = Survey Technician. A flat 3 is
+ * today. Anything descending is the proposal: a senior officer gets fewer
+ * chances to correct a mistake than a junior one.
  */
-const DIFFICULTY_PER_RANK = 0.06;
+type FilingLadder = number[];
+const FLAT: FilingLadder = [3, 3, 3, 3, 3];
+const LADDERS: { label: string; filings: FilingLadder }[] = [
+  { label: "flat 3 (today)", filings: FLAT },
+  { label: "4 4 3 2 2", filings: [4, 4, 3, 2, 2] },
+  { label: "4 3 3 2 1", filings: [4, 3, 3, 2, 1] },
+  { label: "3 3 2 2 1", filings: [3, 3, 2, 2, 1] },
+];
 
-function playRegion(p: Player, rank: number, difficultyPerRank: number): SurveyOutcome {
+function playRegion(
+  p: Player,
+  rank: number,
+  difficultyPerRank: number,
+  filings: FilingLadder
+): SurveyOutcome {
   const step = Math.max(0, rank - STARTING_RANK) * difficultyPerRank;
   const unsolvable = p.unsolvable + step * 0.5;
-  const solveRate = p.solveRate - step;
+  const accuracy = Math.max(0.02, p.accuracy - step);
+  const attempts = filings[Math.max(0, Math.min(filings.length - 1, rank))];
+  const solveRate = 1 - Math.pow(1 - accuracy, attempts);
   const solvable = Math.random() >= unsolvable;
   if (solvable && Math.random() < solveRate) return "confirmed";
   return Math.random() < p.discipline ? "withdrawn" : "retracted";
 }
 
 /** One career under one threshold set; returns the final rank. */
-function runCareer(p: Player, t: Thresholds, difficultyPerRank = 0): number {
+function runCareer(
+  p: Player,
+  t: Thresholds,
+  difficultyPerRank = 0,
+  filings: FilingLadder = FLAT
+): number {
   let rank = STARTING_RANK;
   let window: SurveyOutcome[] = [];
   for (let i = 0; i < REGIONS_PER_CAREER; i++) {
-    window.push(playRegion(p, rank, difficultyPerRank));
+    window.push(playRegion(p, rank, difficultyPerRank, filings));
     if (rank === RELIEVED) continue;
     const v = verdict(window, t);
     if (v === "promote" || v === "demote") {
@@ -125,9 +154,9 @@ function runCareer(p: Player, t: Thresholds, difficultyPerRank = 0): number {
   return rank;
 }
 
-function profile(p: Player, t: Thresholds, difficultyPerRank = 0) {
+function profile(p: Player, t: Thresholds, difficultyPerRank = 0, filings: FilingLadder = FLAT) {
   const ranks: number[] = [];
-  for (let i = 0; i < CAREERS; i++) ranks.push(runCareer(p, t, difficultyPerRank));
+  for (let i = 0; i < CAREERS; i++) ranks.push(runCareer(p, t, difficultyPerRank, filings));
   const mean = ranks.reduce((a, b) => a + b, 0) / ranks.length;
   const top = ranks.filter((r) => r === TOP_RANK).length / ranks.length;
   const off = ranks.filter((r) => r === RELIEVED).length / ranks.length;
@@ -171,21 +200,23 @@ console.log(
     `starting at ${STARTING_RANK} ${rankTitle(STARTING_RANK)}.`
 );
 
-// The table above says the thresholds barely separate competent players -
-// everyone able to clear the bar saturates at the top, because the work
-// never gets harder. Backlog item 3 (rank drives generation) is the thing
-// that would change that, so measure whether it actually does.
-console.log(
-  `\n\nSame thresholds, but with regions getting harder per rank ` +
-    `(backlog item 3, ${DIFFICULTY_PER_RANK} per step):\n`
-);
+// The tables above say the thresholds barely separate competent players -
+// everyone able to clear the bar saturates at the top, because nothing
+// about the work changes as you rise. Scaling the *filing budget* with rank
+// is the cheapest way to change that: a senior officer gets fewer chances
+// to correct a near-miss, so the same accuracy converts to fewer
+// confirmations. Does that create an equilibrium at the top, or just a
+// slower climb?
+console.log(`
+
+Filings per rank, at the shipped thresholds:
+`);
 console.log(head);
 console.log("-".repeat(head.length));
-for (const t of candidates) {
-  const label = `${t.promoteConfirmed} of ${t.window} / ${t.demoteRetracted}`;
+for (const ladder of LADDERS) {
   const cells = PLAYERS.map((p) => {
-    const { mean, top, off } = profile(p, t, DIFFICULTY_PER_RANK);
+    const { mean, top, off } = profile(p, SHIPPED, 0, ladder.filings);
     return `${mean.toFixed(2)} top${(top * 100).toFixed(0).padStart(3)}% off${(off * 100).toFixed(0).padStart(3)}%`.padStart(22);
   });
-  console.log(label.padEnd(22) + cells.join(""));
+  console.log(ladder.label.padEnd(22) + cells.join(""));
 }
