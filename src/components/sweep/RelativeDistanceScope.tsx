@@ -55,11 +55,18 @@ interface PositionedBlip {
 export function RelativeDistanceScope({
   signatures,
   visible,
+  onReference,
 }: {
   signatures: ScopeSignature[];
   /** Whether this scope is actually on screen right now - the sweep clock
       keeps running while hidden (background panel), but sound should not. */
   visible: boolean;
+  /**
+   * Fired for whichever signature is the current reference, including the
+   * one picked by default - every distance from it is on screen, so it
+   * counts as observed whether or not the player clicked to get there.
+   */
+  onReference?: (id: string) => void;
 }) {
   const scopeRef = useRef<HTMLDivElement>(null);
   const sweepLineRef = useRef<HTMLDivElement>(null);
@@ -90,6 +97,10 @@ export function RelativeDistanceScope({
   // fresh each render, so there's no state to keep in sync and no need to
   // "reset" anything when the region changes.
   const ref = signatures.find((s) => s.id === refId) ?? signatures[0];
+
+  useEffect(() => {
+    if (ref) onReference?.(ref.id);
+  }, [ref, onReference]);
 
   const blips: PositionedBlip[] = useMemo(() => {
     if (!ref) return [];

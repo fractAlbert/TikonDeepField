@@ -5,6 +5,7 @@ import { Region } from "@/lib/puzzle-types";
 import { buildSectors } from "@/lib/grid";
 import { quasarColorHex } from "@/lib/quasar-colors";
 import { PANEL_LABELS } from "@/lib/copy";
+import { recordReference } from "@/lib/observations";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { RelativeDistanceScope, ScopeSignature } from "@/components/sweep/RelativeDistanceScope";
 
@@ -40,7 +41,17 @@ export function SweepScopePanel({ region, visible }: { region: Region; visible: 
           doesn&apos;t render at all. Switch reference to reveal a different
           set.
         </p>
-        <RelativeDistanceScope signatures={signatures} visible={visible} />
+        {/* The scope keys its signatures by designation; the observation
+            store keys by quasar id. They are the same string for generated
+            regions but not guaranteed to be, so map rather than assume. */}
+        <RelativeDistanceScope
+          signatures={signatures}
+          visible={visible}
+          onReference={(designation) => {
+            const quasar = region.quasars.find((q) => q.designation === designation);
+            if (quasar) recordReference(region.id, quasar.id);
+          }}
+        />
       </LcarsPanel>
     </div>
   );
