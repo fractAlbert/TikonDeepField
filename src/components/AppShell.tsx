@@ -5,7 +5,13 @@ import { regions as builtInRegions } from "@/data/regions";
 import { generateRegion } from "@/lib/generate-region";
 import { Region } from "@/lib/puzzle-types";
 import { BUTTON_COLORS, ButtonColor } from "@/lib/lcars-colors";
-import { EMPTY_LOG, getSurveyLog, subscribeSurveyLog, touchSurvey } from "@/lib/survey-log";
+import {
+  EMPTY_LOG,
+  getSurveyLog,
+  setArchived,
+  subscribeSurveyLog,
+  touchSurvey,
+} from "@/lib/survey-log";
 import { loadActiveRegionId, saveActiveRegionId } from "@/lib/active-region";
 import { unlockAudio } from "@/lib/sound";
 import { BELOW_LG, useMediaQuery } from "@/lib/use-media-query";
@@ -242,6 +248,23 @@ export function AppShell() {
     selectPanel("station");
   }
 
+  /**
+   * Pick a survey back up from the Log. Distinct from previewing it, which
+   * is what clicking the card does and deliberately leaves the active
+   * survey alone.
+   *
+   * Un-archives on the way through, because archived means "hidden from
+   * the Briefing picker" and that is also what `noActiveAssignment` keys
+   * off - resuming an archived region without this would make it active
+   * and then show the no-assignment placeholder instead of it.
+   */
+  function resumeRegion(target: Region) {
+    setArchived(target.id, false);
+    setRegionId(target.id);
+    setLogPreviewRegion(null);
+    selectPanel("briefing");
+  }
+
   // Archiving the active region leaves nothing meaningful to show it as -
   // browsing the Log tab is an intentional exception, since a previewed
   // entry may itself be archived without that meaning "nothing is active."
@@ -405,6 +428,7 @@ export function AppShell() {
               activeRegionId={region.id}
               previewRegionId={logPreviewRegion?.id ?? null}
               onPreviewRegion={setLogPreviewRegion}
+              onResumeRegion={resumeRegion}
             />
           )}
           {panel === "profile" && <ProfilePanel />}

@@ -45,11 +45,14 @@ export function LogPanel({
   activeRegionId,
   previewRegionId,
   onPreviewRegion,
+  onResumeRegion,
 }: {
   builtInRegions: Region[];
   activeRegionId: string;
   previewRegionId: string | null;
   onPreviewRegion: (region: Region) => void;
+  /** Make this survey the active one and go to its briefing. */
+  onResumeRegion: (region: Region) => void;
 }) {
   const entries = useSyncExternalStore(subscribeSurveyLog, getSurveyLog, () => EMPTY_LOG);
   const [page, setPage] = useState(0);
@@ -67,7 +70,8 @@ export function LogPanel({
         <p className="text-sm text-lcars-ice/70 leading-relaxed mb-4">
           Every region survey you&apos;ve opened, with its progress. Click an
           entry to load it into the Star Map for review without changing your
-          active survey. Archiving clears a survey from the Briefing
+          active survey; <strong className="text-lcars-teal">Resume</strong>{" "}
+          switches to it properly. Archiving clears a survey from the Briefing
           panel&apos;s selection row without deleting its history here.
         </p>
 
@@ -87,6 +91,7 @@ export function LogPanel({
                   isActive={entry.regionId === activeRegionId}
                   isPreviewed={entry.regionId === previewRegionId}
                   onPreviewRegion={onPreviewRegion}
+                  onResumeRegion={onResumeRegion}
                 />
               ))}
             </ul>
@@ -129,12 +134,14 @@ function LogEntryCard({
   isActive,
   isPreviewed,
   onPreviewRegion,
+  onResumeRegion,
 }: {
   entry: SurveyLogEntry;
   builtInRegions: Region[];
   isActive: boolean;
   isPreviewed: boolean;
   onPreviewRegion: (region: Region) => void;
+  onResumeRegion: (region: Region) => void;
 }) {
   const region = resolveEntryRegion(entry, builtInRegions);
   if (!region) return null;
@@ -181,6 +188,26 @@ function LogEntryCard({
             </span>
           )}
 
+          {/* Resume is the way back into a survey, as distinct from
+              clicking the card, which only previews it. Offered on open
+              regions you aren't already in: a closed one has a read-only
+              board, so making it active would replace the game you're
+              playing with a finished one for no gain - preview shows it
+              just as well. */}
+          {!isActive && !outcome && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                playButtonClick();
+                onResumeRegion(region);
+              }}
+              className="ml-auto lcars-caps text-[10px] font-semibold tracking-wide text-black bg-lcars-teal hover:bg-lcars-ice rounded-full px-2.5 py-0.5 cursor-pointer transition-colors"
+            >
+              Resume
+            </button>
+          )}
+
           <button
             type="button"
             onClick={(e) => {
@@ -188,7 +215,9 @@ function LogEntryCard({
               playButtonClick();
               setArchived(entry.regionId, !entry.archived);
             }}
-            className="ml-auto lcars-caps text-[10px] font-semibold tracking-wide text-lcars-ice bg-white/15 hover:bg-white/25 rounded-full px-2.5 py-0.5 cursor-pointer transition-colors"
+            className={`lcars-caps text-[10px] font-semibold tracking-wide text-lcars-ice bg-white/15 hover:bg-white/25 rounded-full px-2.5 py-0.5 cursor-pointer transition-colors ${
+              !isActive && !outcome ? "" : "ml-auto"
+            }`}
           >
             {entry.archived ? "Restore" : "Archive"}
           </button>
