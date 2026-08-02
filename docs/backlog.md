@@ -248,15 +248,18 @@ Two things make the proposal different from what was removed:
   gives the ladder something to change about the *work* rather than the
   label.
 
-It is still a large concession, so size it deliberately. Knowing which
-markers are wrong reduces the region to permuting only those, which with
-two filings left is a much smaller search than the count alone allows. Two
-ways to bound it if it proves too strong:
+**It is more self-limiting than it looks.** The obvious exploit is to file
+a garbage board immediately and harvest the marks, since a wrong filing
+that is not your third records nothing against your rank — it costs a
+filing and nothing else. That does not pay: a randomly placed board gets
+about **0.2 signatures right** (8 signatures across 8 of 40 cells), so a
+speculative filing circles nothing and has spent a third of the budget.
 
-- Only on the **first** filing of a region, so the information arrives
-  before the endgame rather than during it.
-- Circle a **count per ring or quadrant** rather than per signature — still
-  actionable, still not a per-cell answer.
+The marks are only worth anything on a board you have already reasoned
+out, which is exactly when a player deserves confirmation. So it probably
+needs no extra bounding. If it does prove too strong in play, the least
+damaging limit is circling a **count per ring or quadrant** rather than per
+signature — still actionable, still not a per-cell answer.
 
 **Implementation note, and it is the important one.** The marks must come
 from the frozen `Filing` snapshot in `StarMap.tsx`, never from live
