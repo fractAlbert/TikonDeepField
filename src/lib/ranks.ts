@@ -113,8 +113,30 @@ export const RELIEVED = -1;
  * of them should cost you the post.
  */
 export const REVIEW_WINDOW = 8;
-export const PROMOTION_CONFIRMED = 5;
+/**
+ * Raised from 5 to 6 on 2026-08-01, when the Ring Scan shipped.
+ *
+ * 5 was chosen against an ~81% ceiling - roughly one region in five could
+ * not be solved by anyone - which made it about 77% of what was actually
+ * achievable. Two metered ring scans took that ceiling to ~99% for careful
+ * play (docs/instrument-analysis.md), so the same 77% of achievable is now
+ * ~6.1 of 8.
+ *
+ * `scripts/tune-rank-thresholds.ts` simulates careers against this logic.
+ * Be warned that it also shows the thresholds are a *weak* lever: every
+ * player who can clear the bar at all eventually does, because attempts are
+ * unlimited and the window resets on promotion. What decides the top of the
+ * ladder is whether the work gets harder with rank, not this number.
+ */
+export const PROMOTION_CONFIRMED = 6;
 export const PROMOTION_MAX_RETRACTED = 1;
+/**
+ * Left at 3 deliberately. Raising it to 4 takes a careless player's chance
+ * of being relieved from ~77% to ~41%, which sounds closer to the "rare"
+ * the design asks for - but the player it spares is one who never
+ * withdraws, files a wrong classification instead, and does it repeatedly.
+ * Being relieved is the game teaching that lesson, so it should land.
+ */
 export const DEMOTION_RETRACTED = 3;
 
 export const TOP_RANK = RANKS.length - 1;

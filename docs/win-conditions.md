@@ -334,8 +334,44 @@ Three consequences, and the third is the important one:
    — rather than the generator's luck. That is precisely what the review
    window was built to measure, and it only became true with this change.
 
-The thresholds have not been re-tuned against the new numbers. They should
-be, once there is play data.
+**Re-tuned 2026-08-01.** `PROMOTION_CONFIRMED` went 5 → 6. Five was about
+77% of what was achievable against the old ~81% ceiling; the same fraction
+of a ~99% ceiling is ~6.1 of 8. `DEMOTION_RETRACTED` stays at 3 — raising
+it to 4 takes a careless player's chance of being relieved from ~77% to
+~41%, but the player that spares is one who never withdraws and files a
+wrong classification instead, repeatedly. Being relieved is the game
+teaching that lesson.
+
+### The thresholds are a weak lever, and this is the interesting part
+
+`scripts/tune-rank-thresholds.ts` simulates careers against the shipped
+review logic (with a self-check that its mirror of that logic still
+agrees). Three player profiles, 4000 careers each, 60 regions per career.
+Mean final rank, on a scale where −1 is relieved and 4 is Chief of Survey:
+
+| promote / demote | careless | average | careful |
+| --- | ---: | ---: | ---: |
+| 5 of 8 / 3 *(old)* | −0.47 | 3.85 | 4.00 |
+| **6 of 8 / 3** *(now)* | −0.66 | 3.78 | 4.00 |
+| 7 of 8 / 3 | −0.87 | 3.48 | 4.00 |
+| 6 of 8 / 4 | 0.25 | 3.96 | 4.00 |
+
+Read the last column. **A careful player reaches the top under every
+threshold tested**, including 7 of 8. Moving the promotion bar barely moves
+anyone except the average player, and the demotion bar only really governs
+the careless one.
+
+That is structural, not a bad choice of number: attempts are unlimited and
+the window resets on promotion, so any player whose confirm rate gives a
+non-zero chance of clearing the bar will eventually string together a
+window that does. No threshold fixes that.
+
+What would: **making the work harder as rank rises** — the `duty` lines on
+the ladder already promise it, and nothing implements it. Simulating a
+difficulty gradient of 0.06 per rank barely dented saturation (careful
+still tops out 96–100%), so it would need to be considerably steeper than
+that to create a real equilibrium where holding Chief of Survey is work.
+Until then the top of the ladder is a terminus rather than a position.
 
 ### Consequences for rank (written against the old ~19% floor)
 

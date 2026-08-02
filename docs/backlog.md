@@ -17,7 +17,7 @@ Retire a number when its item ships rather than renumbering the rest.
 | # | item | where |
 | --- | --- | --- |
 | 1 | Distance-matrix view or Star Map scratchpad | Interaction |
-| 2 | Re-tune rank thresholds against the new ~1% floor | `win-conditions.md` |
+| 2 | ~~Re-tune rank thresholds~~ done; the real lever is 3 | `win-conditions.md` |
 | 3 | `generateRegion()` reads rank, so promotion changes the work | Gameplay |
 | 4 | Meter Sweep Scope passes — the rest of the sensor allocation | Gameplay |
 | 5 | Record solvability at generation time | `win-conditions.md` |
