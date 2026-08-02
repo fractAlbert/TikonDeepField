@@ -53,18 +53,18 @@ quietly implies surveys arrive from somewhere.
 
 Two things block it, and only the first is obvious.
 
-**1. The Log can only preview, never resume.** Clicking an entry sets
-`logPreviewRegion`, which is explicitly *not* activation — the Star Map
-shows it for review and leaving the panel drops back to the real active
-survey. That was the right call when a built-in was always active; it is
-exactly wrong if the Log is meant to be how you get back into a game.
-Needs a distinct "resume" action, kept separate from preview so reviewing
-a finished region doesn't yank you out of the one you are playing.
+**1. ~~The Log can only preview, never resume.~~ Done 2026-08-01.** Log
+entries carry a **Resume** action now, kept separate from the card click so
+previewing a finished region still doesn't pull you out of the game you are
+playing. Offered only on open regions you are not already in — a closed one
+has a read-only board, so activating it would swap a finished survey in for
+your live one and gain nothing preview doesn't already give.
 
-**This one is worth doing on its own**, before any of the rest. It is
-useful today: generated regions now survive a refresh, so there are real
-surveys in the Log with no way to return to them except the Briefing
-picker.
+Resuming un-archives on the way through, and that is not optional.
+"Archived" means hidden from the Briefing picker, and it is the same flag
+`noActiveAssignment` keys off — so without it, resuming an archived region
+made it active and then rendered the no-assignment placeholder instead of
+the region.
 
 **2. `region` becomes nullable everywhere.** `AppShell` resolves it as
 `regions.find(...) ?? regions[0]`, which assumes the array is never empty.
