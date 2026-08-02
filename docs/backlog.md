@@ -38,6 +38,108 @@ Constraints a redesign has to keep:
 - The panel it leads to is reached by `handleNavSelect`; nothing about the
   navigation model needs to change, only the presentation.
 
+### No default region, with the Log as the way back in
+
+Direction agreed 2026-08-01. The app ships with a built-in region as the
+initial active assignment; eventually it should ship with none. A player
+starts empty, surveys their first region, and the Log becomes the place
+they see what they have and pick one up again.
+
+The onboarding argument is the good part: an empty first screen plus the
+Log's own copy already reads as instruction — "click an entry to load it",
+"archiving clears a survey from the Briefing panel's selection row". Making
+that the deliberate first-run path is better than a built-in region that
+quietly implies surveys arrive from somewhere.
+
+Two things block it, and only the first is obvious.
+
+**1. The Log can only preview, never resume.** Clicking an entry sets
+`logPreviewRegion`, which is explicitly *not* activation — the Star Map
+shows it for review and leaving the panel drops back to the real active
+survey. That was the right call when a built-in was always active; it is
+exactly wrong if the Log is meant to be how you get back into a game.
+Needs a distinct "resume" action, kept separate from preview so reviewing
+a finished region doesn't yank you out of the one you are playing.
+
+**This one is worth doing on its own**, before any of the rest. It is
+useful today: generated regions now survive a refresh, so there are real
+surveys in the Log with no way to return to them except the Briefing
+picker.
+
+**2. `region` becomes nullable everywhere.** `AppShell` resolves it as
+`regions.find(...) ?? regions[0]`, which assumes the array is never empty.
+Remove the built-ins and a first run has `region === undefined`, so
+`touchSurvey(region)` throws, `logPreviewRegion.id !== region.id` throws,
+and `RingScanPanel`/`StarManifestPanel` — which take `region: Region`, not
+`Region | null` — have nothing to render. `StarMapPanel` already accepts
+null and is the model to follow. This is a real refactor rather than a
+deletion, and it is the actual cost of the change.
+
+Worth keeping: `noActiveAssignment` already exists and already forces every
+panel to a placeholder, so the states are half-built. But the placeholder
+is not where a new player should land — see below.
+
+### First-run welcome, with a generated tutorial region
+
+Direction agreed 2026-08-01, for once the game settles. A first-time
+welcome page: enough to get started, then it generates the opening survey —
+something deliberately easy, to teach the instruments. Probably with a
+walk-through.
+
+This is the answer to "what does a player with no regions see", so it
+replaces the empty-placeholder idea above rather than sitting beside it.
+The placeholder keeps its current job: *your regions are archived*, which
+is a different state from *you have never surveyed anything*.
+
+**"Easy to solve" is measurable, not a feeling.** The tooling is already
+here, and it should pick the tutorial region rather than a human judging
+one. Generate-and-filter against `measure-deduction-depth.ts`, which
+reports exactly the right things:
+
+- **Resolves by plain propagation** — no global argument needed. Only ~61%
+  of regions manage this; a tutorial region must be one of them, or the
+  player hits a wall that needs a technique nobody has taught them.
+- **Shallow chains** — 1 to 2 rounds. Today's mean is 2.6 with 7% needing
+  four rounds. A first region wants every signature falling out of the two
+  anchors or one step past them.
+- **Nothing stuck** — mean is 1.35 signatures unresolvable per region
+  today. For a tutorial it must be 0.
+- **Six signatures, not eight.** Smaller is more *work*-efficient to teach
+  on even though larger regions are more often solvable — fewer pairwise
+  readings to hold in your head while learning what the readings mean.
+
+Note those pull against each other: 6-signature regions are the hardest to
+resolve (~28% unsolvable against ~13% at eight). So a tutorial region is a
+rejection-sampled 6-signature region, not a typical one.
+
+Measured — `scripts/find-tutorial-region.ts`, 3000 samples:
+
+| | |
+| --- | --- |
+| 6-signature regions meeting all four bars | **29.3%** |
+| `generateRegion()` calls to find one | **~11** |
+
+Cheap enough to do live on the welcome screen. No need to pre-bake a
+region into the source, which also means the tutorial is a different field
+every time and can't be looked up.
+
+**One finding that shapes the walk-through:** only **2 of 960** six-signature
+regions resolve in a *single* round. A region where every signature falls
+straight out of the two anchors essentially does not exist with the
+current clue set — 2 rounds is the real floor, and 3 is common. So the
+tutorial cannot avoid teaching chained inference: "this one is now fixed,
+which fixes that one". That is the actual skill, so it is the right thing
+to teach, but it means the walk-through is a few steps rather than one.
+
+**It needs the same lever rank wants.** `generateRegion()` taking a
+difficulty is already on the list further down (rank is meant to draw
+harder regions and currently does not). A tutorial region is that lever at
+its easiest setting, so building one gets the other most of the way.
+
+**The walk-through needs somewhere to remember itself** — a completed flag
+next to the officer profile, and it should be skippable and replayable. Do
+not gate it behind "has never played": people re-read tutorials.
+
 ### Log, Help and Prototypes flick-scroll on a phone
 
 They overflow 390x844 by 85px, 41px and 42px and fall back to the
