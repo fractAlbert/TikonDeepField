@@ -19,22 +19,19 @@ says it means today.
 | --- | --- | --- |
 | 1 | `generateRegion()` reads rank, so regions get harder as you rise | Gameplay |
 | 2 | Cap active assignments at 3 | Gameplay |
-| 3 | Circle the signatures a filing got right | Gameplay |
-| 4 | Meter Sweep Scope passes, the rest of the sensor allocation | Gameplay |
-| 5 | Record solvability at generation time | `win-conditions.md` |
-| 6 | No `quasar-type` clues are ever emitted | Gameplay |
-| 7 | Remove the default region (`region` becomes nullable) | Design |
-| 8 | First-run welcome, tutorial region, walk-through | Design |
-| 9 | Star Map 50% wider | Design |
-| 10 | Maximize the Star Map (desktop only) | Design |
-| 11 | Mobile menu hub is a wall of fat buttons | Design |
-| 12 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
-| 13 | Star Map hover readout dead on touch, accepted | Interaction |
-| 14 | Let a player recolour a signature | Interaction |
+| 3 | No `quasar-type` clues are ever emitted | Gameplay |
+| 4 | Remove the default region (`region` becomes nullable) | Design |
+| 5 | First-run welcome, tutorial region, walk-through | Design |
+| 6 | Star Map 50% wider | Design |
+| 7 | Maximize the Star Map (desktop only) | Design |
+| 8 | Mobile menu hub is a wall of fat buttons | Design |
+| 9 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
+| 10 | Star Map hover readout dead on touch, accepted | Interaction |
+| 11 | Let a player recolour a signature | Interaction |
 
 ## Design
 
-### 11 - The mobile menu hub is a wall of fat buttons
+### 8 - The mobile menu hub is a wall of fat buttons
 
 Raised 2026-07-30, on a real phone.
 
@@ -62,7 +59,7 @@ Constraints a redesign has to keep:
 - The panel it leads to is reached by `handleNavSelect`; nothing about the
   navigation model needs to change, only the presentation.
 
-### 7 - No default region, with the Log as the way back in
+### 4 - No default region, with the Log as the way back in
 
 Direction agreed 2026-08-01. The app ships with a built-in region as the
 initial active assignment; eventually it should ship with none. A player
@@ -103,7 +100,7 @@ Worth keeping: `noActiveAssignment` already exists and already forces every
 panel to a placeholder, so the states are half-built. But the placeholder
 is not where a new player should land — see below.
 
-### 8 - First-run welcome, with a generated tutorial region
+### 5 - First-run welcome, with a generated tutorial region
 
 Direction agreed 2026-08-01, for once the game settles. A first-time
 welcome page: enough to get started, then it generates the opening survey —
@@ -164,7 +161,7 @@ its easiest setting, so building one gets the other most of the way.
 next to the officer profile, and it should be skippable and replayable. Do
 not gate it behind "has never played": people re-read tutorials.
 
-### 9 - Star Map 50% wider
+### 6 - Star Map 50% wider
 
 Raised 2026-08-02. The sidebar is `w-[360px]` and the dial inside it is
 capped at `max-w-[260px]`, which is what makes the ring and segment labels
@@ -181,7 +178,7 @@ have to cope with less.
 Item 15 is the other half of the answer: if the map can be maximised on
 demand, the docked size matters less.
 
-### 10 - Maximize the Star Map (desktop only)
+### 7 - Maximize the Star Map (desktop only)
 
 Raised 2026-08-02. A button that expands the Star Map to fill `main`, with
 the dial drawn much larger, and a Back control to return to the docked
@@ -201,7 +198,7 @@ Notes for whoever builds it:
 - The nav rails should stay reachable; maximising the map should not become
   a mode you can get stuck in.
 
-### 12 - Log, Help and Prototypes flick-scroll on a phone
+### 9 - Log, Help and Prototypes flick-scroll on a phone
 
 They overflow 390x844 by 85px, 41px and 42px and fall back to the
 hidden-scrollbar scroll inside `main`. That's allowed by the project rules —
@@ -211,16 +208,19 @@ or pagination the way the Survey Log does it) rather than layout.
 
 ## Gameplay
 
-### 1, 4, 5, 6 - Rank, the sensor allocation, and what is left
+### 1, 3 - Rank and the clue vocabulary
 
 Lives in **`win-conditions.md`** — the whole design, its build order, and
 the two generation constraints (anchor separation, solvability) it depends
 on. Not duplicated here.
 
-Status as of 2026-07-31: outcomes, the filing budget, withdrawal, the rank
-ladder and the officer record all ship. Two things are still open —
-charging for Sweep Scope passes (the Ring Scan is already metered, so
-this is the remaining half of the allocation economy), and having
+Status as of 2026-08-02: outcomes, the filing budget (now scaled by rank),
+withdrawal, the rank ladder, the officer record, per-rank filing marks and
+generation-time solvability all ship. Metering the Sweep Scope was
+considered and **closed as a non-problem** — free, unlimited readings are
+not what made the game hard; the bookkeeping was, and the Manifest fixed
+that. What is still open is —
+having
 `generateRegion()` read the officer's rank so the *regions* get harder as
 you rise.
 
@@ -231,51 +231,6 @@ one, which no threshold setting could. What is still missing is region
 difficulty - a Chief of Survey draws exactly the same fields as a
 technician. That is the other half of item 1, and it is also the lever the
 tutorial region needs (item 8).
-
-### 3 - Circle the signatures a filing got right
-
-Raised 2026-08-02, from play: working out which markers are wrong is the
-hard part, and a filing that only says "3 of 7 inconsistent" gives nothing
-to act on. Mark the correct ones so the player can see what to leave alone.
-Proposed to fade out with rank, so a Chief of Survey files blind.
-
-**This is the oracle the filing rework removed**, and that is worth saying
-plainly before building it. Until 2026-07-30 the Star Map showed
-per-signature correctness and kept showing it as you edited, so you could
-hunt the answer one cell at a time without ever filing again. The fix was
-to return a count and nothing else.
-
-Two things make the proposal different from what was removed:
-
-- **Filings are capped at three now.** The old oracle was free and
-  unlimited, which is what made it degenerate. Three marked filings is a
-  budget, and spending one to learn which five of eight are right is a real
-  trade.
-- **It would be rank-scaled.** At the bottom of the ladder it is training
-  wheels; at the top it is gone. That is the same lever as item 1, and it
-  gives the ladder something to change about the *work* rather than the
-  label.
-
-**It is more self-limiting than it looks.** The obvious exploit is to file
-a garbage board immediately and harvest the marks, since a wrong filing
-that is not your third records nothing against your rank — it costs a
-filing and nothing else. That does not pay: a randomly placed board gets
-about **0.2 signatures right** (8 signatures across 8 of 40 cells), so a
-speculative filing circles nothing and has spent a third of the budget.
-
-The marks are only worth anything on a board you have already reasoned
-out, which is exactly when a player deserves confirmation. So it probably
-needs no extra bounding. If it does prove too strong in play, the least
-damaging limit is circling a **count per ring or quadrant** rather than per
-signature — still actionable, still not a per-cell answer.
-
-**Implementation note, and it is the important one.** The marks must come
-from the frozen `Filing` snapshot in `StarMap.tsx`, never from live
-`placements`. That snapshot already exists and already goes stale the
-moment a marker moves — which is exactly what stops this becoming the old
-live oracle again. The rendering hook is already there too: confirmation
-rings are drawn today when `currentFiling.solved`, so this is the same
-draw, gated per signature instead of all-or-nothing.
 
 ### 2 - Cap active assignments at 3
 
@@ -305,7 +260,7 @@ Decisions it needs:
 
 ## Interaction
 
-### 14 - Let a player recolour a signature
+### 11 - Let a player recolour a signature
 
 Raised 2026-08-02, from play. Colours are assigned by position in the
 region's quasar list, so which two a region gets is luck — and two close
@@ -326,7 +281,7 @@ the work is routing them through one helper — after which a change lands
 everywhere at once, which is the requirement. Do not thread a colour prop
 down; that is the version that gets missed in one place.
 
-### 13 - The star map hover readout is dead on touch
+### 10 - The star map hover readout is dead on touch
 
 `StarMap`'s readout uses `onMouseEnter`, which never fires on a touch device,
 so it sits at `--` on a phone for the whole session. Accepted as-is: tapping

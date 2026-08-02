@@ -45,6 +45,11 @@ export interface Rank {
    * go. See FILINGS_BY_RANK below for why the numbers are these.
    */
   filings: number;
+  /**
+   * Whether a filing circles the signatures it got right. Training wheels:
+   * on for everyone except the top of the ladder, where you file blind.
+   */
+  filingMarks: boolean;
 }
 
 export const RANKS: Rank[] = [
@@ -59,6 +64,7 @@ export const RANKS: Rank[] = [
       "Instrument operator. You run the passes and hand the readings to someone else to sign off on.",
     duty: "Draws the station's smallest, most heavily briefed regions - the ones nobody is worried about getting wrong.",
     filings: 4,
+    filingMarks: true,
   },
   {
     index: 1,
@@ -71,6 +77,7 @@ export const RANKS: Rank[] = [
       "Trusted to classify, not yet trusted to be the only one who did. Your filings are reviewed on the way out.",
     duty: "Regions still run small, with the full briefing allocation.",
     filings: 4,
+    filingMarks: true,
   },
   {
     index: 2,
@@ -83,6 +90,7 @@ export const RANKS: Rank[] = [
       "The post the station is actually built around. Your signature is the last one a catalog entry gets before it goes out to every ship in the region.",
     duty: "Standard survey load. The rank you were commissioned at.",
     filings: 3,
+    filingMarks: true,
   },
   {
     index: 3,
@@ -95,6 +103,7 @@ export const RANKS: Rank[] = [
       "You get the regions that came back ambiguous the first time. Nobody double-checks you any more.",
     duty: "Draws larger, thinner-briefed regions - more signatures to place, less handed to you.",
     filings: 2,
+    filingMarks: true,
   },
   {
     index: 4,
@@ -107,6 +116,7 @@ export const RANKS: Rank[] = [
       "You set what the station works on. The catalog's accuracy is your name on it, region by region.",
     duty: "Draws the fields nobody else has resolved. Full instrument allocation, minimum briefing.",
     filings: 2,
+    filingMarks: false,
   },
 ];
 
@@ -175,6 +185,24 @@ export function filingsForRank(rank: number): number {
   // A relieved officer files as a technician would; they are on their way
   // back to that rung anyway.
   return rankAt(rank)?.filings ?? RANKS[0].filings;
+}
+
+/**
+ * Does a filing at this rank say *which* signatures were right, or only how
+ * many were wrong?
+ *
+ * On below the top rank. This is the oracle the 2026-07-30 filing rework
+ * removed, reintroduced deliberately and bounded three ways: filings are
+ * budgeted now, the marks come from a frozen snapshot so they cannot be
+ * walked (see StarMap.tsx), and a Chief of Survey does not get them at all.
+ *
+ * It is also more self-limiting than it looks. A board you have not
+ * reasoned about circles almost nothing - 8 signatures across 8 of 40 cells
+ * is about 0.2 expected hits - so filing early to harvest marks costs a
+ * filing and buys noise. They only pay once the work is mostly done.
+ */
+export function showsFilingMarks(rank: number): boolean {
+  return rankAt(rank)?.filingMarks ?? true;
 }
 
 export function rankAt(index: number): Rank | null {

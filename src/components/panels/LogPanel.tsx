@@ -292,6 +292,22 @@ function LogEntryCard({
           ))}
         </div>
 
+        {/* Only once the region is closed. While it is open, "nobody could
+            have solved this" would decide the survey for the player - the
+            whole point of withdrawal is that they cannot tell. */}
+        {outcome && region.solvability && !region.solvability.withBestScans && (
+          <p className="text-[11px] text-lcars-red/80 mb-1.5">
+            This region could not be resolved. Two positions matched every
+            reading, so no amount of work would have separated them.
+          </p>
+        )}
+        {outcome && region.solvability?.withBestScans === true &&
+          region.solvability.withoutScans === false && (
+            <p className="text-[11px] text-lcars-salmon/70 mb-1.5">
+              This region needed a ring scan aimed at the right signature.
+            </p>
+          )}
+
         <p className="text-[11px] text-lcars-ice/40 font-mono">
           {/* Written as an explicit string because the plain version lost
               its leading space and rendered "3filings used". The original

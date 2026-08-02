@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { regions as builtInRegions } from "@/data/regions";
 import { generateRegion } from "@/lib/generate-region";
+import { assessSolvability } from "@/lib/solvability";
 import { Region } from "@/lib/puzzle-types";
 import { BUTTON_COLORS, ButtonColor } from "@/lib/lcars-colors";
 import {
@@ -231,7 +232,11 @@ export function AppShell() {
     if (id === "generate") {
       // Generate immediately (it's fast either way) but hold the reveal
       // behind a deliberate delay - the loading screen is purely flavor.
-      const generated = generateRegion();
+      // Assessed here rather than inside generateRegion: the analysis
+      // scripts generate regions precisely to measure solvability, so
+      // handing them a verdict would be circular. Costs about 0.4ms.
+      const raw = generateRegion();
+      const generated: Region = { ...raw, solvability: assessSolvability(raw) };
       setGenerating(true);
       selectPanel("briefing");
       setTimeout(() => {
