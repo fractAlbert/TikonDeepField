@@ -17,7 +17,7 @@ says it means today.
 
 | # | item | where |
 | --- | --- | --- |
-| 1 | `generateRegion()` reads rank, so promotion changes the work | Gameplay |
+| 1 | `generateRegion()` reads rank, so regions get harder as you rise | Gameplay |
 | 2 | Cap active assignments at 3 | Gameplay |
 | 3 | Circle the signatures a filing got right | Gameplay |
 | 4 | Meter Sweep Scope passes, the rest of the sensor allocation | Gameplay |
@@ -31,7 +31,6 @@ says it means today.
 | 12 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
 | 13 | Star Map hover readout dead on touch, accepted | Interaction |
 | 14 | Let a player recolour a signature | Interaction |
-| ~~15~~ | ~~Show ring-scan results as a Manifest tag~~ done 2026-08-02 | Interaction |
 
 ## Design
 
@@ -221,8 +220,17 @@ on. Not duplicated here.
 Status as of 2026-07-31: outcomes, the filing budget, withdrawal, the rank
 ladder and the officer record all ship. Two things are still open —
 charging for Sweep Scope passes (the Ring Scan is already metered, so
-this is the remaining half of the allocation economy), and having `generateRegion()` read the officer's rank
-so promotion actually changes the work.
+this is the remaining half of the allocation economy), and having
+`generateRegion()` read the officer's rank so the *regions* get harder as
+you rise.
+
+**Partly answered 2026-08-02.** The filing budget now scales with rank
+(4 4 3 2 2), which was the cheaper half of "rank changes the work" and the
+one that fixed the ladder: it separates an average player from a careful
+one, which no threshold setting could. What is still missing is region
+difficulty - a Chief of Survey draws exactly the same fields as a
+technician. That is the other half of item 1, and it is also the lever the
+tutorial region needs (item 8).
 
 ### 3 - Circle the signatures a filing got right
 
@@ -317,19 +325,6 @@ single `colorFor(regionId, quasarId, index)` that every call site uses.
 the work is routing them through one helper — after which a change lands
 everywhere at once, which is the requirement. Do not thread a colour prop
 down; that is the version that gets missed in one place.
-
-### ~~15 - Show ring-scan results as a Manifest tag~~ - done 2026-08-02
-
-Raised 2026-08-02. The Manifest became the working record on 2026-08-02 and
-carries briefing facts and Sweep Scope readings, but not ring scans — so
-the one instrument that answers a question directly is the one whose answer
-is not written down. A `Ring 3` chip beside the sector and quadrant ones
-closes that.
-
-The data is already persisted: `ringScans` on the survey-log entry lists
-the quasar ids scanned, and the ring itself is re-derivable from the region
-exactly as the sweep readings are. Same rule applies — show it only for
-signatures actually scanned.
 
 ### 13 - The star map hover readout is dead on touch
 
