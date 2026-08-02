@@ -1,6 +1,6 @@
 import { LcarsPanel } from "@/components/LcarsShell";
 import { PANEL_LABELS } from "@/lib/copy";
-import { FILING_LIMIT, RING_SCAN_LIMIT } from "@/lib/survey-log";
+import { RING_SCAN_LIMIT, currentFilingLimit } from "@/lib/survey-log";
 import { DEMOTION_RETRACTED, PROMOTION_CONFIRMED, REVIEW_WINDOW } from "@/lib/ranks";
 
 export function HelpPanel() {
@@ -48,7 +48,7 @@ export function HelpPanel() {
             <strong className="text-lcars-teal">File Classification</strong>. A filing that
             matches the catalog is confirmed; one that doesn&apos;t comes back with a count
             of how many signatures are inconsistent, and nothing else. You get{" "}
-            {FILING_LIMIT}
+            {currentFilingLimit()}
             {" filings per region"}, and if the last one is still wrong the entry
             is retracted. If you can&apos;t crack it,{" "}
             <strong className="text-lcars-ice">Withdraw</strong>{" "}
@@ -73,6 +73,11 @@ export function HelpPanel() {
           rank and stalls your career &mdash; which is the only reason to ever risk a filing.
           Your record, the ladder and the current review are on the{" "}
           <strong className="text-lcars-lilac">Officer</strong> panel.
+        </p>
+        <p className="text-sm text-lcars-ice/80 leading-relaxed mt-3">
+          Rank also decides how many filings you get. A technician gets four
+          and can afford to be wrong twice; a Chief of Survey gets two. The
+          higher you go, the less room there is to correct yourself.
         </p>
         <p className="text-sm text-lcars-ice/60 leading-relaxed mt-3">
           Some regions genuinely cannot be resolved &mdash; the instruments return identical

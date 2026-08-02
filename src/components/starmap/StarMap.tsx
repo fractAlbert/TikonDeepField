@@ -15,7 +15,7 @@ import { quasarColorHex } from "@/lib/quasar-colors";
 import { starMapStorageKey } from "@/lib/starmap-storage";
 import {
   EMPTY_LOG,
-  FILING_LIMIT,
+  currentFilingLimit,
   entryOutcome,
   filingsUsed,
   getSurveyLog,
@@ -183,7 +183,8 @@ export function StarMap({ region }: { region: Region | null }) {
   const outcome = entry ? entryOutcome(entry) : null;
   const closed = outcome !== null;
   const filingsSpent = entry ? filingsUsed(entry) : 0;
-  const filingsLeft = Math.max(0, FILING_LIMIT - filingsSpent);
+  const filingLimit = currentFilingLimit();
+  const filingsLeft = Math.max(0, filingLimit - filingsSpent);
 
   // A rank change is announced on the filing that caused it, which is the
   // one moment it's guaranteed to be looked at. The profile panel is the
@@ -915,7 +916,7 @@ export function StarMap({ region }: { region: Region | null }) {
               <>
                 {" · "}
                 <span className={filingsLeft === 1 ? "text-lcars-salmon" : undefined}>
-                  {filingsLeft} of {FILING_LIMIT} filings left
+                  {filingsLeft} of {filingLimit} filings left
                 </span>
               </>
             )}

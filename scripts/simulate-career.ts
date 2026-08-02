@@ -12,6 +12,8 @@
 
 import {
   DEMOTION_RETRACTED,
+  RANKS,
+  filingsForRank,
   PROMOTION_CONFIRMED,
   PROMOTION_MAX_RETRACTED,
   RELIEVED,
@@ -212,6 +214,44 @@ scenario("Renaming does not touch the record", () => {
   else {
     failures++;
     console.log("  FAIL service number changed on reroll");
+  }
+});
+
+scenario("Filings shrink as rank rises", () => {
+  const ladder = RANKS.map((r) => filingsForRank(r.index));
+
+  checks++;
+  if (ladder.every((n, i) => i === 0 || n <= ladder[i - 1]))
+    console.log(`  ok   ladder is non-increasing: ${ladder.join(" ")}`);
+  else {
+    failures++;
+    console.log(`  FAIL ladder rises somewhere: ${ladder.join(" ")}`);
+  }
+
+  checks++;
+  if (ladder[0] > ladder[ladder.length - 1])
+    console.log(`  ok   technician beats chief: ${ladder[0]} vs ${ladder[ladder.length - 1]}`);
+  else {
+    failures++;
+    console.log("  FAIL top and bottom of the ladder get the same budget");
+  }
+
+  // One filing would delete the cross-check rather than tighten it: the
+  // discrepancy count would only ever arrive on the filing that already
+  // retracted you.
+  checks++;
+  if (Math.min(...ladder) >= 2) console.log("  ok   no rank is cut to a single filing");
+  else {
+    failures++;
+    console.log("  FAIL a rank gets one filing, which removes the cross-check");
+  }
+
+  checks++;
+  if (filingsForRank(RELIEVED) === ladder[0])
+    console.log("  ok   a relieved officer files as a technician");
+  else {
+    failures++;
+    console.log("  FAIL relieved rank has no filing budget");
   }
 });
 

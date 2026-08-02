@@ -6,7 +6,7 @@ import { quasarColorHex } from "@/lib/quasar-colors";
 import { loadStarMapSave } from "@/lib/starmap-storage";
 import {
   EMPTY_LOG,
-  FILING_LIMIT,
+  currentFilingLimit,
   SurveyLogEntry,
   entryOutcome,
   filingsUsed,
@@ -298,7 +298,7 @@ function LogEntryCard({
               "verify attempts" line this replaced had the same bug, so
               it's worth recognising: it shows up when a JSX text node
               wraps across lines and contains an entity like &middot;. */}
-          {placedCount} / {region.quasars.length} placed &middot; {spent} of {FILING_LIMIT}
+          {placedCount} / {region.quasars.length} placed &middot; {spent} of {currentFilingLimit()}
           {" filings used"} &middot; first surveyed {formatDate(entry.firstSurveyedAt)}
           {outcome && entry.closedAt && (
             <>
