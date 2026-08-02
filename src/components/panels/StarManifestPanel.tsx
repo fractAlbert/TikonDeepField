@@ -12,6 +12,12 @@ import {
   subscribeObservations,
 } from "@/lib/observations";
 import { playButtonClick } from "@/lib/sound";
+import {
+  EMPTY_LOG,
+  getSurveyLog,
+  ringScansUsed,
+  subscribeSurveyLog,
+} from "@/lib/survey-log";
 import { LcarsPanel } from "@/components/LcarsShell";
 
 const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
@@ -86,6 +92,13 @@ function observedDistances(
 }
 
 export function StarManifestPanel({ region }: { region: Region }) {
+  // Ring scans are recorded against the survey log rather than the
+  // observation store, because spending one is a budgeted action and the
+  // budget lives with the filings. Read from there rather than duplicating.
+  const log = useSyncExternalStore(subscribeSurveyLog, getSurveyLog, () => EMPTY_LOG);
+  const scannedRings = log.find((e) => e.regionId === region.id);
+  const scanned = scannedRings ? ringScansUsed(scannedRings) : [];
+
   const observations = useSyncExternalStore(
     subscribeObservations,
     () => getObservations(region.id),
@@ -120,6 +133,16 @@ export function StarManifestPanel({ region }: { region: Region }) {
           {region.quasars.map((q, i) => {
             const color = quasarColorHex(i);
             const facts = knownFacts(region, q.id);
+            // A ring scan is an answer the player paid for, so it sits with
+            // the briefing facts rather than with the sweep readings. Only
+            // for signatures actually scanned - same rule as everywhere
+            // else here.
+            if (scanned.includes(q.id)) {
+              const ring = sectorLookup.get(region.solution[q.id]?.sector ?? "")?.ring;
+              if (ring !== undefined) {
+                facts.push({ label: `Ring ${ring + 1}`, chip: "bg-lcars-salmon" });
+              }
+            }
             const readings = observedDistances(region, q.id, observations.references);
             const note = observations.notes[q.id] ?? "";
             const isEditing = editing === q.id;

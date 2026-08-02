@@ -10,32 +10,32 @@ them (`mobile-comments.md`, `mobile-layout-plan.md`).
 
 ## Index
 
-Numbers are stable handles for talking about an item ("let's do 6"). They
-are not a priority order — where one is recommended, the entry says so.
-Retire a number when its item ships rather than renumbering the rest.
+Numbers are handles for talking about an item ("let's do 6"), not a
+priority order — where one is recommended, the entry says so. Shipped items
+are removed and the rest renumbered, so a number only means what this table
+says it means today.
 
 | # | item | where |
 | --- | --- | --- |
-| 1 | Distance-matrix view or Star Map scratchpad | Interaction |
-| 2 | ~~Re-tune rank thresholds~~ done; the real lever is 3 | `win-conditions.md` |
-| 3 | `generateRegion()` reads rank, so promotion changes the work | Gameplay |
-| 4 | Meter Sweep Scope passes — the rest of the sensor allocation | Gameplay |
+| 1 | `generateRegion()` reads rank, so promotion changes the work | Gameplay |
+| 2 | Cap active assignments at 3 | Gameplay |
+| 3 | Circle the signatures a filing got right | Gameplay |
+| 4 | Meter Sweep Scope passes, the rest of the sensor allocation | Gameplay |
 | 5 | Record solvability at generation time | `win-conditions.md` |
-| 6 | Remove the default region (`region` becomes nullable) | Design |
-| 7 | First-run welcome, tutorial region, walk-through | Design |
-| 8 | Star Manifest: give it thematic content or drop it | Gameplay |
-| 9 | Mobile menu hub is a wall of fat buttons | Design |
-| 10 | Log/Help/Prototypes flick-scroll on a phone — accepted | Design |
-| 11 | Star Map hover readout dead on touch — accepted | Interaction |
-| 12 | No `quasar-type` clues are ever emitted | Gameplay |
-| 13 | Cap active assignments at 3 | Gameplay |
-| 16 | ~~Restart the sweep when the reference changes~~ done 2026-08-02 | Interaction |
-| 14 | Star Map 50% wider | Design |
-| 15 | Maximize the Star Map (desktop only) | Design |
+| 6 | No `quasar-type` clues are ever emitted | Gameplay |
+| 7 | Remove the default region (`region` becomes nullable) | Design |
+| 8 | First-run welcome, tutorial region, walk-through | Design |
+| 9 | Star Map 50% wider | Design |
+| 10 | Maximize the Star Map (desktop only) | Design |
+| 11 | Mobile menu hub is a wall of fat buttons | Design |
+| 12 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
+| 13 | Star Map hover readout dead on touch, accepted | Interaction |
+| 14 | Let a player recolour a signature | Interaction |
+| ~~15~~ | ~~Show ring-scan results as a Manifest tag~~ done 2026-08-02 | Interaction |
 
 ## Design
 
-### 9 - The mobile menu hub is a wall of fat buttons
+### 11 - The mobile menu hub is a wall of fat buttons
 
 Raised 2026-07-30, on a real phone.
 
@@ -63,7 +63,7 @@ Constraints a redesign has to keep:
 - The panel it leads to is reached by `handleNavSelect`; nothing about the
   navigation model needs to change, only the presentation.
 
-### 6 - No default region, with the Log as the way back in
+### 7 - No default region, with the Log as the way back in
 
 Direction agreed 2026-08-01. The app ships with a built-in region as the
 initial active assignment; eventually it should ship with none. A player
@@ -104,7 +104,7 @@ Worth keeping: `noActiveAssignment` already exists and already forces every
 panel to a placeholder, so the states are half-built. But the placeholder
 is not where a new player should land — see below.
 
-### 7 - First-run welcome, with a generated tutorial region
+### 8 - First-run welcome, with a generated tutorial region
 
 Direction agreed 2026-08-01, for once the game settles. A first-time
 welcome page: enough to get started, then it generates the opening survey —
@@ -165,7 +165,7 @@ its easiest setting, so building one gets the other most of the way.
 next to the officer profile, and it should be skippable and replayable. Do
 not gate it behind "has never played": people re-read tutorials.
 
-### 14 - Star Map 50% wider
+### 9 - Star Map 50% wider
 
 Raised 2026-08-02. The sidebar is `w-[360px]` and the dial inside it is
 capped at `max-w-[260px]`, which is what makes the ring and segment labels
@@ -182,7 +182,7 @@ have to cope with less.
 Item 15 is the other half of the answer: if the map can be maximised on
 demand, the docked size matters less.
 
-### 15 - Maximize the Star Map (desktop only)
+### 10 - Maximize the Star Map (desktop only)
 
 Raised 2026-08-02. A button that expands the Star Map to fill `main`, with
 the dial drawn much larger, and a Back control to return to the docked
@@ -202,7 +202,7 @@ Notes for whoever builds it:
 - The nav rails should stay reachable; maximising the map should not become
   a mode you can get stuck in.
 
-### 10 - Log, Help and Prototypes flick-scroll on a phone
+### 12 - Log, Help and Prototypes flick-scroll on a phone
 
 They overflow 390x844 by 85px, 41px and 42px and fall back to the
 hidden-scrollbar scroll inside `main`. That's allowed by the project rules —
@@ -212,7 +212,7 @@ or pagination the way the Survey Log does it) rather than layout.
 
 ## Gameplay
 
-### 2, 3, 4, 5 - Win/lose, rank, and the sensor allocation
+### 1, 4, 5, 6 - Rank, the sensor allocation, and what is left
 
 Lives in **`win-conditions.md`** — the whole design, its build order, and
 the two generation constraints (anchor separation, solvability) it depends
@@ -224,43 +224,49 @@ charging for Sweep Scope passes (the Ring Scan is already metered, so
 this is the remaining half of the allocation economy), and having `generateRegion()` read the officer's rank
 so promotion actually changes the work.
 
-### The starting puzzle is punishing, and only half of that is information
+### 3 - Circle the signatures a filing got right
 
-Raised 2026-07-31, from play. Two separate causes, and they need different
-fixes:
+Raised 2026-08-02, from play: working out which markers are wrong is the
+hard part, and a filing that only says "3 of 7 inconsistent" gives nothing
+to act on. Mark the correct ones so the player can see what to leave alone.
+Proposed to fade out with rank, so a Chief of Survey files blind.
 
-1. **~19% of regions could not be solved at all.** No amount of skill
-   helped, and nothing told you which ones they were. **Fixed** by the Ring
-   Scan (below): a careful player now sees ~1%.
-2. **The hardest legitimate tier is indistinguishable from the broken
-   one.** Only 63% of regions fall to plain pairwise propagation, so about
-   18% are solvable *but need a global argument* (quadrant totals, mutual
-   exclusion). Hitting a wall therefore tells you nothing about whether
-   you are missing a clever argument or the region is impossible — the two
-   feel identical and one is unwinnable. A ring budget of 2 drops stuck
-   signatures from 1.23 per region to 0.19, which mostly dissolves this.
-3. **The bookkeeping is brutal.** Cross-referencing a 6–8 × 6–8 distance
-   matrix means cycling the Sweep Scope one reference at a time and holding
-   the readings in your head, because there is nowhere in the app to write
-   anything down. This is a *UI* problem, and fixing it would make the game
-   markedly less painful **without changing the difficulty at all** —
-   arguably the better first move. A distance matrix view, or a scratchpad
-   on the Star Map, would both qualify.
+**This is the oracle the filing rework removed**, and that is worth saying
+plainly before building it. Until 2026-07-30 the Star Map showed
+per-signature correctness and kept showing it as you edited, so you could
+hunt the answer one cell at a time without ever filing again. The fix was
+to return a count and nothing else.
 
-### ~~Retire the Quadrant Survey~~ - done 2026-08-01
+Two things make the proposal different from what was removed:
 
-Replaced by the **Ring Scan** panel: aim the array at one signature, learn
-which ring it sits in, two scans per region. `QuadrantSurveyPanel.tsx` and
-`quadrant-survey.ts` are deleted; `quasar-quadrant` briefing clues are
-untouched and still ship two per region.
+- **Filings are capped at three now.** The old oracle was free and
+  unlimited, which is what made it degenerate. Three marked filings is a
+  budget, and spending one to learn which five of eight are right is a real
+  trade.
+- **It would be rank-scaled.** At the bottom of the ladder it is training
+  wheels; at the top it is gone. That is the same lever as item 1, and it
+  gives the ladder something to change about the *work* rather than the
+  label.
 
-The census version measured better as a fairness fix and was rejected as a
-mechanic - see `instrument-analysis.md`. Short version: a census reads the
-same for everyone, so it lowers the loss rate uniformly and measures
-nothing, while two metered scans leave a careful player at ~1% unsolvable
-and a careless one at ~11%. That spread is what the rank ladder grades.
+It is still a large concession, so size it deliberately. Knowing which
+markers are wrong reduces the region to permuting only those, which with
+two filings left is a much smaller search than the count alone allows. Two
+ways to bound it if it proves too strong:
 
-### 13 - Cap active assignments at 3
+- Only on the **first** filing of a region, so the information arrives
+  before the endgame rather than during it.
+- Circle a **count per ring or quadrant** rather than per signature — still
+  actionable, still not a per-cell answer.
+
+**Implementation note, and it is the important one.** The marks must come
+from the frozen `Filing` snapshot in `StarMap.tsx`, never from live
+`placements`. That snapshot already exists and already goes stale the
+moment a marker moves — which is exactly what stops this becoming the old
+live oracle again. The rendering hook is already there too: confirmation
+rings are drawn today when `currentFiling.solved`, so this is the same
+draw, gated per signature instead of all-or-nothing.
+
+### 2 - Cap active assignments at 3
 
 Raised 2026-08-02. You can have any number of surveys on the go. Capping it
 at three means starting a fourth requires finishing or letting go of one,
@@ -286,89 +292,43 @@ Decisions it needs:
   than three open. Do not delete or auto-archive anything — block *new*
   surveys until they are back under, and say so.
 
-### 8 - The Star Manifest carries no information
-
-Raised 2026-08-01. It lists every signature by name and colour, and now
-also whatever the briefing pins down (sector, quadrant) after the
-2026-07-31 fix. But that is all restatement — the briefing already said it
-and the Star Map already shows the colours. Nothing on the panel is
-something you could not get elsewhere in fewer clicks.
-
-Two ways out, and they want deciding before more is built on it:
-
-1. **Make it thematic.** Give it the character a personnel-and-equipment
-   roster would have: catalog provenance, when a signature was first
-   logged, which survey picked it up, confidence notes. Flavour rather
-   than mechanics — it would earn its place by making the station feel
-   staffed rather than by helping you solve anything.
-2. **Drop it.** One fewer nav entry, which the mobile hub would thank us
-   for (see the fat-buttons entry above — it is at ten and has no room).
-   The colour-to-name mapping it provides also already exists on the Star
-   Map's signature chips.
-
-Leaning toward (1) only if the flavour is genuinely wanted; otherwise (2).
-No mechanical argument for keeping it either way.
-
-### ~~Ring Survey / census~~ - resolved 2026-08-01, shipped as metered scans
-
-Both were built and measured. The **census** (anonymous per-ring
-headcounts) is the better fairness fix in isolation: it takes unsolvable
-regions from ~19% to ~4% and costs the puzzle nothing at all, 136 candidate
-eliminations against today's 135. It was rejected anyway.
-
-The reason is not in the solvability numbers. A census reads the same for
-everyone, so it lowers the loss rate uniformly and measures nothing about
-the player. Two metered scans instead leave a careful player at ~1%
-unsolvable and a careless one at ~11%, and that ten-point spread is player
-judgment - which is the thing the rank ladder exists to grade. Retiring the
-census also *widens* the spread rather than narrowing it.
-
-What shipped: `RingScanPanel.tsx`, two scans per region, budget persisted
-in the survey log so a reload cannot refund one. Re-reading an
-already-scanned signature is free, since the cost is the decision about
-where to aim rather than the act of looking.
-
-The census presentation work is not wasted if it is ever wanted: `RingScope`
-still takes per-ring counts and the prototype panel still exercises all
-four looks (sweep / sweep+hold / instant / no dial).
-
-**Open question, unchanged:** whether to emit `quasar-type` clues. Nothing
-currently links a signature's name to its type, which is what made a
-type-sliced census reduce exactly to anonymous per-ring totals. It has no
-bearing on the shipped scan, but it would change any future census.
-
 ## Interaction
 
-### 1 — Nowhere to write anything down
+### 14 - Let a player recolour a signature
 
-**Recommended first.** Solving a region means cross-referencing a 6-8 x 6-8
-distance matrix, and the only way to read it is to cycle the Sweep Scope
-through every reference one at a time and hold the numbers in your head.
-There is nowhere in the app to note anything.
+Raised 2026-08-02, from play. Colours are assigned by position in the
+region's quasar list, so which two a region gets is luck — and two close
+shades on the signatures you happen to be cross-referencing makes the Sweep
+Scope harder to read than the puzzle warrants. Being able to change one
+when it matters costs the design nothing.
 
-This is the half of "the game is punishing" that no instrument fixed. The
-Ring Scan removed the unwinnable regions; it did nothing about the mental
-load of the winnable ones. A distance-matrix view, or a scratchpad on the
-Star Map, would make the game markedly less punishing **without changing
-the difficulty at all** — which is a claim none of the instrument work
-could make.
+The palette is ten entries (`quasar-colors.ts`) against 6-8 signatures per
+region, so collisions are not the problem; adjacency is. `#6fd0e8` cyan and
+`#7ab8ff` sky blue, or `#ffb454` orange and `#f5d35c` yellow, are hard to
+tell apart at blip size.
 
-Two shapes worth considering:
+Shape it should take: an override store keyed by region and quasar, and a
+single `colorFor(regionId, quasarId, index)` that every call site uses.
+`quasarColorHex(index)` is currently called directly in seven components
+(Star Map, Sweep Scope, Manifest, Log, Ring Scan and both prototypes), so
+the work is routing them through one helper — after which a change lands
+everywhere at once, which is the requirement. Do not thread a colour prop
+down; that is the version that gets missed in one place.
 
-- **A matrix view.** Signatures down and across, distances in the cells,
-  filled in as you observe them. Closest to what a player is actually
-  building in their head. Risk: it does the bookkeeping *for* you, so it
-  should probably only show readings you have taken rather than the whole
-  true matrix.
-- **A scratchpad on the Star Map.** Free-form notes per region, persisted
-  beside the placements. Less structured, no risk of handing anything
-  over, and much less work.
+### ~~15 - Show ring-scan results as a Manifest tag~~ - done 2026-08-02
 
-The Rule Out marks already do a small version of this and are the reason
-the Star Map is usable at all — this is the same idea applied to distances
-rather than positions.
+Raised 2026-08-02. The Manifest became the working record on 2026-08-02 and
+carries briefing facts and Sweep Scope readings, but not ring scans — so
+the one instrument that answers a question directly is the one whose answer
+is not written down. A `Ring 3` chip beside the sector and quadrant ones
+closes that.
 
-### 11 — The star map hover readout is dead on touch
+The data is already persisted: `ringScans` on the survey-log entry lists
+the quasar ids scanned, and the ring itself is re-derivable from the region
+exactly as the sweep readings are. Same rule applies — show it only for
+signatures actually scanned.
+
+### 13 - The star map hover readout is dead on touch
 
 `StarMap`'s readout uses `onMouseEnter`, which never fires on a touch device,
 so it sits at `--` on a phone for the whole session. Accepted as-is: tapping
