@@ -1,6 +1,32 @@
 # LCARS Style Notes
 
-Analysis of reference image `LCARS-2.jpg`, cataloging the style conventions that define the LCARS (Star Trek) look.
+Analysis of the reference image, cataloging the style conventions that
+define the LCARS (Star Trek) look.
+
+## The reference image
+
+![LCARS reference panel](reference/LCARS-2.jpg)
+
+`docs/reference/LCARS-2.jpg` (1920x1271). **Look at it before designing or
+changing any UI in this project** - it is the thing every rule below was
+read off, and the rules are a summary, not a replacement.
+
+It lived outside the repo until 2026-08-02, which is why these notes cited
+a filename that resolved to nothing. Now committed, so the analysis and its
+source travel together.
+
+A few specifics from it that the summary below is too general to carry:
+
+- **Section titles sit at the bottom-left of their colour block**, not
+  centred and not at the top - the block is a shelf the label rests on.
+- **Numbers keep their leading zeros**: `008`, `017`, `007`, `061`, `03`.
+  Fixed-width readouts, never trimmed, which is what makes a column of them
+  scan as instrument output rather than as text.
+- **A data row reads index tab, label pill, big number, label pill.** The
+  number is the anchor and is roughly twice the label's size; the small
+  stub tab that opens each row is colour-coded and carries no text.
+- **The same colour repeats freely down a column.** Grouping is the job
+  colour is doing, so repetition is the signal, not a collision to avoid.
 
 ## Structure & Shape
 
