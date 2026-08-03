@@ -174,11 +174,18 @@ const CELL_LINE_GHOST = "rgba(232,240,247,0.65)";
 const CELL_FILL = "rgba(207,227,242,0.045)";
 const CELL_FILL_HOVER = "rgba(232,240,247,0.14)";
 const RULED_OUT_TINT = "rgba(255,107,107,0.05)";
-// Amber against the rule-out's red, matching the mode switch below: red is
-// already the app's "no" everywhere (Reset, incorrect-verify, ruled-out),
-// so a maybe has to sit off that axis entirely rather than be a paler no.
-const MAYBE_TINT = "rgba(255,204,102,0.06)";
-const MAYBE_STROKE = "#ffcc66";
+// Light grey, off the rule-out's red entirely: red is already the app's "no"
+// everywhere (Reset, incorrect-verify, ruled-out), so a maybe must not read
+// as a paler no. Grey also keeps the mark neutral against every signature
+// colour, which an amber one didn't - it sat close to the amber and orange
+// entries in the palette.
+//
+// The tint runs hotter than the rule-out's (0.10 against 0.05) because a
+// grey wash can't lean on hue to separate itself from the resting cell fill
+// (rgba(207,227,242,0.045)) - only on being brighter. Still under the hover
+// fill at 0.14, so hovering a marked cell still reads as a change.
+const MAYBE_TINT = "rgba(210,220,232,0.10)";
+const MAYBE_STROKE = "#c3ccd6";
 
 export function StarMap({ region }: { region: Region | null }) {
   const sectors = useMemo(() => buildSectors(), []);
@@ -841,30 +848,34 @@ export function StarMap({ region }: { region: Region | null }) {
 
           {/* Candidate marks for the armed signature. Same rule as the X
               above: only for the armed signature, and never under a
-              marker. Drawn as a glyph rather than as a shape so it reads
-              as "?" at 260px, where the dial is at its smallest - the two
-              annotations have to be tellable apart at a glance or the
-              board stops being worth annotating. */}
+              marker.
+
+              A hollow ring rather than a glyph. It was a "?" first, which
+              carried the meaning literally but painted as 4x11px on the
+              260px dial - a tall thin scribble the eye reads as noise next
+              to the X's compact cross. The ring takes the same 10-unit box
+              as the X, so the two annotations are the same size and differ
+              only in shape, which is what makes them separable at a
+              glance. Hollow is load-bearing: a signature marker is a
+              filled star with a glow, so nothing filled may appear in a
+              cell that has no marker in it. */}
           {armed &&
             [...(maybe[armed] ?? [])]
               .filter((sid) => !occupantBySector.has(sid))
               .map((sid) => {
                 const p = centerOf(sid);
                 return (
-                  <text
+                  <circle
                     key={sid}
-                    x={p.x}
-                    y={p.y}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    fontSize={15}
-                    fontWeight={700}
-                    fill={MAYBE_STROKE}
+                    cx={p.x}
+                    cy={p.y}
+                    r={5}
+                    fill="none"
+                    stroke={MAYBE_STROKE}
+                    strokeWidth={1.4}
                     opacity={0.75}
                     style={{ pointerEvents: "none" }}
-                  >
-                    ?
-                  </text>
+                  />
                 );
               })}
         </svg>
