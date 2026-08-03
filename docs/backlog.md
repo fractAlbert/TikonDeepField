@@ -81,54 +81,45 @@ in the code: `BriefingPanel` takes `hasAnySurveys` and picks between
 *your regions are archived* and *you have never surveyed anything*, so a
 welcome screen has a flag to key off already.
 
-**"Easy to solve" is measurable, not a feeling.** The tooling is already
-here, and it should pick the tutorial region rather than a human judging
-one. Generate-and-filter against `measure-deduction-depth.ts`, which
-reports exactly the right things:
+**Planned in full: `docs/tutorial-plan.md`.** Steps, storage, anchors,
+constraints, open decisions and a build order that can stall halfway and
+still leave the app better. Only the headlines are repeated here.
 
-- **Resolves by plain propagation** — no global argument needed. Only ~61%
-  of regions manage this; a tutorial region must be one of them, or the
-  player hits a wall that needs a technique nobody has taught them.
-- **Shallow chains** — 1 to 2 rounds. Today's mean is 2.6 with 7% needing
-  four rounds. A first region wants every signature falling out of the two
-  anchors or one step past them.
-- **Nothing stuck** — mean is 1.35 signatures unresolvable per region
-  today. For a tutorial it must be 0.
-- **Six signatures, not eight.** Smaller is more *work*-efficient to teach
-  on even though larger regions are more often solvable — fewer pairwise
-  readings to hold in your head while learning what the readings mean.
+**Two things changed on 2026-08-03**, both from direction given that day,
+and both invert what this entry used to say.
 
-Note those pull against each other: 6-signature regions are the hardest to
-resolve (~28% unsolvable against ~13% at eight). So a tutorial region is a
-rejection-sampled 6-signature region, not a typical one.
+**1. The region is fixed, not generated per player.** The cost is that it
+can be looked up; the gain is that the walk-through can be written against
+the actual solution — "PKS 2083 reads 2 from your anchor and 3 from the
+other, so it can only be R3S6" — instead of gesturing at technique. A
+tutorial over a random region can only teach process.
 
-Measured — `scripts/find-tutorial-region.ts`, 3000 samples:
+**2. It must *require* a Ring Scan.** This is the reversal that matters.
+The old bar was "resolves by plain propagation with no scans" — the
+gentlest possible field. That teaches the player, correctly, that the Ring
+Scan is ignorable, and then their second region is unsolvable and they
+don't know why. The scan is the one instrument nobody discovers on their
+own: metered, costly, and silent about everything but its target.
+
+So the tutorial region has to hit a wall on purpose. Re-measured with
+`scripts/find-tutorial-region.ts` (rewritten for the new bars), 4000
+samples:
 
 | | |
 | --- | --- |
-| 6-signature regions meeting all four bars | **29.3%** |
-| `generateRegion()` calls to find one | **~11** |
+| 6-signature regions that are tutorial grade | **16.6%** |
+| `generateRegion()` calls to find one | **~18** |
+| of scan-requiring regions, share needing only *one* scan | **89.8%** |
 
-Cheap enough to do live on the welcome screen. No need to pre-bake a
-region into the source, which also means the tutorial is a different field
-every time and can't be looked up.
+Still cheap. The one-scan bar is nearly free and worth demanding: the
+budget is two, and a learner who aims their first scan wrong needs a way
+out.
 
-**One finding that shapes the walk-through:** only **2 of 960** six-signature
-regions resolve in a *single* round. A region where every signature falls
-straight out of the two anchors essentially does not exist with the
-current clue set — 2 rounds is the real floor, and 3 is common. So the
-tutorial cannot avoid teaching chained inference: "this one is now fixed,
-which fixes that one". That is the actual skill, so it is the right thing
-to teach, but it means the walk-through is a few steps rather than one.
-
-**It needs the same lever rank wants.** `generateRegion()` taking a
-difficulty is already on the list further down (rank is meant to draw
-harder regions and currently does not). A tutorial region is that lever at
-its easiest setting, so building one gets the other most of the way.
-
-**The walk-through needs somewhere to remember itself** — a completed flag
-next to the officer profile, and it should be skippable and replayable. Do
-not gate it behind "has never played": people re-read tutorials.
+**The walk-through needs somewhere to remember itself** — on `player.ts`,
+next to the officer profile, so clearing your surveys doesn't resurrect it.
+Store the furthest step reached rather than a boolean so it can resume.
+Skippable and replayable; do not gate it behind "has never played", since
+people re-read tutorials.
 
 ### 4 - Star Map 50% wider
 
