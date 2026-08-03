@@ -15,8 +15,13 @@ priority order — where one is recommended, the entry says so. Shipped items
 are removed and the rest renumbered, so a number only means what this table
 says it means today.
 
+**Current priority: item 9**, stated 2026-08-03. Numbers 1–8 kept their
+meanings so that `tutorial-plan.md` and the cross-references below don't
+go stale; the new item took the next free number rather than the top slot.
+
 | # | item | where |
 | --- | --- | --- |
+| **9** | **Survey result report, and auto-archive on close** — *top priority* | Design |
 | 1 | `generateRegion()` reads rank, so regions get harder as you rise | Gameplay |
 | 2 | No `quasar-type` clues are ever emitted | Gameplay |
 | 3 | First-run welcome, tutorial region, walk-through | Design |
@@ -27,6 +32,76 @@ says it means today.
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
 
 ## Design
+
+### 9 - Survey result report, and auto-archive on close
+
+Raised 2026-08-03. **Top priority.**
+
+A finished region should archive itself. Nothing does that today —
+`setArchived` has exactly two callers, the Log's button and `resumeRegion`,
+so a closed survey sits in the Briefing picker until the player tidies it
+away by hand. Closing it already stops it holding a slot against the cap
+(`activeSurveys` excludes closed entries), so this is about the picker and
+about finishing feeling finished, **not** about slot maths. Don't sell it
+as a cap fix.
+
+**The catch is structural, not cosmetic.** `archived` is the same flag
+`noActiveAssignment` keys off, and that flag forces *every* panel to the
+placeholder. So auto-archiving on its own means the moment you file your
+last classification the whole app cuts to the station logo — your board,
+the outcome, the catalog reveal and any rank change all vanish in the same
+frame that produced them. That is the jarring part, and it is why the
+report is a prerequisite for the auto-archive rather than a nicety
+alongside it. **Neither half ships without the other.**
+
+**The material already exists; it is scattered and cramped.** Closing a
+region today leaves you on a read-only board that already shows the outcome
+label and its detail line (`OUTCOME_COPY` in `StarMap.tsx`), the catalog
+reveal — dashed rings on the true sectors, tethered to wherever your marker
+actually landed, which is what makes a near-miss legible — and the rank
+event card if the review fired. The Log adds the per-signature catalog with
+types, filings spent, and the solvability verdict ("this region could not
+be resolved", "this region needed a ring scan").
+
+So the report is mostly a *gathering and a promotion*, not new invention.
+The tether reveal in particular is the best thing in the endgame and it is
+currently drawn in a 260px dial in the sidebar.
+
+What a build has to respect:
+
+- **The report must sit outside the `noActiveAssignment` gate.** Every
+  panel that renders real content is behind it, so a report rendered the
+  usual way would be replaced by the placeholder the instant the archive
+  lands. This is the one thing that will bite.
+- **It has to be re-openable, not a one-shot.** Make it a view of a *closed
+  log entry* rather than a modal fired once by the filing. That gets
+  "review and then return" for free, gives the Log somewhere better to
+  point than a read-only board, and means a player who dismisses it too
+  fast hasn't lost anything.
+- **Where "return" goes.** Not the blank page — that reintroduces exactly
+  the jar this item exists to remove. The Log is the honest destination:
+  the entry that was just archived is right there. Briefing is the wrong
+  one until there is a next survey to show.
+- **Confirmed regions should reveal the catalog too.** `revealed` on the
+  Star Map excludes `confirmed`, on the reasoning that a correct board is
+  already the catalog — true of *sectors*, but types are secret until close
+  and the Log reveals them for all three outcomes. The report is where the
+  types are the payoff, so it should not inherit that exclusion.
+- **Don't retroactively archive** regions that closed before this ships.
+  Same rule as the survey cap: never tidy someone's board to enforce a
+  decision made after they built it.
+
+Open decisions:
+
+1. **Panel or overlay?** A panel is reachable from the Log and survives a
+   reload; an overlay reads more like a moment. Leaning panel, because
+   re-openable is a requirement and an overlay would have to fake it.
+2. **Does the phone need a twelfth destination for it?** If reached only
+   from the Log and from the filing, no — which matters, because the hub is
+   full (item 6).
+3. **Withdrawn regions**: same report, or a thinner one? A withdrawal has
+   no discrepancy history and nothing was filed, so several sections would
+   be empty.
 
 ### 6 - The mobile menu hub is a wall of fat buttons
 
