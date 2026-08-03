@@ -18,6 +18,7 @@ import { playButtonClick } from "@/lib/sound";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { QuasarStar } from "@/components/QuasarStar";
 import { RingScope } from "@/components/ringsurvey/RingScope";
+import { quasarGlyph } from "@/lib/quasar-glyph";
 
 const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
 
@@ -51,6 +52,7 @@ export function RingScanPanel({ region }: { region: Region }) {
         id: q.id,
         label: q.designation,
         color: colorOf(q.id, i),
+        glyph: quasarGlyph(i),
         ring: sectorLookup.get(region.solution[q.id].sector)!.ring,
       })),
     [region, colorOf]
@@ -130,7 +132,7 @@ export function RingScanPanel({ region }: { region: Region }) {
                     : "bg-lcars-panel text-lcars-ice hover:bg-white/10"
                 }`}
               >
-                <QuasarStar color={s.color} size={16} />
+                <QuasarStar color={s.color} glyph={s.glyph} size={16} />
                 {s.label}
                 {used && (
                   <span className="font-mono text-[9px] text-lcars-salmon">R{s.ring + 1}</span>

@@ -102,6 +102,16 @@ export interface SurveyLogEntry {
    * them - a budget you can reset by pressing F5 is not a budget.
    */
   ringScans?: string[];
+  /**
+   * The rank change this region's closure caused, if any.
+   *
+   * Stored rather than only returned because the survey result report is a
+   * re-openable view of a closed entry, not a one-shot banner: a report
+   * opened a week later still has to show the promotion it produced. The
+   * Star Map used to be the only place this was ever seen, in local state
+   * that closing now unmounts.
+   */
+  rankEvent?: RankEvent;
 }
 
 /** What one filing did, for the Star Map to render and announce. */
@@ -263,13 +273,25 @@ export function recordRingScan(regionId: string, quasarId: string): string[] {
 }
 
 /**
- * Writes the outcome and reports it to the career record - the single
- * place either of those happens.
+ * Writes the outcome, archives the region, and reports it to the career
+ * record - the single place any of those happens.
  *
  * The `isClosed` guard is what makes "exactly once per region" structural
  * rather than a thing every caller has to remember: a second close is a
  * no-op, so a double-click, a re-render or a restored save can't inflate
  * the review window.
+ *
+ * **Archiving here is what makes a finished region finish.** It used to sit
+ * in the Briefing picker until the player tidied it away by hand, which
+ * meant nothing in the app ever said "that one is done". The catch is that
+ * `archived` is the same flag `noActiveAssignment` keys off, so this alone
+ * would cut the whole app to the station logo in the same frame the outcome
+ * was produced - which is why the survey result report shipped with it and
+ * not after it. Callers hand the closure to `onClosed` and the shell opens
+ * the report; see StarMap.
+ *
+ * Only ever on the transition out of the open state, so regions closed
+ * before this shipped keep whatever archive state their player chose.
  */
 function closeEntry(
   store: LogStore,
@@ -279,15 +301,18 @@ function closeEntry(
   now: number
 ): { entry: SurveyLogEntry; rankEvent: RankEvent | null } {
   if (isClosed(entry)) return { entry, rankEvent: null };
+  const rankEvent = recordOutcome(outcome, region.id, region.name);
   const closed: SurveyLogEntry = {
     ...entry,
     outcome,
     closedAt: now,
+    archived: true,
     solved: outcome === "confirmed" ? true : entry.solved,
     solvedAt: outcome === "confirmed" ? entry.solvedAt ?? now : entry.solvedAt,
+    ...(rankEvent ? { rankEvent } : {}),
   };
   store[region.id] = closed;
-  return { entry: closed, rankEvent: recordOutcome(outcome, region.id, region.name) };
+  return { entry: closed, rankEvent };
 }
 
 /**

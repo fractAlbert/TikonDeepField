@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { Region } from "@/lib/puzzle-types";
 import { resolveQuasarColor, getQuasarColors } from "@/lib/quasar-colors";
+import { quasarGlyph } from "@/lib/quasar-glyph";
 import { loadStarMapSave } from "@/lib/starmap-storage";
 import {
   ACTIVE_SURVEY_LIMIT,
@@ -51,6 +52,7 @@ export function LogPanel({
   capRefused,
   onPreviewRegion,
   onResumeRegion,
+  onOpenReport,
 }: {
   builtInRegions: Region[];
   /** Null when nothing is active - a first run, or everything archived. */
@@ -63,6 +65,8 @@ export function LogPanel({
   onPreviewRegion: (region: Region) => void;
   /** Make this survey the active one and go to its briefing. */
   onResumeRegion: (region: Region) => void;
+  /** Re-open a closed survey's result report. */
+  onOpenReport: (regionId: string) => void;
 }) {
   const allEntries = useSyncExternalStore(subscribeSurveyLog, getSurveyLog, () => EMPTY_LOG);
   const [page, setPage] = useState(0);
@@ -102,8 +106,15 @@ export function LogPanel({
           Every region survey you&apos;ve opened, with its progress. Click an
           entry to load it into the Star Map for review without changing your
           active survey; <strong className="text-lcars-teal">Resume</strong>{" "}
-          switches to it properly. Archiving clears a survey from the Briefing
-          panel&apos;s selection row without deleting its history here.
+          switches to it properly, and{" "}
+          {/* Explicit, because this text node wraps across lines and
+              carries an entity - which is exactly when JSX drops the
+              leading space and renders "Resultre-opens". */}
+          <strong className="text-lcars-amber">Result</strong>{" "}
+          re-opens the report for one that&apos;s finished. A survey archives itself when it
+          closes; archiving one by hand does the same thing early, clearing it
+          from the Briefing panel&apos;s selection row without deleting its
+          history here.
         </p>
 
         {/* The cap made visible before you hit it. Shown always rather than
@@ -181,6 +192,7 @@ export function LogPanel({
                   isPreviewed={entry.regionId === previewRegionId}
                   onPreviewRegion={onPreviewRegion}
                   onResumeRegion={onResumeRegion}
+                  onOpenReport={onOpenReport}
                 />
               ))}
             </ul>
@@ -224,6 +236,7 @@ function LogEntryCard({
   isPreviewed,
   onPreviewRegion,
   onResumeRegion,
+  onOpenReport,
 }: {
   entry: SurveyLogEntry;
   builtInRegions: Region[];
@@ -231,6 +244,7 @@ function LogEntryCard({
   isPreviewed: boolean;
   onPreviewRegion: (region: Region) => void;
   onResumeRegion: (region: Region) => void;
+  onOpenReport: (regionId: string) => void;
 }) {
   const region = resolveEntryRegion(entry, builtInRegions);
   if (!region) return null;
@@ -241,6 +255,12 @@ function LogEntryCard({
   const style = outcome ? OUTCOME_STYLE[outcome] : null;
   const accentColor = style?.accent ?? "var(--lcars-amber)";
   const spent = filingsUsed(entry);
+  // Resume is the way back into a survey, as distinct from clicking the
+  // card, which only previews it. Offered on open regions you aren't
+  // already in: a closed one has a read-only board, so making it active
+  // would replace the game you're playing with a finished one for no gain -
+  // and it has the Result report instead.
+  const canResume = !isActive && !outcome;
 
   return (
     <li
@@ -277,13 +297,7 @@ function LogEntryCard({
             </span>
           )}
 
-          {/* Resume is the way back into a survey, as distinct from
-              clicking the card, which only previews it. Offered on open
-              regions you aren't already in: a closed one has a read-only
-              board, so making it active would replace the game you're
-              playing with a finished one for no gain - preview shows it
-              just as well. */}
-          {!isActive && !outcome && (
+          {canResume && (
             <button
               type="button"
               onClick={(e) => {
@@ -297,6 +311,23 @@ function LogEntryCard({
             </button>
           )}
 
+          {/* What a closed entry gets instead of Resume, and the reason the
+              report isn't a one-shot: the survey it describes is over, so
+              the only thing left to do with it is read the result again. */}
+          {outcome && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                playButtonClick();
+                onOpenReport(entry.regionId);
+              }}
+              className="ml-auto lcars-caps text-[10px] font-semibold tracking-wide text-black bg-lcars-amber hover:bg-lcars-ice rounded-full px-2.5 py-0.5 cursor-pointer transition-colors"
+            >
+              Result
+            </button>
+          )}
+
           <button
             type="button"
             onClick={(e) => {
@@ -305,7 +336,8 @@ function LogEntryCard({
               setArchived(entry.regionId, !entry.archived);
             }}
             className={`lcars-caps text-[10px] font-semibold tracking-wide text-lcars-ice bg-white/15 hover:bg-white/25 rounded-full px-2.5 py-0.5 cursor-pointer transition-colors ${
-              !isActive && !outcome ? "" : "ml-auto"
+              /* Whichever trailing button comes first takes the gap. */
+              canResume || outcome ? "" : "ml-auto"
             }`}
           >
             {entry.archived ? "Restore" : "Archive"}
@@ -324,6 +356,7 @@ function LogEntryCard({
             >
               <QuasarStar
                 color={resolveQuasarColor(getQuasarColors(), entry.regionId, q.id, i)}
+                glyph={quasarGlyph(i)}
                 size={14}
               />
               {q.designation}

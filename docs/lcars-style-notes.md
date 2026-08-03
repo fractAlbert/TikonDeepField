@@ -132,6 +132,25 @@ Implemented:
 - Nested sub-runs - Station Info's Quasars section tabs its six
   classifications with a smaller, fixed-three-column run in the section's
   own salmon, over a black nested sub-panel. See Project rules above.
+- Signature *shape* as a second identity channel, alongside colour -
+  Pinpoint, Bloom, Four-spike and Ringed, adopted 2026-08-03 from the
+  Marker Identity Trial in the Prototypes panel. `lib/quasar-glyph.ts`
+  assigns them by list position exactly as colour is assigned, and
+  `components/QuasarMarker.tsx` is the single drawing, so a Four-spike in a
+  14px Log chip is the same picture as one on the dial.
+
+  This is depicted sky, not chrome, so it is covered by the `QuasarStar`
+  exemption above rather than being a new departure from the flat-rendering
+  rule. What it deliberately avoids is geometric glyphs - diamonds,
+  triangles, squares - which separate better and turn the dial into a chart
+  of shapes. Every variant is a way a real point source differs through a
+  real instrument.
+
+  Two measurements worth keeping, both in
+  `scripts/check-marker-clearance.ts`: nothing grew to make room (all four
+  fit a cell's 15.5 units at the core the map already used), and the rings
+  drawn *around* a marker had to move outward - the Ringed glyph's own ring
+  sits at 9.2, which was exactly where the catalog reveal used to be.
 
 Not adopted (deliberately):
 - Terse two/three-letter code labeling convention for nav - would hurt
