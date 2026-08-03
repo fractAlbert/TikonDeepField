@@ -18,6 +18,7 @@ import {
 import { SurveyOutcome } from "@/lib/ranks";
 import { playButtonClick } from "@/lib/sound";
 import { LcarsPanel } from "@/components/LcarsShell";
+import { QuasarStar } from "@/components/QuasarStar";
 import { LcarsButton } from "@/components/LcarsButton";
 
 const ENTRIES_PER_PAGE = 3;
@@ -274,9 +275,9 @@ function LogEntryCard({
               key={q.id}
               className="flex items-center gap-1 rounded-full bg-black/30 px-1.5 py-0.5 text-[11px] font-mono text-lcars-ice/80"
             >
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: resolveQuasarColor(getQuasarColors(), entry.regionId, q.id, i) }}
+              <QuasarStar
+                color={resolveQuasarColor(getQuasarColors(), entry.regionId, q.id, i)}
+                size={14}
               />
               {q.designation}
               {outcome && (

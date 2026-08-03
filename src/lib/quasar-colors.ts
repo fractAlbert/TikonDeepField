@@ -16,8 +16,40 @@ const QUASAR_HEX = [
   "#ff9e7a", // coral
 ];
 
-/** The palette itself, for the recolour picker in the Star Manifest. */
-export const QUASAR_PALETTE: readonly string[] = QUASAR_HEX;
+/**
+ * Offered by the picker but never auto-assigned.
+ *
+ * The ten above are all mid-lightness chromatic tints, which is right for
+ * defaults - they read as a set. That also means the picker could only ever
+ * trade one bright tint for another, so a player trying to separate two
+ * lookalikes had nowhere genuinely different to go.
+ *
+ * These fill the gaps that list has no entry anywhere near: the neutral
+ * axis (white, grey), a dark saturated blue, a desaturated warm, and the
+ * ends of the teal/pink ranges the defaults only sample the pale end of.
+ *
+ * Kept out of `QUASAR_HEX` rather than appended to it because that array is
+ * the default-assignment order. Appending would be harmless today only
+ * because regions cap at 8 signatures; the moment that changed, grey would
+ * start being handed out as a default, and a grey blip on a grey-labelled
+ * dial is the one colour here that should always be a deliberate choice.
+ *
+ * `scripts/check-palette-distance.ts` is the check: every entry here clears
+ * dE 22.6 against all ten defaults, above the defaults' own tightest pair
+ * (21.1, yellow/orange), so nothing below is a closer call than something
+ * the palette already shipped. A pale aqua was cut at dE 17.0 against cyan.
+ */
+const EXTRA_HEX = [
+  "#ffffff", // white
+  "#98a2ae", // grey
+  "#2fb8a0", // deep teal
+  "#5b6ee8", // indigo
+  "#c2926a", // bronze
+  "#ff4d94", // hot pink
+];
+
+/** Everything the recolour picker in the Star Manifest offers. */
+export const QUASAR_PALETTE: readonly string[] = [...QUASAR_HEX, ...EXTRA_HEX];
 
 export function quasarColorHex(index: number): string {
   return QUASAR_HEX[index % QUASAR_HEX.length];

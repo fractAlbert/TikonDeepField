@@ -27,7 +27,6 @@ says it means today.
 | 8 | Mobile menu hub is a wall of fat buttons | Design |
 | 9 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
 | 10 | Star Map hover readout dead on touch, accepted | Interaction |
-| 11 | Station Info is unreachable while a survey is active | Interaction |
 
 ## Design
 
@@ -44,13 +43,22 @@ as fat and crude rather than as a system. ("Officer" joined the hub with
 the rank work on 2026-07-31, making ten — still no scrolling, but the run
 has no room left to grow.)
 
+**The run is now full.** "Station" joined on 2026-08-02, making eleven.
+Measured on a cold load at 320x568, the smallest phone still worth
+supporting, every button lands at exactly 44px — the `min-h-11` floor, with
+nothing left over. It fits, and it fits by nothing. A twelfth destination
+either scrolls or breaks the touch floor, so the redesign below is now a
+prerequisite for adding one rather than a nicety. (At 390x844 the same run
+is comfortable, 65px a button, which is why this doesn't show up unless you
+go looking for it.)
+
 **Direction agreed:** small buttons with generous empty space are fine here.
 The hub is the one screen with nothing competing for the room, so it doesn't
 need to spend it.
 
 Constraints a redesign has to keep:
 
-- No scrolling. Ten destinations must fit whatever the layout is — see
+- No scrolling. Eleven destinations must fit whatever the layout is — see
   **Project rules** in `lcars-style-notes.md`. Shrinking the buttons makes
   this easier, not harder.
 - Touch targets stay >= 44px (`min-h-11`), which is the real floor on "small".
@@ -259,25 +267,6 @@ Decisions it needs:
   surveys until they are back under, and say so.
 
 ## Interaction
-
-### 11 - Station Info is unreachable while a survey is active
-
-Found 2026-08-02 while building the quasar science pages. `openStationInfo`
-is handed to `BriefingPanel`, but the only control wired to it lives in
-`NoActiveAssignmentPanel` - so Station Info can be opened only when no
-survey is running. The moment you pick up an assignment, the whole section
-disappears from the app until you file or withdraw.
-
-That was tolerable when the pages were station lore you read once. It is
-not now: the quasar classifications are reference material, and the moment
-you want them is mid-survey, looking at a type you do not recognise. The
-science pages are currently readable only when you have no reason to want
-them.
-
-Needs a persistent entry point. The right rail already carries Officer,
-Help and Prototypes, which are all non-survey destinations that stay
-available throughout - Station Info belongs in exactly that group, and
-there is room for it.
 
 ### 10 - The star map hover readout is dead on touch
 

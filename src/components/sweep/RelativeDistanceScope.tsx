@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { orthogonalDistanceSigned } from "@/lib/grid";
 import { playButtonClick, playSweepPing } from "@/lib/sound";
+import { QuasarStar } from "@/components/QuasarStar";
 import styles from "./RelativeDistanceScope.module.css";
 
 export interface ScopeSignature {
@@ -227,12 +228,11 @@ export function RelativeDistanceScope({
         const core = coreEls.current[b.id];
         const label = labelEls.current[b.id];
         if (core) {
+          // Opacity and scale only. The glow is part of the star now, so
+          // it brightens and blooms with the element rather than being
+          // grown as a separate box-shadow each frame.
           core.style.opacity = String(opacity);
           core.style.transform = `scale(${0.7 + opacity * 0.9})`;
-          core.style.boxShadow =
-            opacity > 0.03
-              ? `0 0 ${opacity * 16}px ${opacity * 4}px ${b.color}`
-              : "none";
         }
         if (label) label.style.opacity = String(Math.min(1, opacity * 1.4));
 
@@ -312,7 +312,9 @@ export function RelativeDistanceScope({
                 ref={(el) => {
                   coreEls.current[b.id] = el;
                 }}
-              />
+              >
+                <QuasarStar color={b.color} size={22} />
+              </div>
             </div>
           );
         })}
@@ -354,7 +356,9 @@ export function RelativeDistanceScope({
       <div className={styles.legend}>
         {signatures.map((s) => (
           <div key={s.id} className={styles.legendItem}>
-            <span className={styles.legendDot} style={{ background: s.color }} />
+            <span className={styles.legendDot}>
+              <QuasarStar color={s.color} size={14} />
+            </span>
             <span>{s.label}</span>
           </div>
         ))}

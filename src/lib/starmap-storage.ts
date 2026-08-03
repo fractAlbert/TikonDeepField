@@ -7,6 +7,14 @@ export type Placements = Record<string, string | undefined>; // quasarId -> sect
 export interface StarMapSave {
   placements: Placements;
   ruledOut: Record<string, string[]>;
+  /**
+   * quasarId -> sectorIds marked "?" - a candidate the player wants to
+   * come back to, the opposite of a rule-out rather than a weaker one.
+   *
+   * Optional because saves written before this existed have no such key,
+   * and a reader that demanded one would drop every board in progress.
+   */
+  maybe?: Record<string, string[]>;
 }
 
 export function starMapStorageKey(regionId: string): string {
