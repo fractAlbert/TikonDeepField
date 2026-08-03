@@ -20,6 +20,7 @@ import {
   subscribeSurveyLog,
 } from "@/lib/survey-log";
 import { LcarsPanel } from "@/components/LcarsShell";
+import { QuasarStar } from "@/components/QuasarStar";
 
 const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
 
@@ -154,12 +155,32 @@ export function StarManifestPanel({ region }: { region: Region }) {
             return (
               <li key={q.id} className="flex rounded-lg overflow-hidden">
                 <span className="w-2 shrink-0" style={{ backgroundColor: color }} />
-                <div className="flex-1 min-w-0 bg-lcars-panel px-3 py-2.5">
+                <div className="flex-1 min-w-0 bg-lcars-panel px-3 py-2.5 flex gap-4 flex-wrap">
+                  <div className="flex-1 min-w-[220px]">
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: color, boxShadow: `0 0 10px 2px ${color}66` }}
-                    />
+                    {/* The star *is* the colour control. It used to be an
+                        inert dot with a separate swatch button further
+                        along the row, which is two things standing for one
+                        signature - and the swatch was the only place the
+                        colour appeared at a size worth clicking. Clicking
+                        the thing whose colour you want to change is the
+                        shorter route, and it gives the row back the space
+                        the swatch was using. */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playButtonClick();
+                        setRecolouring(recolouring === q.id ? null : q.id);
+                      }}
+                      title={`Change the colour of ${q.designation}`}
+                      className={`shrink-0 rounded-full cursor-pointer transition-transform hover:scale-110 ${
+                        recolouring === q.id
+                          ? "ring-2 ring-lcars-ice ring-offset-2 ring-offset-lcars-panel"
+                          : ""
+                      }`}
+                    >
+                      <QuasarStar color={color} size={22} />
+                    </button>
                     <span className="text-sm font-mono text-lcars-ice">{q.designation}</span>
                     {/* Only signatures the briefing says something about get a
                         chip. The rest are left blank rather than tagged: an
@@ -180,36 +201,24 @@ export function StarManifestPanel({ region }: { region: Region }) {
                         swept
                       </span>
                     )}
-                    <span className="ml-auto flex items-center gap-1.5">
-                      {/* Recolour. Two palette entries can land close enough
-                          to be hard to tell apart at blip size - cyan
-                          against sky blue, orange against yellow - and
-                          which pair a region gets is luck. Changing one
-                          here lands everywhere the signature is drawn. */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          playButtonClick();
-                          setRecolouring(recolouring === q.id ? null : q.id);
-                        }}
-                        title={`Change the colour of ${q.designation}`}
-                        className={`w-5 h-5 rounded-full shrink-0 cursor-pointer transition-transform hover:scale-110 ${
-                          recolouring === q.id ? "ring-2 ring-lcars-ice" : "ring-1 ring-white/25"
-                        }`}
-                        style={{ backgroundColor: color }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          playButtonClick();
-                          setDraft(note);
-                          setEditing(isEditing ? null : q.id);
-                        }}
-                        className="lcars-caps text-[10px] font-semibold tracking-wide text-lcars-ice bg-white/15 hover:bg-white/25 rounded-full px-2.5 py-0.5 cursor-pointer transition-colors"
-                      >
-                        {note ? "Edit note" : "Note"}
-                      </button>
-                    </span>
+                    {/* Sits with the rest of the row rather than pushed to
+                        the far right by `ml-auto`. It was the only thing
+                        over there, so it read as belonging to a different
+                        control group than the signature it edits - and it
+                        was holding the whole right-hand column hostage for
+                        one small button. The note itself gets that column
+                        now. */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playButtonClick();
+                        setDraft(note);
+                        setEditing(isEditing ? null : q.id);
+                      }}
+                      className="lcars-caps text-[10px] font-semibold tracking-wide text-lcars-ice bg-white/15 hover:bg-white/25 rounded-full px-2.5 py-0.5 cursor-pointer transition-colors"
+                    >
+                      {note ? "Edit note" : "Note"}
+                    </button>
                   </div>
 
                   {recolouring === q.id && (
@@ -232,11 +241,20 @@ export function StarManifestPanel({ region }: { region: Region }) {
                               setQuasarColor(region.id, q.id, hex);
                               setRecolouring(null);
                             }}
-                            className={`w-5 h-5 rounded-full cursor-pointer transition-transform hover:scale-110 ${
-                              hex === color ? "ring-2 ring-lcars-ice" : "ring-1 ring-white/20"
+                            /* Stars, not swatches. You are choosing how the
+                               signature will look, so the picker should
+                               show you that - a flat disc made you infer
+                               it. The selected ring keeps its black offset
+                               so it stays visible around the white entry,
+                               which ice-on-ice would not. */
+                            className={`rounded-full cursor-pointer transition-transform hover:scale-110 ${
+                              hex === color
+                                ? "ring-2 ring-lcars-ice ring-offset-2 ring-offset-lcars-panel"
+                                : ""
                             } ${clash ? "opacity-40" : ""}`}
-                            style={{ backgroundColor: hex }}
-                          />
+                          >
+                            <QuasarStar color={hex} size={22} />
+                          </button>
                         );
                       })}
                       <button
@@ -275,39 +293,56 @@ export function StarManifestPanel({ region }: { region: Region }) {
                     </div>
                   )}
 
-                  {isEditing ? (
-                    <div className="flex items-center gap-2 mt-2">
-                      <input
-                        autoFocus
-                        value={draft}
-                        onChange={(e) => setDraft(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") commitNote(q.id);
-                          if (e.key === "Escape") setEditing(null);
-                        }}
-                        maxLength={120}
-                        placeholder="e.g. ring 3 or 4, not quadrant II"
-                        aria-label={`Note for ${q.designation}`}
-                        className="flex-1 min-w-0 bg-black/40 rounded px-2 py-1 text-xs text-lcars-ice outline-none ring-1 ring-lcars-lilac/50 focus:ring-lcars-amber"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          playButtonClick();
-                          commitNote(q.id);
-                        }}
-                        className="lcars-caps text-[10px] font-semibold rounded-full px-2.5 py-0.5 bg-lcars-teal text-black cursor-pointer hover:bg-lcars-ice transition-colors"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  ) : (
-                    note && (
-                      <p className="text-xs text-lcars-amber/80 mt-2 leading-relaxed break-words">
-                        {note}
-                      </p>
-                    )
-                  )}
+                  </div>
+
+                  {/* The note gets the right-hand column the Note button
+                      used to occupy on its own, and gets to be readable
+                      there: this is the player's own reasoning, which is
+                      the most valuable text on the row and was previously
+                      the smallest. Full width below `sm`, where two
+                      columns would leave neither usable. */}
+                  <div className="w-full sm:w-[38%] sm:max-w-[280px] min-w-0">
+                    {isEditing ? (
+                      <div className="flex flex-col gap-1.5">
+                        <textarea
+                          autoFocus
+                          value={draft}
+                          onChange={(e) => setDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            // Enter saves, shift-Enter breaks the line -
+                            // the box is now big enough for that to be a
+                            // distinction worth having.
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              commitNote(q.id);
+                            }
+                            if (e.key === "Escape") setEditing(null);
+                          }}
+                          rows={3}
+                          maxLength={400}
+                          placeholder="e.g. ring 3 or 4, not quadrant II"
+                          aria-label={`Note for ${q.designation}`}
+                          className="w-full bg-black/40 rounded px-2 py-1.5 text-xs text-lcars-ice outline-none ring-1 ring-lcars-lilac/50 focus:ring-lcars-amber resize-y"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playButtonClick();
+                            commitNote(q.id);
+                          }}
+                          className="lcars-caps text-[10px] font-semibold rounded-full px-2.5 py-0.5 bg-lcars-teal text-black cursor-pointer hover:bg-lcars-ice transition-colors self-start"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    ) : (
+                      note && (
+                        <p className="text-sm text-lcars-amber/85 leading-relaxed break-words whitespace-pre-wrap">
+                          {note}
+                        </p>
+                      )
+                    )}
+                  </div>
                 </div>
               </li>
             );

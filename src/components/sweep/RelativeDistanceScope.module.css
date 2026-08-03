@@ -116,13 +116,16 @@
   transform: translate(-50%, calc(-50% + var(--blip-dy, 0px)));
 }
 
+/* A positioning and animation wrapper only. The blip used to be this
+   element - a 14px disc with a box-shadow glow grown per frame - which made
+   the Sweep Scope's idea of a signature its own. It now holds a QuasarStar,
+   the single rendering used everywhere, and animates opacity and scale
+   around it. The halo comes with the star, so there is no box-shadow left
+   to transition. */
 .core {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--q-color);
+  display: flex;
   opacity: 0;
-  transition: opacity 0.12s linear, transform 0.12s linear, box-shadow 0.12s linear;
+  transition: opacity 0.12s linear, transform 0.12s linear;
 }
 
 .label {
@@ -205,10 +208,7 @@
 }
 
 .legendDot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--q-color);
+  display: flex;
 }
 
 @media (prefers-reduced-motion: reduce) {

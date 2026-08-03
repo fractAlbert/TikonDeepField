@@ -16,6 +16,7 @@ import {
 } from "@/lib/survey-log";
 import { playButtonClick } from "@/lib/sound";
 import { LcarsPanel } from "@/components/LcarsShell";
+import { QuasarStar } from "@/components/QuasarStar";
 import { RingScope } from "@/components/ringsurvey/RingScope";
 
 const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
@@ -129,10 +130,7 @@ export function RingScanPanel({ region }: { region: Region }) {
                     : "bg-lcars-panel text-lcars-ice hover:bg-white/10"
                 }`}
               >
-                <span
-                  className="w-2 h-2 rounded-full shrink-0"
-                  style={{ backgroundColor: s.color }}
-                />
+                <QuasarStar color={s.color} size={16} />
                 {s.label}
                 {used && (
                   <span className="font-mono text-[9px] text-lcars-salmon">R{s.ring + 1}</span>
