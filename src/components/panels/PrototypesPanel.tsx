@@ -13,6 +13,7 @@ import {
   RingScopeMode,
 } from "@/components/ringsurvey/RingScope";
 import { TargetedScanPrototype } from "@/components/ringsurvey/TargetedScanPrototype";
+import { StarGlyphPrototype } from "@/components/prototypes/StarGlyphPrototype";
 import { RING_COUNT } from "@/lib/grid";
 
 const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
@@ -63,6 +64,7 @@ export function PrototypesPanel({
 }) {
   return (
     <div className="flex flex-col gap-4">
+      <StarGlyphPrototype />
       <RingSurveyPrototype region={region} />
       <TargetedScanPrototype region={region} />
 
