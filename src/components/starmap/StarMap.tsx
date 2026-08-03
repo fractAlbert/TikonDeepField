@@ -35,6 +35,7 @@ import {
 } from "@/lib/ranks";
 import { usePlayer } from "@/lib/use-player";
 import { RankInsignia } from "@/components/RankInsignia";
+import { QuasarStar } from "@/components/QuasarStar";
 import {
   playButtonClick,
   playPlace,
@@ -45,8 +46,22 @@ import {
 } from "@/lib/sound";
 
 type Placements = Record<string, string | undefined>; // quasarId -> sectorId
-type RuledOut = Record<string, Set<string>>; // quasarId -> set of sectorId
-type MarkMode = "place" | "ruleout";
+type CellMarks = Record<string, Set<string>>; // quasarId -> set of sectorId
+type MarkMode = "place" | "ruleout" | "maybe";
+
+/**
+ * The two annotation modes, and the state each one owns.
+ *
+ * "?" is the inverse of "X" rather than a softer version of it: X says the
+ * armed signature is definitely not here, ? says here is one of the places
+ * it could be. So they are mutually exclusive per cell - marking one clears
+ * the other - and each has its own set, because a cell being neither is the
+ * common case and has to stay distinguishable from both.
+ */
+const ANNOTATION_MODES = ["ruleout", "maybe"] as const;
+type AnnotationMode = (typeof ANNOTATION_MODES)[number];
+const isAnnotation = (m: MarkMode): m is AnnotationMode =>
+  (ANNOTATION_MODES as readonly string[]).includes(m);
 
 /**
  * The result of one filing, frozen at the moment Verify was pressed.
@@ -71,6 +86,7 @@ interface Filing {
 interface SavedState {
   placements: Placements;
   ruledOut: Record<string, string[]>;
+  maybe?: Record<string, string[]>;
 }
 
 const CX = 220;
@@ -158,6 +174,11 @@ const CELL_LINE_GHOST = "rgba(232,240,247,0.65)";
 const CELL_FILL = "rgba(207,227,242,0.045)";
 const CELL_FILL_HOVER = "rgba(232,240,247,0.14)";
 const RULED_OUT_TINT = "rgba(255,107,107,0.05)";
+// Amber against the rule-out's red, matching the mode switch below: red is
+// already the app's "no" everywhere (Reset, incorrect-verify, ruled-out),
+// so a maybe has to sit off that axis entirely rather than be a paler no.
+const MAYBE_TINT = "rgba(255,204,102,0.06)";
+const MAYBE_STROKE = "#ffcc66";
 
 export function StarMap({ region }: { region: Region | null }) {
   const sectors = useMemo(() => buildSectors(), []);
@@ -175,7 +196,8 @@ export function StarMap({ region }: { region: Region | null }) {
   );
 
   const [placements, setPlacements] = useState<Placements>({});
-  const [ruledOut, setRuledOut] = useState<RuledOut>({});
+  const [ruledOut, setRuledOut] = useState<CellMarks>({});
+  const [maybe, setMaybe] = useState<CellMarks>({});
   const [armed, setArmed] = useState<string | null>(null);
   const [markMode, setMarkMode] = useState<MarkMode>("place");
   const [filing, setFiling] = useState<Filing | null>(null);
@@ -220,9 +242,12 @@ export function StarMap({ region }: { region: Region | null }) {
       if (raw) {
         const saved: SavedState = JSON.parse(raw);
         setPlacements(saved.placements ?? {});
-        const restored: RuledOut = {};
+        const restored: CellMarks = {};
         for (const qid in saved.ruledOut ?? {}) restored[qid] = new Set(saved.ruledOut[qid]);
         setRuledOut(restored);
+        const restoredMaybe: CellMarks = {};
+        for (const qid in saved.maybe ?? {}) restoredMaybe[qid] = new Set(saved.maybe![qid]);
+        setMaybe(restoredMaybe);
         // Only trust the persisted "solved" flag if the restored placements
         // still match the solution exactly - it may be stale if placements
         // were edited again after the last successful verify.
@@ -248,11 +273,17 @@ export function StarMap({ region }: { region: Region | null }) {
     if (!loaded || !region) return;
     const serializedRuledOut: Record<string, string[]> = {};
     for (const qid in ruledOut) serializedRuledOut[qid] = [...ruledOut[qid]];
+    const serializedMaybe: Record<string, string[]> = {};
+    for (const qid in maybe) serializedMaybe[qid] = [...maybe[qid]];
     window.localStorage.setItem(
       starMapStorageKey(region.id),
-      JSON.stringify({ placements, ruledOut: serializedRuledOut } satisfies SavedState)
+      JSON.stringify({
+        placements,
+        ruledOut: serializedRuledOut,
+        maybe: serializedMaybe,
+      } satisfies SavedState)
     );
-  }, [placements, ruledOut, loaded, region]);
+  }, [placements, ruledOut, maybe, loaded, region]);
 
   const occupantBySector = useMemo(() => {
     const map = new Map<string, string>(); // sectorId -> quasarId
@@ -306,18 +337,37 @@ export function StarMap({ region }: { region: Region | null }) {
     };
   }, [paintTarget]);
 
-  function applyRuleOut(sectorIdPainted: string, ruled: boolean) {
+  /** The set a given annotation mode owns, and its opposite. */
+  function marksFor(mode: AnnotationMode) {
+    return mode === "ruleout"
+      ? { own: ruledOut, setOwn: setRuledOut, setOther: setMaybe }
+      : { own: maybe, setOwn: setMaybe, setOther: setRuledOut };
+  }
+
+  function applyMark(sectorIdPainted: string, mode: AnnotationMode, on: boolean) {
     if (!armed) return;
-    // Read for the sound only. `ruledOut` can be a render behind during a
-    // fast sweep, which is harmless because the update below sets an
+    const { own, setOwn, setOther } = marksFor(mode);
+    // Read for the sound only. The mark sets can be a render behind during
+    // a fast sweep, which is harmless because the updates below set an
     // absolute state rather than toggling - at worst a tick is skipped.
-    if ((ruledOut[armed]?.has(sectorIdPainted) ?? false) === ruled) return;
-    setRuledOut((r) => {
+    if ((own[armed]?.has(sectorIdPainted) ?? false) === on) return;
+    setOwn((r) => {
       const next = new Set(r[armed] ?? []);
-      if (ruled) next.add(sectorIdPainted);
+      if (on) next.add(sectorIdPainted);
       else next.delete(sectorIdPainted);
       return { ...r, [armed]: next };
     });
+    // X and ? are mutually exclusive per cell: "definitely not here" and
+    // "could be here" cannot both hold, and letting them stack would draw
+    // two glyphs on one cell.
+    if (on) {
+      setOther((r) => {
+        if (!r[armed]?.has(sectorIdPainted)) return r;
+        const next = new Set(r[armed]);
+        next.delete(sectorIdPainted);
+        return { ...r, [armed]: next };
+      });
+    }
     playRuleOut();
   }
 
@@ -365,17 +415,21 @@ export function StarMap({ region }: { region: Region | null }) {
 
     if (markMode === "place") {
       setPlacements((p) => ({ ...p, [armed]: sectorIdClicked }));
-      setRuledOut((r) => {
+      // Both annotations are answered by the placement itself, so neither
+      // should survive under the marker.
+      const clearHere = (r: CellMarks) => {
         const next = new Set(r[armed] ?? []);
         next.delete(sectorIdClicked);
         return { ...r, [armed]: next };
-      });
+      };
+      setRuledOut(clearHere);
+      setMaybe(clearHere);
       setArmed(null);
       playPlace();
     }
-    // Rule Out is not handled here. It runs off pointerdown instead, so a
-    // press can turn into a sweep across several cells - and going through
-    // click as well would toggle every cell a second time.
+    // The annotation modes are not handled here. They run off pointerdown
+    // instead, so a press can turn into a sweep across several cells - and
+    // going through click as well would toggle every cell a second time.
   }
 
   function handleCellPointerDown(
@@ -383,27 +437,29 @@ export function StarMap({ region }: { region: Region | null }) {
     sectorIdPressed: string,
     occupied: boolean
   ) {
-    if (closed || !armed || markMode !== "ruleout" || occupied) return;
+    if (closed || !armed || !isAnnotation(markMode) || occupied) return;
     // Touch gives the element the gesture started in an implicit pointer
     // capture, which would stop pointerenter firing on the cells swept
     // into afterwards. Releasing it is what makes this work on a phone.
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
-    const ruled = !(ruledOut[armed]?.has(sectorIdPressed) ?? false);
-    setPaintTarget(ruled);
-    applyRuleOut(sectorIdPressed, ruled);
+    const { own } = marksFor(markMode);
+    const on = !(own[armed]?.has(sectorIdPressed) ?? false);
+    setPaintTarget(on);
+    applyMark(sectorIdPressed, markMode, on);
   }
 
   function handleCellPointerEnter(sectorIdEntered: string, occupied: boolean) {
-    if (paintTarget === null || closed || !armed || markMode !== "ruleout" || occupied) return;
-    applyRuleOut(sectorIdEntered, paintTarget);
+    if (paintTarget === null || closed || !armed || !isAnnotation(markMode) || occupied) return;
+    applyMark(sectorIdEntered, markMode, paintTarget);
   }
 
   function handleReset() {
     if (closed) return;
     setPlacements({});
     setRuledOut({});
+    setMaybe({});
     setArmed(null);
     setFiling(null);
     if (region) window.localStorage.removeItem(starMapStorageKey(region.id));
@@ -446,7 +502,7 @@ export function StarMap({ region }: { region: Region | null }) {
         <p className="text-xs text-lcars-ice/60 leading-relaxed -mb-1">
           {closed
             ? "This survey is closed. The board is kept as filed."
-            : "Arm a signature, then click a cell to place it. Switch to Rule Out to mark cells it definitely isn't at."}
+            : "Arm a signature, then click a cell to place it. Rule Out marks cells it definitely isn't at; Maybe marks the ones it still could be. Both paint across a sweep."}
         </p>
       )}
       <div className="flex items-center justify-center">
@@ -460,7 +516,7 @@ export function StarMap({ region }: { region: Region | null }) {
           /* Only while a rule-out sweep is actually possible. Left on
              permanently it would swallow the page scroll on a phone, where
              the map is tall enough that you need to scroll past it. */
-          style={{ touchAction: armed && markMode === "ruleout" ? "none" : undefined }}
+          style={{ touchAction: armed && isAnnotation(markMode) ? "none" : undefined }}
         >
           <defs>
             {/* Blurred glow halo behind a solid core - the same look Sweep
@@ -544,22 +600,31 @@ export function StarMap({ region }: { region: Region | null }) {
               const id = sectorId(ring, seg);
               const occupantId = occupantBySector.get(id);
               const isRuledOutForArmed = armed ? (ruledOut[armed]?.has(id) ?? false) : false;
+              const isMaybeForArmed = armed ? (maybe[armed]?.has(id) ?? false) : false;
+              // The hint marks cells the current mode would actually
+              // change, so it drops off whatever this mode has already
+              // marked - and in Place mode, off nothing.
               const isGhostTarget =
                 !!armed &&
                 !occupantId &&
-                (markMode === "place" ? true : !isRuledOutForArmed);
+                (markMode === "place"
+                  ? true
+                  : markMode === "ruleout"
+                  ? !isRuledOutForArmed
+                  : !isMaybeForArmed);
+              const restingFill = occupantId
+                ? "rgba(207,227,242,0.08)"
+                : isRuledOutForArmed
+                ? RULED_OUT_TINT
+                : isMaybeForArmed
+                ? MAYBE_TINT
+                : CELL_FILL;
 
               return (
                 <path
                   key={id}
                   d={annularSegmentPath(CX, CY, r0, r1, a0, a1)}
-                  fill={
-                    occupantId
-                      ? "rgba(207,227,242,0.08)"
-                      : isRuledOutForArmed
-                      ? RULED_OUT_TINT
-                      : CELL_FILL
-                  }
+                  fill={restingFill}
                   /* No outline of its own - the grid layer above draws it,
                      once. Only the armed-target hint is stroked here. */
                   stroke={isGhostTarget ? CELL_LINE_GHOST : "none"}
@@ -574,11 +639,7 @@ export function StarMap({ region }: { region: Region | null }) {
                   }}
                   onMouseLeave={(e) => {
                     setHovered((h) => (h === id ? null : h));
-                    if (!occupantId)
-                      e.currentTarget.setAttribute(
-                        "fill",
-                        isRuledOutForArmed ? RULED_OUT_TINT : CELL_FILL
-                      );
+                    if (!occupantId) e.currentTarget.setAttribute("fill", restingFill);
                   }}
                   onClick={() => handleCellClick(id)}
                 />
@@ -777,12 +838,46 @@ export function StarMap({ region }: { region: Region | null }) {
                   </g>
                 );
               })}
+
+          {/* Candidate marks for the armed signature. Same rule as the X
+              above: only for the armed signature, and never under a
+              marker. Drawn as a glyph rather than as a shape so it reads
+              as "?" at 260px, where the dial is at its smallest - the two
+              annotations have to be tellable apart at a glance or the
+              board stops being worth annotating. */}
+          {armed &&
+            [...(maybe[armed] ?? [])]
+              .filter((sid) => !occupantBySector.has(sid))
+              .map((sid) => {
+                const p = centerOf(sid);
+                return (
+                  <text
+                    key={sid}
+                    x={p.x}
+                    y={p.y}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize={15}
+                    fontWeight={700}
+                    fill={MAYBE_STROKE}
+                    opacity={0.75}
+                    style={{ pointerEvents: "none" }}
+                  >
+                    ?
+                  </text>
+                );
+              })}
         </svg>
       </div>
 
       {region && (
       <div className="flex flex-col gap-4 w-full">
-        <div className="flex items-start justify-between gap-3">
+        {/* Wraps because the mode switch grew a third button and the
+            desktop sidebar is the tight case - the map is 260px there and
+            the panel around it barely wider. If the switch and the Sector
+            readout stop fitting on one line the readout drops below rather
+            than the row overflowing its panel. */}
+        <div className="flex items-start justify-between gap-3 flex-wrap">
         {/* Nothing on a closed board responds to a click, so the mode
             switch would only advertise an interaction that no longer
             exists. */}
@@ -790,31 +885,35 @@ export function StarMap({ region }: { region: Region | null }) {
           <div className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50 mb-1.5">
             Click action
           </div>
+          {/* Three modes now, so mapped rather than written out - a third
+              hand-copied button is where the label and the mode it sets
+              drift apart. Padding is tighter than the two-button version
+              was: three labels plus the Sector readout is a lot to ask of
+              a 260px-wide sidebar. */}
           <div className="flex gap-1 bg-lcars-panel rounded-full p-1 w-fit">
-            <button
-              type="button"
-              onClick={() => {
-                playButtonClick();
-                setMarkMode("place");
-              }}
-              className={`lcars-caps text-[11px] px-3 py-1 rounded-full cursor-pointer ${
-                markMode === "place" ? "bg-lcars-amber text-black font-semibold" : "text-lcars-ice/60"
-              }`}
-            >
-              Place
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                playButtonClick();
-                setMarkMode("ruleout");
-              }}
-              className={`lcars-caps text-[11px] px-3 py-1 rounded-full cursor-pointer ${
-                markMode === "ruleout" ? "bg-lcars-amber text-black font-semibold" : "text-lcars-ice/60"
-              }`}
-            >
-              Rule out
-            </button>
+            {(
+              [
+                { mode: "place", label: "Place" },
+                { mode: "ruleout", label: "Rule out" },
+                { mode: "maybe", label: "Maybe" },
+              ] as const
+            ).map(({ mode, label }) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => {
+                  playButtonClick();
+                  setMarkMode(mode);
+                }}
+                className={`lcars-caps text-[11px] px-2.5 py-1 rounded-full cursor-pointer whitespace-nowrap ${
+                  markMode === mode
+                    ? "bg-lcars-amber text-black font-semibold"
+                    : "text-lcars-ice/60"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -875,10 +974,7 @@ export function StarMap({ region }: { region: Region | null }) {
                     isHovered ? "ring-2 ring-lcars-ice" : ""
                   }`}
                 >
-                  <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: q.color }}
-                  />
+                  <QuasarStar color={q.color} size={16} />
                   <span>{q.designation}</span>
                   {sid && (
                     <span className="text-[9px] text-lcars-ice/50 font-mono">{sid}</span>
