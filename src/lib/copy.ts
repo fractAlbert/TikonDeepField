@@ -36,12 +36,34 @@ export const PANEL_LABELS = {
 export const COPY = {
   noActiveAssignment: {
     caption: "No Active Assignment",
-    defaultHint: "Select a region on the Briefing panel, or survey a new one, to begin.",
+    /**
+     * Worded so it holds in both empty states. It used to open with
+     * "Select a region on the Briefing panel", which pointed at a picker
+     * that is genuinely empty on a first run now that no default region
+     * ships. The panels that show this one (Manifest, Sweep, Ring Scan)
+     * don't know which state they're in; Briefing does, and overrides it.
+     */
+    defaultHint: `Pick a survey up from the Briefing panel, or use ${PANEL_LABELS.surveyNewRegion} in the navigation, to begin.`,
   },
   briefing: {
     // Deliberately doesn't name a rail - it's the right-hand one on
     // desktop and part of the single strip on a phone.
     archivedHint: `This region was archived. Pick one above, or use ${PANEL_LABELS.surveyNewRegion} in the navigation, to continue.`,
+    /**
+     * The other empty state, and a genuinely different one: *you have never
+     * surveyed anything* rather than *the region you had is archived*. It
+     * exists because the app no longer ships with a default region, so this
+     * is what a first run actually lands on. A welcome page with a
+     * generated tutorial region is meant to replace it (backlog item 5) -
+     * until then this at least says the true thing rather than telling a
+     * new player their region was archived.
+     */
+    noSurveysHint: `No surveys on record. Use ${PANEL_LABELS.surveyNewRegion} in the navigation to open your first field.`,
+  },
+  surveyCap: {
+    caption: "Survey slots full",
+    /** Named actions only - each one is a control that exists on screen. */
+    hint: "Every slot is taken by an unfinished survey. File a classification to close one, withdraw it from the Star Map, or archive it below.",
   },
   stationLoading: {
     label: "Surveying…",

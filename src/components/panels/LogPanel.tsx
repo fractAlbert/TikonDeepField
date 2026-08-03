@@ -5,6 +5,7 @@ import { Region } from "@/lib/puzzle-types";
 import { resolveQuasarColor, getQuasarColors } from "@/lib/quasar-colors";
 import { loadStarMapSave } from "@/lib/starmap-storage";
 import {
+  ACTIVE_SURVEY_LIMIT,
   EMPTY_LOG,
   currentFilingLimit,
   SurveyLogEntry,
@@ -16,6 +17,7 @@ import {
   subscribeSurveyLog,
 } from "@/lib/survey-log";
 import { SurveyOutcome } from "@/lib/ranks";
+import { COPY, PANEL_LABELS } from "@/lib/copy";
 import { playButtonClick } from "@/lib/sound";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { QuasarStar } from "@/components/QuasarStar";
@@ -45,12 +47,19 @@ export function LogPanel({
   builtInRegions,
   activeRegionId,
   previewRegionId,
+  openSurveyCount,
+  capRefused,
   onPreviewRegion,
   onResumeRegion,
 }: {
   builtInRegions: Region[];
-  activeRegionId: string;
+  /** Null when nothing is active - a first run, or everything archived. */
+  activeRegionId: string | null;
   previewRegionId: string | null;
+  /** Surveys occupying a slot: unarchived and unclosed. */
+  openSurveyCount: number;
+  /** True when the player just tried to open a survey and was refused. */
+  capRefused: boolean;
   onPreviewRegion: (region: Region) => void;
   /** Make this survey the active one and go to its briefing. */
   onResumeRegion: (region: Region) => void;
@@ -62,7 +71,11 @@ export function LogPanel({
   // default list would undo the only thing archiving does here.
   const [showArchived, setShowArchived] = useState(false);
 
+  // Distinct from openSurveyCount: this one counts the Current *tab*, which
+  // includes closed surveys you haven't archived yet. Those show in the
+  // list but don't hold a slot.
   const activeCount = allEntries.filter((e) => !e.archived).length;
+  const atCap = openSurveyCount >= ACTIVE_SURVEY_LIMIT;
   const archivedCount = allEntries.length - activeCount;
   const entries = allEntries.filter((e) => e.archived === showArchived);
 
@@ -93,6 +106,40 @@ export function LogPanel({
           panel&apos;s selection row without deleting its history here.
         </p>
 
+        {/* The cap made visible before you hit it. Shown always rather than
+            only at the limit, so "Survey New Region did nothing" is never
+            the first time a player learns the rule exists. */}
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-3">
+          <span className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50">
+            Survey slots
+          </span>
+          <span
+            className={`font-mono text-sm tabular-nums ${
+              atCap ? "text-lcars-red" : "text-lcars-amber"
+            }`}
+          >
+            {openSurveyCount} / {ACTIVE_SURVEY_LIMIT}
+          </span>
+          <span className="text-[11px] text-lcars-ice/40">
+            Unfinished surveys only &mdash; closed and archived ones don&apos;t hold a slot.
+          </span>
+        </div>
+
+        {/* Only after a refusal. The count above is the standing state; this
+            is the answer to a specific click, and AppShell clears it when
+            you navigate away. */}
+        {capRefused && (
+          <div className="flex rounded-lg overflow-hidden mb-4">
+            <div className="w-2 shrink-0 bg-lcars-red" />
+            <div className="flex-1 min-w-0 bg-lcars-panel px-3.5 py-3">
+              <div className="lcars-caps text-[11px] font-semibold tracking-wide text-lcars-red mb-1">
+                {COPY.surveyCap.caption}
+              </div>
+              <p className="text-xs text-lcars-ice/70 leading-relaxed">{COPY.surveyCap.hint}</p>
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-1 bg-black/30 rounded-full p-1 w-fit mb-4">
           {([
             [false, "Current", activeCount],
@@ -119,7 +166,7 @@ export function LogPanel({
             {showArchived
               ? "Nothing archived. Archiving a survey moves it here and out of the Briefing panel's selection row."
               : allEntries.length === 0
-              ? "No surveys begun yet. Select a region on the Briefing panel, or generate a new one, to start your log."
+              ? `No surveys begun yet. Use ${PANEL_LABELS.surveyNewRegion} in the navigation to open your first field — it will appear here once you do.`
               : "Every survey is archived. Switch to Archived above to see them."}
           </p>
         ) : (

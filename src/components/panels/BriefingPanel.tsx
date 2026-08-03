@@ -12,17 +12,23 @@ import { NoActiveAssignmentPanel } from "@/components/NoActiveAssignmentPanel";
 export function BriefingPanel({
   region,
   regions,
-  noActiveAssignment,
+  hasAnySurveys,
   onSelectRegion,
   onOpenStationInfo,
 }: {
-  region: Region;
+  /** Null when there is no live survey - the placeholder branch below. */
+  region: Region | null;
   regions: Region[];
-  noActiveAssignment: boolean;
+  /**
+   * Whether the player has any surveys on record at all, archived
+   * included. Only used to pick which empty-state hint to show: without
+   * it, a brand-new player is told their region was archived.
+   */
+  hasAnySurveys: boolean;
   onSelectRegion: (id: string) => void;
   onOpenStationInfo: () => void;
 }) {
-  if (noActiveAssignment) {
+  if (!region) {
     // Rendered exactly like the Star Manifest/Sweep Scope/Quadrant Survey
     // placeholders: a single title-barred LcarsPanel sized with h-full,
     // directly under <main> - no extra wrapper div and no flex-1 sizing.
@@ -39,7 +45,7 @@ export function BriefingPanel({
         className="h-full"
       >
         <NoActiveAssignmentPanel
-          hint={COPY.briefing.archivedHint}
+          hint={hasAnySurveys ? COPY.briefing.archivedHint : COPY.briefing.noSurveysHint}
           onOpenStationInfo={onOpenStationInfo}
         />
       </LcarsPanel>

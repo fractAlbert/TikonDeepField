@@ -15,10 +15,17 @@ export function loadActiveRegionId(): string | null {
   }
 }
 
-export function saveActiveRegionId(regionId: string) {
+/**
+ * `null` clears the key rather than storing "null". There is a real state
+ * now where nothing is active - a first run, or the moment after the last
+ * survey is archived - and writing the string would make the next load
+ * hunt for a region called "null" instead of starting empty.
+ */
+export function saveActiveRegionId(regionId: string | null) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, regionId);
+    if (regionId === null) window.localStorage.removeItem(STORAGE_KEY);
+    else window.localStorage.setItem(STORAGE_KEY, regionId);
   } catch {
     // Storage full or blocked. The session still works; only the
     // remembered selection is lost.

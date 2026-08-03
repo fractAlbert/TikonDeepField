@@ -101,6 +101,22 @@ function countConsistent(region: Region, ringKnown: Set<string>): number {
   return found;
 }
 
+/**
+ * Is the region uniquely determined when exactly these signatures' rings
+ * are known? Pass nothing for "with no scans spent".
+ *
+ * Exported for `scripts/find-tutorial-region.ts`, which has to ask a
+ * sharper question than `assessSolvability` answers: not *can* this be
+ * solved with the scan budget, but does it **require** a scan, and does
+ * exactly one suffice. A tutorial region has to force the instrument it
+ * is teaching. Sharing this rather than re-deriving it in the script is
+ * the point - a finder that measured solvability its own way could bless
+ * a region the app then judges differently.
+ */
+export function uniqueWithRingsKnown(region: Region, ringKnown: Iterable<string> = []): boolean {
+  return countConsistent(region, new Set(ringKnown)) === 1;
+}
+
 /** Every k-sized subset of `items`. */
 function combinations<T>(items: T[], k: number): T[][] {
   if (k === 0) return [[]];

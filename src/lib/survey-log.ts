@@ -55,6 +55,24 @@ export function currentFilingLimit(): number {
  */
 export const RING_SCAN_LIMIT = 2;
 
+/**
+ * How many surveys may be open at once.
+ *
+ * Without a cap, a survey you never close costs you nothing: you can hold
+ * a dozen half-finished regions and simply never take the one filing that
+ * might go against your record. The filing budget and the rank ladder are
+ * both built around closing being the moment that counts, and a cap is
+ * what makes reaching for a fourth region cost something - you have to
+ * finish one, or withdraw it and take the neutral outcome on purpose.
+ *
+ * Three rather than one, because cross-referencing a stuck region against
+ * a fresh one is legitimate play, and because generated regions survive a
+ * reload now (5ebfa7d) - the Briefing picker lists every unarchived survey
+ * rather than just this session's, so the cap is also what keeps that row
+ * to a readable length by construction instead of by good housekeeping.
+ */
+export const ACTIVE_SURVEY_LIMIT = 3;
+
 export interface SurveyLogEntry {
   regionId: string;
   origin: SurveyOrigin;
@@ -188,6 +206,23 @@ export function entryOutcome(entry: SurveyLogEntry): SurveyOutcome | null {
 
 export function isClosed(entry: SurveyLogEntry): boolean {
   return entryOutcome(entry) !== null;
+}
+
+/**
+ * The surveys that occupy a slot against `ACTIVE_SURVEY_LIMIT`: unarchived
+ * and not closed.
+ *
+ * Confirmed, retracted and withdrawn regions are finished, so they don't
+ * hold a slot - the cap limits *unfinished* work, which is the thing worth
+ * limiting. Archiving frees a slot too, which is deliberate: it is the
+ * cheap way back under the cap for someone who just wants a region out of
+ * the way, and it keeps the history rather than deleting it.
+ *
+ * Takes the log rather than reading the store, so callers already
+ * subscribed via `useSyncExternalStore` recompute when it changes.
+ */
+export function activeSurveys(log: SurveyLogEntry[]): SurveyLogEntry[] {
+  return log.filter((e) => !e.archived && !isClosed(e));
 }
 
 export function getEntry(regionId: string): SurveyLogEntry | undefined {
