@@ -1,7 +1,8 @@
 # First-run tutorial
 
-Backlog item 3 (was 5 before the 2026-08-03 renumber). Plan only — nothing
-here is built yet.
+**Shipped 2026-08-03.** This was the plan; the "As built" section at the
+bottom records where the build departed from it and what only showed up
+once the thing was walked end to end.
 
 **The brief, as given 2026-08-03:** it starts from the blank page, guides
 the player through starting a game and through using each section, and the
@@ -207,3 +208,109 @@ stuck on is itself the deduction.
 Steps 1–4 are each independently useful, which is deliberate: this is a
 feature that can stall halfway and still leave the app better than it
 started.
+
+---
+
+## As built (2026-08-03)
+
+Shipped in one pass rather than the five staged steps above, because the
+region turned out to be the only genuinely independent piece — everything
+after it needs the step list to exist to be worth reviewing.
+
+### The region
+
+`Ember Verge`, baked by `scripts/bake-tutorial-region.ts --write` into
+`src/data/regions/tutorial.ts`. It beat the plan's candidate: **1** round of
+plain elimination after the scan rather than 2, with exactly one viable aim
+point. `scripts/explain-tutorial-region.ts` prints its whole deduction path,
+and the walk-through copy is written from that output rather than from
+memory:
+
+```
+briefing:      Mrk 633 @ R2S7, Q3970 @ R4S4 (anchors)
+               Ton 454, Mrk 280 in Quadrant III
+               nothing at all about CTA 118 or CTA 115
+bearings only: CTA 115 -> R5S3, Mrk 280 -> R2S6, Ton 454 -> R5S5
+THE WALL:      CTA 118 is R1S7 or R2S8 — and the two are indistinguishable:
+               both read 1 from Mrk 633, both out of range from Q3970
+one scan:      ring 2, which kills R1S7, and the region closes
+```
+
+That last line is why this region is better than tutorial-grade. The wall is
+a *single* signature whose two candidates read identically from **every**
+bearing available, so the copy can state the actual inference instead of
+gesturing at technique — which was the entire argument for fixing the region
+in the first place.
+
+`scripts/verify-puzzles.ts` now re-asserts all four bars plus "the
+walk-through aims at the one signature that works", so a re-bake that
+invalidates the copy fails the build rather than shipping a tutorial that
+teaches a false inference.
+
+### The three open decisions, as answered
+
+1. **Survey cap** — counts, as recommended. No special case in
+   `activeSurveys`.
+2. **Rank** — answered by direction on the day, and better than either
+   option written here: **a tutorial win counts toward your career, a
+   tutorial failure does not count against it.** `careerOutcome` in
+   `survey-log.ts` reports a tutorial `retracted` to the record as
+   `withdrawn` — reusing the ladder's existing neutral outcome, so no new
+   case in `reviewVerdict` — while `confirmed` passes through untouched.
+   The log entry keeps `retracted`, so the board and the report stay honest
+   about what happened; only the record is merciful. The report says so
+   explicitly, since otherwise a retraction reads as a real mark.
+3. **Blocking vs pointing** — points. `pointer-events` is off everywhere
+   except the coach bar, and every step condition asks about the board's
+   state rather than intercepting a click, so working out of order still
+   satisfies them. Next is never disabled: a player who already knows a step
+   can move on.
+
+### What the plan got wrong
+
+- **A docked bar, not a coach mark.** The plan assumed a tooltip pinned to
+  an anchor. That cannot work under the no-scroll rule — the usual fix for
+  an off-screen anchor is to scroll it into view, which is exactly what is
+  forbidden — and on a 390px screen it would cover the thing it points at.
+  The bar is fixed to the bottom, so it is never off screen and never moves
+  the layout; anchors get an *outline* instead, which is drawn outside the
+  box and so cannot shift a panel that exactly fits.
+- **The shell shrinks rather than being overlaid.** `#app-shell` takes
+  bottom padding while a step is up. Since the shell never scrolls, content
+  underneath a fixed bar would be unreachable rather than merely hidden.
+- **"Place the two that fall straight out" is three.** Measured, not
+  guessed.
+- **The phone lands on the menu hub, not Briefing** — so the welcome screen
+  shipped desktop-only until the hub was made to yield to it. The one place
+  a welcome matters most is the platform that never showed it.
+
+### Three bugs that only appeared by walking it
+
+Worth recording because none were visible from the code, and the first two
+were invisible to a DOM check that only counted elements:
+
+1. **The Sweep Scope never mounted.** The step controller set the panel with
+   `setRequestedPanel`, bypassing `selectPanel` — which is also what sets
+   `visitedSweep`, the flag that mounts the scope at all. Step 3 navigated to
+   an empty panel and told the player to read an instrument that wasn't
+   there. Caught by measuring the container at height 0.
+2. **Anchors in panels that mount on navigation never highlighted.** One
+   `requestAnimationFrame` fires before React has committed the newly
+   selected panel. Now retried for ~30 frames.
+3. **React wipes an imperatively-added class.** `#sweep-scope-container`'s
+   `className` flips between `""` and `"hidden"`, and React rewrites it on
+   exactly the render a step navigates — silently removing the highlight.
+   A `MutationObserver` puts it back. This worked on every static-className
+   anchor and failed only on the dynamic one, which is the kind of thing
+   that ships.
+
+### Verified end to end
+
+Both outcomes, on desktop and at 390x844:
+
+| | |
+| --- | --- |
+| Win path | 06/06 matched, 1 filing, 1 of 2 scans; career records `confirmed` |
+| Fail path | entry `retracted`, career records `withdrawn`, report says so |
+| All 10 steps | correct panel, correct anchor ringed, conditions flip on the board |
+| Phone | welcome reachable, shell never scrolls, no horizontal overflow |

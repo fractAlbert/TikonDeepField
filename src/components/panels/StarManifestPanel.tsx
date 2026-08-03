@@ -134,7 +134,7 @@ export function StarManifestPanel({ region }: { region: Region }) {
           Nothing is filled in that you have not looked at.
         </p>
 
-        <ul className="flex flex-col gap-2">
+        <ul id="manifest-list" className="flex flex-col gap-2">
           {region.quasars.map((q, i) => {
             const color = colorOf(q.id, i);
             const facts = knownFacts(region, q.id);

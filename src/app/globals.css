@@ -47,3 +47,36 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* The walk-through's anchor highlight, applied imperatively by
+   TutorialCoach to whichever element the current step names.
+   
+   Outline rather than border or ring: outline is drawn outside the box and
+   doesn't participate in layout, so ringing an element cannot shift the
+   panel it sits in. That matters more than usual here - the shell never
+   scrolls, so a highlight that nudged the layout could push content out of
+   a panel that exactly fits. */
+.tutorial-anchor {
+  outline: 2px solid var(--lcars-teal);
+  outline-offset: 3px;
+  border-radius: 4px;
+  animation: tutorial-anchor-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes tutorial-anchor-pulse {
+  0%,
+  100% {
+    outline-color: var(--lcars-teal);
+  }
+  50% {
+    outline-color: rgba(92, 225, 200, 0.35);
+  }
+}
+
+/* Respect a stated preference for less motion - the pulse is decoration,
+   the outline is the information. */
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-anchor {
+    animation: none;
+  }
+}

@@ -108,7 +108,7 @@ export function RingScanPanel({ region }: { region: Region }) {
         {/* An already-scanned signature stays clickable: re-reading a result
             you have paid for is free, since the cost is the decision about
             where to aim rather than the act of looking. */}
-        <div className="flex flex-wrap gap-1.5">
+        <div id="ringscan-signatures" className="flex flex-wrap gap-1.5">
           {signatures.map((s) => {
             const used = scanned.includes(s.id);
             const locked = !used && (remaining === 0 || closed);

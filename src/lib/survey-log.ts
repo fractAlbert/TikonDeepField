@@ -8,6 +8,7 @@
 import { Region } from "./puzzle-types";
 import { SurveyOutcome, filingsForRank } from "./ranks";
 import { RankEvent, getPlayer, recordOutcome } from "./player";
+import { TUTORIAL_REGION_ID } from "@/data/regions/tutorial";
 
 export type SurveyOrigin = "builtin" | "generated";
 
@@ -273,6 +274,30 @@ export function recordRingScan(regionId: string, quasarId: string): string[] {
 }
 
 /**
+ * What the *career record* is told, which is not always what happened on
+ * the board.
+ *
+ * The tutorial is the only region this bends for, and it bends one way.
+ * Finishing it is a real confirmation and counts toward your victories -
+ * you solved a real region, and a training win that vanished from your
+ * record would be a strange thing to teach on. Failing it must not count
+ * against you: it is the first survey anyone files and the walk-through
+ * hands you the answer, so a player who spends their filings exploring the
+ * board should not carry a retraction for it.
+ *
+ * Reported as `withdrawn` rather than dropped entirely, because withdrawal
+ * is already the rank-neutral outcome the ladder is built around (see
+ * docs/win-conditions.md) - reusing it means no new case in `reviewVerdict`
+ * or `tallyOutcomes`. The log entry keeps `retracted`, so the board and the
+ * survey report stay honest about what actually happened; only the record
+ * is merciful.
+ */
+function careerOutcome(regionId: string, outcome: SurveyOutcome): SurveyOutcome {
+  if (regionId === TUTORIAL_REGION_ID && outcome === "retracted") return "withdrawn";
+  return outcome;
+}
+
+/**
  * Writes the outcome, archives the region, and reports it to the career
  * record - the single place any of those happens.
  *
@@ -301,7 +326,7 @@ function closeEntry(
   now: number
 ): { entry: SurveyLogEntry; rankEvent: RankEvent | null } {
   if (isClosed(entry)) return { entry, rankEvent: null };
-  const rankEvent = recordOutcome(outcome, region.id, region.name);
+  const rankEvent = recordOutcome(careerOutcome(region.id, outcome), region.id, region.name);
   const closed: SurveyLogEntry = {
     ...entry,
     outcome,

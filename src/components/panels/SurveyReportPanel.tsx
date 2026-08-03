@@ -35,6 +35,7 @@ import { LcarsButton } from "@/components/LcarsButton";
 import { QuasarStar } from "@/components/QuasarStar";
 import { RankInsignia } from "@/components/RankInsignia";
 import { ResultField } from "@/components/starmap/ResultField";
+import { TUTORIAL_REGION_ID } from "@/data/regions/tutorial";
 
 /**
  * The verdict, in the station's voice. Same three endings the Star Map
@@ -101,6 +102,7 @@ export function SurveyReportPanel({
 
   const placements = loadStarMapSave(entry.regionId)?.placements ?? {};
   const colors = getQuasarColors();
+  const isTutorial = entry.regionId === TUTORIAL_REGION_ID;
 
   const matched = region.quasars.filter(
     (q) => placements[q.id] && placements[q.id] === region.solution[q.id]?.sector
@@ -122,6 +124,18 @@ export function SurveyReportPanel({
               {style.label}
             </div>
             <p className="text-xs text-lcars-ice/60 leading-relaxed mt-2">{style.detail}</p>
+            {/* The tutorial's retraction is rank-neutral (see
+                `careerOutcome` in survey-log.ts), and without saying so the
+                report reads as a real mark on the record - which is the one
+                thing a training region must never do. Only shown where it
+                is true: a tutorial *win* is an ordinary confirmation and
+                counts like any other, so it gets no note. */}
+            {isTutorial && outcome === "retracted" && (
+              <p className="text-[11px] text-lcars-teal/85 leading-relaxed mt-2">
+                This was a training survey &mdash; it has not been counted
+                against your record. Open a real field whenever you are ready.
+              </p>
+            )}
             {entry.closedAt && (
               <p className="text-[11px] text-lcars-ice/35 font-mono mt-1.5">
                 Closed {formatDate(entry.closedAt)}

@@ -4,10 +4,12 @@ import { StarMap } from "@/components/starmap/StarMap";
 export function StarMapPanel({
   region,
   onClosed,
+  onBoardChange,
 }: {
   region: Region | null;
-  /** Passed straight through - see StarMap for what it's for. */
+  /** Passed straight through - see StarMap for what they're for. */
   onClosed?: (regionId: string) => void;
+  onBoardChange?: (board: { placements: Record<string, string | undefined>; markCount: number }) => void;
 }) {
   return (
     <div className="bg-lcars-panel rounded-t-xl overflow-hidden">
@@ -28,7 +30,12 @@ export function StarMapPanel({
               No active survey &mdash; the field is shown for reference only.
             </p>
           )}
-          <StarMap key={region?.id ?? "empty"} region={region} onClosed={onClosed} />
+          <StarMap
+            key={region?.id ?? "empty"}
+            region={region}
+            onClosed={onClosed}
+            onBoardChange={onBoardChange}
+          />
         </div>
       </div>
     </div>

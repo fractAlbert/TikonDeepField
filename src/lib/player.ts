@@ -48,6 +48,22 @@ export interface OutcomeRecord {
   regionName: string;
 }
 
+/**
+ * How far through the first-run walk-through the player has got.
+ *
+ * On the profile rather than in the survey log, deliberately: clearing your
+ * surveys must not resurrect the tutorial. The furthest step is stored
+ * rather than a boolean so it can resume mid-way, and `done` is separate
+ * from `step` because finishing and skipping both end it but only one of
+ * them reached the last step.
+ */
+export interface TutorialState {
+  /** Furthest step index reached. */
+  step: number;
+  /** Finished, or skipped. Either way it stops offering itself. */
+  done: boolean;
+}
+
 export interface PlayerProfile {
   name: string;
   serviceNumber: string;
@@ -56,6 +72,8 @@ export interface PlayerProfile {
   rank: number;
   /** Every closed region, oldest first. Append-only. */
   outcomes: OutcomeRecord[];
+  /** Undefined for profiles written before the tutorial existed - which is what makes it not fire retroactively for them. See `tutorialState`. */
+  tutorial?: TutorialState;
   /**
    * Index into `outcomes` where the current review window starts. Reset to
    * the end of the stream on every rank change, so a single bad stretch
@@ -107,6 +125,7 @@ function read(): PlayerProfile | null {
       outcomes: parsed.outcomes ?? [],
       windowStart: parsed.windowStart ?? 0,
       history: parsed.history ?? [],
+      tutorial: parsed.tutorial,
     };
   } catch {
     return null;
@@ -198,6 +217,44 @@ export function rerollPlayerName(): string {
   if (next === current.name) next = randomOfficerName();
   renamePlayer(next);
   return next;
+}
+
+/**
+ * The tutorial's state, defaulted for anyone whose profile predates it.
+ *
+ * The fallback keys off whether they have surveys, not off rank or age of
+ * profile: someone mid-campaign is treated as **done**, so the walk-through
+ * cannot ambush them the next time a board happens to be empty. Someone
+ * with an empty roster is offered it regardless of rank - which does mean a
+ * senior officer who archived everything gets the welcome, and that is the
+ * right call, because the alternative on that screen is the bare "no
+ * surveys on record" placeholder. It is one click to decline.
+ */
+export function tutorialState(profile: PlayerProfile, hasAnySurveys: boolean): TutorialState {
+  return profile.tutorial ?? { step: 0, done: hasAnySurveys };
+}
+
+/** Records progress through the walk-through. Never moves backwards. */
+export function setTutorialStep(step: number) {
+  const current = getPlayer();
+  if (!isCommissioned(current)) return;
+  const existing = current.tutorial ?? { step: 0, done: false };
+  if (existing.step >= step && !existing.done) return;
+  commit({ ...current, tutorial: { step: Math.max(existing.step, step), done: false } });
+}
+
+/** Finished it, or skipped it. Both stop it offering itself again. */
+export function endTutorial(step: number) {
+  const current = getPlayer();
+  if (!isCommissioned(current)) return;
+  commit({ ...current, tutorial: { step, done: true } });
+}
+
+/** Replay from the top, from the Officer panel. */
+export function restartTutorial() {
+  const current = getPlayer();
+  if (!isCommissioned(current)) return;
+  commit({ ...current, tutorial: { step: 0, done: false } });
 }
 
 /** The slice of closed regions the current review is judging. */
