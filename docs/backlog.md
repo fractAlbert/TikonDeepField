@@ -15,6 +15,11 @@ priority order — where one is recommended, the entry says so. Shipped items
 are removed and the rest renumbered, so a number only means what this table
 says it means today.
 
+Item 9 (survey result report, auto-archive on close) shipped 2026-08-03 and
+is written up in `win-conditions.md`. Numbers 1–8 never moved — that was the
+point of giving it the next free number rather than the top slot — so
+`tutorial-plan.md` and the cross-references below are still valid.
+
 | # | item | where |
 | --- | --- | --- |
 | 1 | `generateRegion()` reads rank, so regions get harder as you rise | Gameplay |
@@ -157,6 +162,14 @@ Notes for whoever builds it:
   larger for free. That is the actual point of the feature.
 - The nav rails should stay reachable; maximising the map should not become
   a mode you can get stuck in.
+- **There is precedent now.** The survey result report (2026-08-03) drops
+  the sidebar while it is open and draws the field into `main` at 392px
+  against the sidebar's 260. It gets away with unmounting the map because
+  the region behind it is closed; a maximise control cannot, which is
+  exactly the remount hazard above. What it does establish is the shared
+  geometry: `components/starmap/field.tsx` holds the dial's constants and
+  its two inert chrome layers, so a second drawing of the field is now a
+  small component rather than a copy of StarMap.
 
 ### 7 - Log, Help and Prototypes flick-scroll on a phone
 

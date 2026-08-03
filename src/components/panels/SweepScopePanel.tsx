@@ -8,6 +8,7 @@ import { PANEL_LABELS } from "@/lib/copy";
 import { recordReference } from "@/lib/observations";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { RelativeDistanceScope, ScopeSignature } from "@/components/sweep/RelativeDistanceScope";
+import { quasarGlyph } from "@/lib/quasar-glyph";
 
 // One fixed lookup, not tied to any region (sectors are the same 40-cell
 // field for everyone).
@@ -23,6 +24,7 @@ export function SweepScopePanel({ region, visible }: { region: Region; visible: 
           id: q.designation,
           label: q.designation,
           color: colorOf(q.id, i),
+          glyph: quasarGlyph(i),
           ring: sector.ring,
           seg: sector.seg,
         };

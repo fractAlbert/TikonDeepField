@@ -1,6 +1,8 @@
 "use client";
 
 import { useId } from "react";
+import { QuasarMarker } from "@/components/QuasarMarker";
+import { QuasarGlyph } from "@/lib/quasar-glyph";
 
 /**
  * A signature, drawn the one way it is drawn anywhere.
@@ -32,11 +34,28 @@ import { useId } from "react";
  * control's own surface.
  */
 
-/** Box side in user units. Only sets padding - see the size math below. */
-const BOX = 24;
-const CORE_R = 3.6;
-const HALO_R = 6.4;
-const BLUR = 2.4;
+/**
+ * Box side in user units. Only sets padding - see the size math below.
+ *
+ * Widened from 24 to 30 when glyphs shipped. The four-spike reaches
+ * `CORE_R * 3.2` = 11.5 units from the centre, which overflowed a 24-box
+ * (half-side 12) once the round cap was counted, clipping the arm tips. The
+ * core is held at its old *rendered* size by `CORE_SCALE` below rather than
+ * by this number, so no chip in the app changed size.
+ */
+const BOX = 30;
+const CORE_R = 4.5;
+const BLUR = 3;
+// Everything above is the old 24/3.6/2.4 multiplied by 30/24, so the
+// core-to-box ratio is still exactly 0.15 and `quasarStarCorePx` below
+// returns what it always did. Nothing in the app changed size; the box just
+// gained the padding the spikes needed. Widest feature is the four-spike at
+// CORE_R * 3.2 = 14.4 plus a 0.25 cap, against a half-side of 15.
+//
+// The halo is no longer a constant here at all - it and every other feature
+// come from `QuasarMarker`, which is the point: a Four-spike in a 14px Log
+// chip is then the same drawing as one on the dial rather than a smaller
+// thing that resembles it.
 
 /**
  * Rendered core diameter for a given `size`, in px:
@@ -50,11 +69,19 @@ export function quasarStarCorePx(size: number): number {
 
 export function QuasarStar({
   color,
+  glyph,
   size = 20,
   className = "",
   title,
 }: {
   color: string;
+  /**
+   * The signature's shape. Required, not defaulted: a default would let a
+   * call site silently draw the wrong signature's marker, which is the
+   * failure `quasar-colors.ts` avoided by not making colour a prop at all.
+   * Derive it with `quasarGlyph(index)` from the same index the colour uses.
+   */
+  glyph: QuasarGlyph;
   /** Box side in px. The core paints at 0.3x this. */
   size?: number;
   className?: string;
@@ -80,15 +107,14 @@ export function QuasarStar({
           <feGaussianBlur stdDeviation={BLUR} />
         </filter>
       </defs>
-      <circle
-        cx={BOX / 2}
-        cy={BOX / 2}
-        r={HALO_R}
-        fill={color}
-        filter={`url(#${filterId})`}
-        opacity={0.85}
+      <QuasarMarker
+        glyph={glyph}
+        x={BOX / 2}
+        y={BOX / 2}
+        core={CORE_R}
+        color={color}
+        filterId={filterId}
       />
-      <circle cx={BOX / 2} cy={BOX / 2} r={CORE_R} fill={color} />
     </svg>
   );
 }

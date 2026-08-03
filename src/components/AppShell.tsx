@@ -37,6 +37,7 @@ import { ProfilePanel } from "@/components/panels/ProfilePanel";
 import { OfficerBadge } from "@/components/OfficerBadge";
 import { StationEmblem } from "@/components/StationEmblem";
 import { StationLoadingScreen } from "@/components/StationLoadingScreen";
+import { SurveyReportPanel } from "@/components/panels/SurveyReportPanel";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { GAME_NAME, OUTPOST_NAME, PANEL_LABELS } from "@/lib/copy";
 
@@ -55,7 +56,12 @@ type PanelId =
   | "station"
   | "profile"
   | "starmap"
-  | "menu";
+  | "menu"
+  // Deliberately not in any nav list. The report is reached by finishing a
+  // survey and by opening a closed entry from the Log, which is what keeps
+  // it from needing a twelfth slot in the phone hub - that run is full at
+  // eleven (backlog item 6).
+  | "report";
 
 const MOBILE_ONLY_PANELS: PanelId[] = ["starmap", "menu"];
 
@@ -118,6 +124,8 @@ const MOBILE_NAV: NavItem[] = [PRIMARY_NAV[0], STARMAP_NAV, ...PRIMARY_NAV.slice
 const MOBILE_TITLES: Record<string, string> = {
   ...Object.fromEntries(MOBILE_NAV.map((item) => [item.id, item.label])),
   station: OUTPOST_NAME,
+  // Not a menu entry, so it has no label to inherit - see PanelId.
+  report: "Survey Result",
 };
 
 export function AppShell() {
@@ -267,6 +275,37 @@ export function AppShell() {
   // navigation, one panel away from where it gets explained.
   const [capRefused, setCapRefused] = useState(false);
 
+  // Which closed survey the result report is showing. Resolved from the log
+  // rather than from `regions`, and rendered outside the `noActiveAssignment`
+  // gate below - closing a region archives it, and every gated panel would
+  // fall back to the placeholder in the same frame the report was opened.
+  const [reportRegionId, setReportRegionId] = useState<string | null>(null);
+  const reportEntry = useMemo(
+    () => log.find((e) => e.regionId === reportRegionId) ?? null,
+    [log, reportRegionId]
+  );
+  const reportRegion = reportEntry ? resolveEntryRegion(reportEntry, builtInRegions) ?? null : null;
+
+  /**
+   * A survey just ended - by a final filing or by a withdrawal. Both now
+   * archive the region (see `closeEntry`), so without this the app would
+   * cut straight to the station logo.
+   *
+   * The active region is cleared as well, so "no active survey" is
+   * literally true rather than "your active survey is one you finished".
+   */
+  function handleSurveyClosed(closedRegionId: string) {
+    setReportRegionId(closedRegionId);
+    setRegionId(null);
+    selectPanel("report");
+  }
+
+  /** Re-open a report from the Log, which is what makes it not a one-shot. */
+  function handleOpenReport(closedRegionId: string) {
+    setReportRegionId(closedRegionId);
+    selectPanel("report");
+  }
+
   function selectPanel(id: string) {
     setRequestedPanel(id as PanelId);
     if (id === "sweep") setVisitedSweep(true);
@@ -361,7 +400,12 @@ export function AppShell() {
           Previewing from Log &mdash; not your active survey
         </p>
       )}
-      <StarMapPanel region={starMapRegion} />
+      <StarMapPanel
+        region={starMapRegion}
+        /* Only the live survey can close; a previewed entry from the Log
+           is already closed and read-only. */
+        onClosed={starMapRegion === activeRegion ? handleSurveyClosed : undefined}
+      />
     </>
   );
 
@@ -510,15 +554,40 @@ export function AppShell() {
               capRefused={capRefused}
               onPreviewRegion={setLogPreviewRegion}
               onResumeRegion={resumeRegion}
+              onOpenReport={handleOpenReport}
             />
           )}
+          {/* Outside the activeRegion gate on purpose - the region this
+              describes is archived by definition, which is exactly what
+              that gate rejects. */}
+          {panel === "report" &&
+            (reportRegion && reportEntry ? (
+              <SurveyReportPanel
+                region={reportRegion}
+                entry={reportEntry}
+                atSurveyCap={atSurveyCap}
+                onReturnToLog={() => selectPanel("log")}
+                onSurveyNewRegion={() => handleNavSelect("generate")}
+              />
+            ) : (
+              <LcarsPanel id="report-placeholder" title="Survey Result" accent="bg-lcars-teal" className="h-full">
+                <NoActiveAssignmentPanel onOpenStationInfo={openStationInfo} />
+              </LcarsPanel>
+            ))}
           {panel === "profile" && <ProfilePanel />}
           {panel === "help" && <HelpPanel />}
           {panel === "prototypes" && <PrototypesPanel region={activeRegion} />}
           {isMobile && panel === "starmap" && starMapView}
         </main>
 
-        {!isMobile && (
+        {/* Dropped while the report is up. The report draws the same field
+            itself, much larger, so leaving the sidebar there would show it
+            twice at two sizes - and giving `main` those 380px back is what
+            lets the dial and the catalog sit side by side. Hiding rather
+            than moving the map is safe here because the region behind it is
+            closed: StarMap re-reads its board from localStorage on remount,
+            and a closed board can't have changed meanwhile. */}
+        {!isMobile && panel !== "report" && (
           <div
             id="starmap-sidebar"
             className="w-[360px] shrink-0 min-h-0 overflow-y-auto no-scrollbar ml-[20px] max-lg:hidden"

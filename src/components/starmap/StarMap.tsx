@@ -2,15 +2,27 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Region } from "@/lib/puzzle-types";
+import { RING_COUNT, SEGMENT_COUNT, buildSectors, quadrantOf, sectorId } from "@/lib/grid";
 import {
-  QUADRANTS,
-  RING_COUNT,
-  SEGMENT_COUNT,
-  buildSectors,
-  quadrantOf,
-  sectorId,
-} from "@/lib/grid";
-import { annularSegmentPath, polarPoint } from "@/lib/polar-geometry";
+  CATALOG_RING_R,
+  CELL_FILL,
+  CELL_FILL_HOVER,
+  CELL_FILL_OCCUPIED,
+  CELL_LINE_GHOST,
+  CONFIRM_RING_R,
+  FieldGridLines,
+  FieldLabels,
+  MARKER_CORE,
+  MarkerRing,
+  MAYBE_STROKE,
+  MAYBE_TINT,
+  QuasarGlowDefs,
+  RULED_OUT_TINT,
+  cellPath,
+  centerOf,
+} from "@/components/starmap/field";
+import { QuasarMarker } from "@/components/QuasarMarker";
+import { quasarGlyph } from "@/lib/quasar-glyph";
 import { useQuasarColor } from "@/lib/use-quasar-colors";
 import { starMapStorageKey } from "@/lib/starmap-storage";
 import {
@@ -89,64 +101,6 @@ interface SavedState {
   maybe?: Record<string, string[]>;
 }
 
-const CX = 220;
-const CY = 220;
-const INNER_HOLE = 30;
-const MAX_R = 200;
-const RING_GAP = 3;
-const SEG_GAP_DEG = 3;
-const RING_THICKNESS = (MAX_R - INNER_HOLE) / RING_COUNT;
-const SEG_SPAN = 360 / SEGMENT_COUNT;
-
-// A quadrant is a run of adjacent segments (grid.ts: two of the eight).
-// Cells inside one quadrant sit flush, sharing a single dividing line, so
-// the pair reads as one block; the gap is spent only where a quadrant
-// actually ends. Without this every boundary looked alike and the four
-// quadrants were invisible on the dial - which matters, because two of the
-// four briefing clues are quadrant clues.
-const SEGMENTS_PER_QUADRANT = SEGMENT_COUNT / QUADRANTS.length;
-const opensQuadrant = (seg: number) => seg % SEGMENTS_PER_QUADRANT === 0;
-const closesQuadrant = (seg: number) => seg % SEGMENTS_PER_QUADRANT === SEGMENTS_PER_QUADRANT - 1;
-
-/** Angular extent of one cell, gapped only at quadrant boundaries. */
-const cellStartAngle = (seg: number) =>
-  seg * SEG_SPAN + (opensQuadrant(seg) ? SEG_GAP_DEG / 2 : 0);
-const cellEndAngle = (seg: number) =>
-  (seg + 1) * SEG_SPAN - (closesQuadrant(seg) ? SEG_GAP_DEG / 2 : 0);
-
-// Ring/segment/centre labels. The size is in SVG user units, not pixels:
-// the viewBox is 440 wide and renders into 260px in the desktop sidebar,
-// so a label paints at size * 260/440 there (and correspondingly larger on
-// a phone, where the map is wider). The old value of 10 came out at 5.9px,
-// which was simply too small to read. 18 lands at 10.6px and, per the label-size trial in
-// the Prototypes panel, is still clear of the grid - the ring labels sit
-// at a fixed radius and only start crowding their own ring nearer 22.
-// Neutral gray rather than the ice tint used elsewhere, so labels this
-// much larger sit behind the signatures instead of competing with them.
-const LABEL_SIZE = 18;
-const LABEL_SIZE_CTR = 17;
-const LABEL_FILL = "rgba(198,203,211,0.45)";
-
-// Quadrant labels sit in the corners of the viewBox, which are empty: the
-// dial is a circle of radius 200 in a 440 box, so the diagonals have ~80
-// units of clearance the cardinal directions don't. That works because a
-// quadrant is two of the eight segments, which puts every quadrant's
-// midpoint exactly on a diagonal - 45, 135, 225, 315 degrees.
-//
-// Worth labelling at all because two of the four briefing clues are
-// quadrant clues, and until now the map never said which segments a
-// quadrant covered. See grid.ts: quadrant I is segments S1-S2, II is
-// S3-S4, and so on clockwise.
-const QUADRANT_LABEL_R = 236;
-// User units, like every other label here. The sidebar renders the 440-unit
-// viewBox at 260px, so this paints at ~10px - matching the ring and segment
-// labels, which the label-size trial in the Prototypes panel settled at
-// 10.6px after 5.9px proved unreadable. Going larger is what runs "QUAD III"
-// out of the corner; `scripts/check-quadrant-labels.ts` measures the margin.
-const QUADRANT_LABEL_SIZE = 17;
-const QUADRANT_FILL = "rgba(198,203,211,0.40)";
-const QUADRANT_LINE = "rgba(232,240,247,0.30)";
-
 // What each ending says once the region is closed. The wording matters:
 // "retracted" is the station pulling an entry before it reached anyone,
 // which is the actual stake (docs/win-conditions.md) - a wrong filing
@@ -169,25 +123,23 @@ const OUTCOME_COPY: Record<SurveyOutcome, { label: string; tone: string; detail:
   },
 };
 
-const CELL_LINE = "rgba(232,240,247,0.24)";
-const CELL_LINE_GHOST = "rgba(232,240,247,0.65)";
-const CELL_FILL = "rgba(207,227,242,0.045)";
-const CELL_FILL_HOVER = "rgba(232,240,247,0.14)";
-const RULED_OUT_TINT = "rgba(255,107,107,0.05)";
-// Light grey, off the rule-out's red entirely: red is already the app's "no"
-// everywhere (Reset, incorrect-verify, ruled-out), so a maybe must not read
-// as a paler no. Grey also keeps the mark neutral against every signature
-// colour, which an amber one didn't - it sat close to the amber and orange
-// entries in the palette.
-//
-// The tint runs hotter than the rule-out's (0.10 against 0.05) because a
-// grey wash can't lean on hue to separate itself from the resting cell fill
-// (rgba(207,227,242,0.045)) - only on being brighter. Still under the hover
-// fill at 0.14, so hovering a marked cell still reads as a change.
-const MAYBE_TINT = "rgba(210,220,232,0.10)";
-const MAYBE_STROKE = "#c3ccd6";
-
-export function StarMap({ region }: { region: Region | null }) {
+export function StarMap({
+  region,
+  onClosed,
+}: {
+  region: Region | null;
+  /**
+   * Fired the moment a filing or a withdrawal closes the region, so the
+   * shell can open the survey result report.
+   *
+   * It has to be a callback rather than something the report derives on its
+   * own, because closing now archives the region (see `closeEntry`), which
+   * flips `noActiveAssignment` and unmounts everything below it - including
+   * this component and the rank event it was about to announce. The report
+   * reads that event back off the log entry; this is only the trigger.
+   */
+  onClosed?: (regionId: string) => void;
+}) {
   const sectors = useMemo(() => buildSectors(), []);
   const colorOf = useQuasarColor(region?.id ?? "");
   const quasars = useMemo(
@@ -197,6 +149,10 @@ export function StarMap({ region }: { region: Region | null }) {
             id: q.id,
             designation: q.designation,
             color: colorOf(q.id, i),
+            // Second identity channel, assigned off the same index as the
+            // colour so the chip below and the marker on the dial can never
+            // disagree about which signature you armed.
+            glyph: quasarGlyph(i),
           }))
         : [],
     [region, colorOf]
@@ -306,19 +262,6 @@ export function StarMap({ region }: { region: Region | null }) {
   // events - the cell underneath does - so this comes from the hovered
   // sector rather than from the marker itself.
   const hoveredQuasarId = hovered ? occupantBySector.get(hovered) : undefined;
-
-  /** Centre point of a sector's cell, in SVG user units. */
-  const centerOf = useMemo(() => {
-    const byId = new Map(sectors.map((s) => [s.id, s]));
-    return (sid: string) => {
-      const sector = byId.get(sid)!;
-      const r0 = INNER_HOLE + sector.ring * RING_THICKNESS + RING_GAP / 2;
-      const r1 = INNER_HOLE + (sector.ring + 1) * RING_THICKNESS - RING_GAP / 2;
-      const a0 = cellStartAngle(sector.seg);
-      const a1 = cellEndAngle(sector.seg);
-      return polarPoint(CX, CY, (r0 + r1) / 2, (a0 + a1) / 2);
-    };
-  }, [sectors]);
 
   // Rule-out painting: press and sweep to mark or clear a run of cells
   // instead of clicking each one. Non-null while a stroke is in progress,
@@ -485,6 +428,10 @@ export function StarMap({ region }: { region: Region | null }) {
     setFiling({ placements: { ...placements }, discrepancies, solved });
     setConfirmingWithdraw(false);
     if (result?.rankEvent) setRankEvent(result.rankEvent);
+    // Only on the filing that actually closed it. The ones that merely
+    // spend a filing leave you on the board with a discrepancy count to
+    // reason from, which is the whole loop.
+    if (result?.outcome) onClosed?.(region.id);
   }
 
   function handleWithdraw() {
@@ -501,6 +448,7 @@ export function StarMap({ region }: { region: Region | null }) {
     setConfirmingWithdraw(false);
     playReset();
     if (event) setRankEvent(event);
+    onClosed?.(region.id);
   }
 
   return (
@@ -525,85 +473,13 @@ export function StarMap({ region }: { region: Region | null }) {
              the map is tall enough that you need to scroll past it. */
           style={{ touchAction: armed && isAnnotation(markMode) ? "none" : undefined }}
         >
-          <defs>
-            {/* Blurred glow halo behind a solid core - the same look Sweep
-                Scope's blips use, kept consistent so a quasar reads the
-                same everywhere it's shown. */}
-            <filter id="quasar-glow" x="-150%" y="-150%" width="400%" height="400%">
-              <feGaussianBlur stdDeviation="3.5" />
-            </filter>
-          </defs>
-          <circle cx={CX} cy={CY} r={INNER_HOLE - 4} fill="none" stroke={CELL_LINE} />
-          <text
-            x={CX}
-            y={CY + 6}
-            textAnchor="middle"
-            fontSize={LABEL_SIZE_CTR}
-            letterSpacing="0.08em"
-            fill={LABEL_FILL}
-          >
-            CTR
-          </text>
-
-          {/* The grid, drawn once per line.
-
-              The cells below are fill-only. They can't carry the outline:
-              two cells inside a quadrant share a radial edge, so stroking
-              each cell painted that edge twice and it came out heavier than
-              the quadrant's real boundary - making the middle of a quadrant
-              look like its edge, which is the opposite of the point.
-
-              So each quadrant-ring block is outlined as one shape, with its
-              internal divider drawn separately as a single line. Drawn
-              before the cells so the dashed ghost-target outline, which is
-              still a per-cell stroke, lands on top rather than underneath. */}
-          {Array.from({ length: RING_COUNT }).flatMap((_, ring) =>
-            QUADRANTS.map((quadrant, q) => {
-              const r0 = INNER_HOLE + ring * RING_THICKNESS + RING_GAP / 2;
-              const r1 = INNER_HOLE + (ring + 1) * RING_THICKNESS - RING_GAP / 2;
-              const firstSeg = q * SEGMENTS_PER_QUADRANT;
-              return (
-                <g key={`grid-${ring}-${quadrant}`} style={{ pointerEvents: "none" }}>
-                  <path
-                    d={annularSegmentPath(
-                      CX,
-                      CY,
-                      r0,
-                      r1,
-                      cellStartAngle(firstSeg),
-                      cellEndAngle(firstSeg + SEGMENTS_PER_QUADRANT - 1)
-                    )}
-                    fill="none"
-                    stroke={CELL_LINE}
-                    strokeWidth={1}
-                  />
-                  {Array.from({ length: SEGMENTS_PER_QUADRANT - 1 }).map((__, k) => {
-                    const angle = (firstSeg + k + 1) * SEG_SPAN;
-                    const inner = polarPoint(CX, CY, r0, angle);
-                    const outer = polarPoint(CX, CY, r1, angle);
-                    return (
-                      <line
-                        key={k}
-                        x1={inner.x}
-                        y1={inner.y}
-                        x2={outer.x}
-                        y2={outer.y}
-                        stroke={CELL_LINE}
-                        strokeWidth={1}
-                      />
-                    );
-                  })}
-                </g>
-              );
-            })
-          )}
+          <QuasarGlowDefs />
+          {/* Under the cells, so the dashed ghost-target outline - which is
+              still a per-cell stroke - lands on top rather than underneath. */}
+          <FieldGridLines />
 
           {Array.from({ length: RING_COUNT }).flatMap((_, ring) =>
             Array.from({ length: SEGMENT_COUNT }).map((__, seg) => {
-              const r0 = INNER_HOLE + ring * RING_THICKNESS + RING_GAP / 2;
-              const r1 = INNER_HOLE + (ring + 1) * RING_THICKNESS - RING_GAP / 2;
-              const a0 = cellStartAngle(seg);
-              const a1 = cellEndAngle(seg);
               const id = sectorId(ring, seg);
               const occupantId = occupantBySector.get(id);
               const isRuledOutForArmed = armed ? (ruledOut[armed]?.has(id) ?? false) : false;
@@ -620,7 +496,7 @@ export function StarMap({ region }: { region: Region | null }) {
                   ? !isRuledOutForArmed
                   : !isMaybeForArmed);
               const restingFill = occupantId
-                ? "rgba(207,227,242,0.08)"
+                ? CELL_FILL_OCCUPIED
                 : isRuledOutForArmed
                 ? RULED_OUT_TINT
                 : isMaybeForArmed
@@ -630,7 +506,7 @@ export function StarMap({ region }: { region: Region | null }) {
               return (
                 <path
                   key={id}
-                  d={annularSegmentPath(CX, CY, r0, r1, a0, a1)}
+                  d={cellPath(ring, seg)}
                   fill={restingFill}
                   /* No outline of its own - the grid layer above draws it,
                      once. Only the armed-target hint is stroked here. */
@@ -654,79 +530,7 @@ export function StarMap({ region }: { region: Region | null }) {
             })
           )}
 
-          {Array.from({ length: RING_COUNT }).map((_, ring) => {
-            if (ring % 2 !== 0) return null;
-            const r0 = INNER_HOLE + ring * RING_THICKNESS + RING_GAP / 2;
-            const r1 = INNER_HOLE + (ring + 1) * RING_THICKNESS - RING_GAP / 2;
-            const p = polarPoint(CX, CY, (r0 + r1) / 2, -SEG_GAP_DEG);
-            return (
-              <text
-                key={`ring-label-${ring}`}
-                x={p.x}
-                y={p.y}
-                textAnchor="end"
-                fontSize={LABEL_SIZE}
-                fill={LABEL_FILL}
-                fontFamily="ui-monospace, monospace"
-              >
-                R{ring + 1}
-              </text>
-            );
-          })}
-
-          {Array.from({ length: SEGMENT_COUNT }).map((_, seg) => {
-            const mid = seg * SEG_SPAN + SEG_SPAN / 2;
-            const p = polarPoint(CX, CY, MAX_R + 14, mid);
-            return (
-              <text
-                key={`seg-label-${seg}`}
-                x={p.x}
-                y={p.y}
-                textAnchor={mid > 185 ? "end" : mid < 175 ? "start" : "middle"}
-                fontSize={LABEL_SIZE}
-                fill={LABEL_FILL}
-                fontFamily="ui-monospace, monospace"
-              >
-                S{seg + 1}
-              </text>
-            );
-          })}
-
-          {/* Quadrant boundaries and labels. The boundaries fall in the
-              gaps the segments already leave, so these lines sit in dead
-              space rather than over any cell - they just make the four
-              blocks legible as blocks. Drawn before the markers so a
-              signature is never underneath one. */}
-          {QUADRANTS.map((quadrant, q) => {
-            const boundary = q * 90;
-            const a = polarPoint(CX, CY, INNER_HOLE, boundary);
-            const b = polarPoint(CX, CY, MAX_R + 4, boundary);
-            const label = polarPoint(CX, CY, QUADRANT_LABEL_R, boundary + 45);
-            return (
-              <g key={`quad-${quadrant}`} style={{ pointerEvents: "none" }}>
-                <line
-                  x1={a.x}
-                  y1={a.y}
-                  x2={b.x}
-                  y2={b.y}
-                  stroke={QUADRANT_LINE}
-                  strokeWidth={1}
-                />
-                <text
-                  x={label.x}
-                  y={label.y}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize={QUADRANT_LABEL_SIZE}
-                  letterSpacing="0.12em"
-                  fill={QUADRANT_FILL}
-                  fontFamily="ui-monospace, monospace"
-                >
-                  QUAD {quadrant}
-                </text>
-              </g>
-            );
-          })}
+          <FieldLabels />
 
           {/* quasar markers and rule-out marks, drawn on top of the grid */}
           {quasars.map((q) => {
@@ -757,17 +561,16 @@ export function StarMap({ region }: { region: Region | null }) {
             const confirmed = (currentFiling?.solved ?? false) || markedRight;
             return (
               <g key={q.id} style={{ pointerEvents: "none" }}>
-                <circle cx={p.x} cy={p.y} r={7} fill={q.color} filter="url(#quasar-glow)" />
-                <circle cx={p.x} cy={p.y} r={4} fill={q.color} />
+                <QuasarMarker
+                  glyph={q.glyph}
+                  x={p.x}
+                  y={p.y}
+                  core={MARKER_CORE}
+                  color={q.color}
+                  filterId="quasar-glow"
+                />
                 {confirmed && (
-                  <circle
-                    cx={p.x}
-                    cy={p.y}
-                    r={11}
-                    fill="none"
-                    stroke="#5ce1c8"
-                    strokeWidth={1.4}
-                  />
+                  <MarkerRing x={p.x} y={p.y} r={CONFIRM_RING_R} color="#5ce1c8" />
                 )}
               </g>
             );
@@ -800,15 +603,7 @@ export function StarMap({ region }: { region: Region | null }) {
                       opacity={0.5}
                     />
                   )}
-                  <circle
-                    cx={t.x}
-                    cy={t.y}
-                    r={9}
-                    fill="none"
-                    stroke={q.color}
-                    strokeWidth={1.6}
-                    strokeDasharray="3 2.5"
-                  />
+                  <MarkerRing x={t.x} y={t.y} r={CATALOG_RING_R} color={q.color} dashed />
                   <circle cx={t.x} cy={t.y} r={2} fill={q.color} />
                 </g>
               );
@@ -985,7 +780,7 @@ export function StarMap({ region }: { region: Region | null }) {
                     isHovered ? "ring-2 ring-lcars-ice" : ""
                   }`}
                 >
-                  <QuasarStar color={q.color} size={16} />
+                  <QuasarStar color={q.color} glyph={q.glyph} size={16} />
                   <span>{q.designation}</span>
                   {sid && (
                     <span className="text-[9px] text-lcars-ice/50 font-mono">{sid}</span>

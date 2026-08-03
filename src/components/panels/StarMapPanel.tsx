@@ -1,7 +1,14 @@
 import { Region } from "@/lib/puzzle-types";
 import { StarMap } from "@/components/starmap/StarMap";
 
-export function StarMapPanel({ region }: { region: Region | null }) {
+export function StarMapPanel({
+  region,
+  onClosed,
+}: {
+  region: Region | null;
+  /** Passed straight through - see StarMap for what it's for. */
+  onClosed?: (regionId: string) => void;
+}) {
   return (
     <div className="bg-lcars-panel rounded-t-xl overflow-hidden">
       <div className="bg-lcars-amber lcars-caps text-black font-semibold px-4 py-1.5 text-sm">
@@ -21,7 +28,7 @@ export function StarMapPanel({ region }: { region: Region | null }) {
               No active survey &mdash; the field is shown for reference only.
             </p>
           )}
-          <StarMap key={region?.id ?? "empty"} region={region} />
+          <StarMap key={region?.id ?? "empty"} region={region} onClosed={onClosed} />
         </div>
       </div>
     </div>

@@ -4,12 +4,15 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { orthogonalDistanceSigned } from "@/lib/grid";
 import { playButtonClick, playSweepPing } from "@/lib/sound";
 import { QuasarStar } from "@/components/QuasarStar";
+import { QuasarGlyph } from "@/lib/quasar-glyph";
 import styles from "./RelativeDistanceScope.module.css";
 
 export interface ScopeSignature {
   id: string;
   label: string;
   color: string;
+  /** Shape, the identity channel that survives two adjacent palette hues. */
+  glyph: QuasarGlyph;
   ring: number;
   seg: number;
 }
@@ -49,6 +52,7 @@ interface PositionedBlip {
   id: string;
   label: string;
   color: string;
+  glyph: QuasarGlyph;
   pos: number; // percentage, REF_POS..AXIS_END
   dy: number; // px offset from the baseline, to separate equal distances
 }
@@ -146,6 +150,7 @@ export function RelativeDistanceScope({
           id: s.id,
           label: s.label,
           color: s.color,
+          glyph: s.glyph,
           pos: REF_POS + (dist / VISIBILITY_RANGE) * AXIS_SPAN,
           dy: (i - (bucket.length - 1) / 2) * BLIP_ROW_GAP,
         });
@@ -313,7 +318,7 @@ export function RelativeDistanceScope({
                   coreEls.current[b.id] = el;
                 }}
               >
-                <QuasarStar color={b.color} size={22} />
+                <QuasarStar color={b.color} glyph={b.glyph} size={22} />
               </div>
             </div>
           );
@@ -357,7 +362,7 @@ export function RelativeDistanceScope({
         {signatures.map((s) => (
           <div key={s.id} className={styles.legendItem}>
             <span className={styles.legendDot}>
-              <QuasarStar color={s.color} size={14} />
+              <QuasarStar color={s.color} glyph={s.glyph} size={14} />
             </span>
             <span>{s.label}</span>
           </div>

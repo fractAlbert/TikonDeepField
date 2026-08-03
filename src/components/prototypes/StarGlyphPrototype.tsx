@@ -34,6 +34,25 @@ import { LcarsPanel } from "@/components/LcarsShell";
  *
  * Monochrome is the real test. If the variants only separate while they are
  * also different colours, this has bought nothing.
+ *
+ * ## Settled 2026-08-03 — four of the six shipped
+ *
+ * Pinpoint, Bloom, Four-spike and Ringed are live; see `lib/quasar-glyph.ts`
+ * and `components/QuasarMarker.tsx`. Six-spike and Four-spike-rotated were
+ * cut: both separate from Four-spike only by counting arms or reading their
+ * angle, which works on a swatch and not at 15px on the dial.
+ *
+ * The trial's own worry — that the shipped `r=4` core is too small for any
+ * of this — turned out to be about the *core*, which is the one thing none
+ * of the four shipped variants distinguish themselves by at a distance.
+ * Spikes, bloom spread and a detached ring all carry outside the core, and
+ * at the docked 260px they render 8.3 / 12.3 / 15.1 / 10.9 px across. So
+ * nothing grew: `scripts/check-marker-clearance.ts` confirms all four fit
+ * inside a cell's 15.5 units of clearance at the core the map already used.
+ *
+ * Kept here, with all six, as the record of the comparison. It draws its
+ * own markers rather than importing `QuasarMarker`, because two of the six
+ * no longer exist there.
  */
 
 const CX = 220;
@@ -279,12 +298,20 @@ export function StarGlyphPrototype() {
         spread, diffraction spikes, a detached halo ring. No diamonds, no
         triangles: the dial has to keep reading as a sky.
       </p>
-      <p className="text-xs text-lcars-ice/50 leading-relaxed mb-4">
+      <p className="text-xs text-lcars-ice/50 leading-relaxed mb-3">
         None of these keys off the signature&apos;s type, which stays secret
         until a region closes &mdash; they are assigned by list position, the
         same as colour. <strong className="text-lcars-ice/70">Monochrome is
         the real test:</strong> if the variants only separate while they are
         also different colours, this has bought nothing.
+      </p>
+      <p className="text-xs text-lcars-teal/80 leading-relaxed mb-4">
+        <strong>Settled:</strong> Pinpoint, Bloom, Four-spike and Ringed
+        shipped and are what the Star Map draws now. Six-spike and the
+        rotated four were cut &mdash; both differ from Four-spike only by
+        arm count or angle, which reads on a swatch and not at 15px on the
+        dial. Nothing grew to make room: all four fit a cell at the core the
+        map already used.
       </p>
 
       <div className="flex flex-wrap items-end gap-4 mb-4">

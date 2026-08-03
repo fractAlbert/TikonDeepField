@@ -55,6 +55,16 @@ export function HelpPanel() {
             releases the region unresolved &mdash; that costs you nothing.
           </li>
           <li>
+            However it ends, the region closes and you get a{" "}
+            <strong className="text-lcars-teal">Survey Result</strong>: the
+            catalog positions against where you placed them, the
+            classification of every signature &mdash; secret until now
+            &mdash; and any change to your rank. The survey archives itself
+            at that point;{" "}
+            <strong className="text-lcars-amber">Result</strong> on the Log
+            re-opens the report whenever you want it.
+          </li>
+          <li>
             Out of regions?{" "}
             <strong className="text-lcars-orange">{PANEL_LABELS.surveyNewRegion}</strong>{" "}
             in the navigation generates a fresh field and takes you straight

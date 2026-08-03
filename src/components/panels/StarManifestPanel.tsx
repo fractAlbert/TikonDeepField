@@ -21,6 +21,7 @@ import {
 } from "@/lib/survey-log";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { QuasarStar } from "@/components/QuasarStar";
+import { quasarGlyph } from "@/lib/quasar-glyph";
 
 const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
 
@@ -179,7 +180,7 @@ export function StarManifestPanel({ region }: { region: Region }) {
                           : ""
                       }`}
                     >
-                      <QuasarStar color={color} size={22} />
+                      <QuasarStar color={color} glyph={quasarGlyph(i)} size={22} />
                     </button>
                     <span className="text-sm font-mono text-lcars-ice">{q.designation}</span>
                     {/* Only signatures the briefing says something about get a
@@ -253,7 +254,10 @@ export function StarManifestPanel({ region }: { region: Region }) {
                                 : ""
                             } ${clash ? "opacity-40" : ""}`}
                           >
-                            <QuasarStar color={hex} size={22} />
+                            {/* The signature's own glyph, not a generic
+                                dot: the picker is showing how *this*
+                                signature will look in that colour. */}
+                            <QuasarStar color={hex} glyph={quasarGlyph(i)} size={22} />
                           </button>
                         );
                       })}

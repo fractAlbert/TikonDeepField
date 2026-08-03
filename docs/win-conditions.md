@@ -460,6 +460,66 @@ Two decisions worth keeping:
   Log. Silently tidying someone's board to enforce a rule introduced after
   they built it is not a fix.
 
+  *Amended 2026-08-03, later the same day:* closing a region now archives
+  it — see the next section. The rule that survived is the one that
+  mattered: nothing is archived **retroactively**. It happens on the
+  transition out of the open state and nowhere else, so a region that
+  closed before this shipped keeps whatever archive state its player chose.
+
+### The survey result report, and auto-archive on close
+
+Shipped 2026-08-03. `closeEntry` in `survey-log.ts` sets `archived: true`
+alongside the outcome; `SurveyReportPanel` is where you land.
+
+The complaint was that a finished region sat in the Briefing picker until
+you tidied it away by hand, so nothing in the app ever said *that one is
+done*. Note what this is **not**: closed regions already didn't hold a slot
+(`activeSurveys` excludes them), so this changes nothing about the cap. It
+is about the picker, and about finishing feeling finished.
+
+**The catch was structural, not cosmetic**, and it is the reason the two
+halves are one change. `archived` is the same flag `noActiveAssignment`
+keys off, and that flag forces every panel to the placeholder — so
+auto-archiving on its own meant the moment you filed your last
+classification the whole app cut to the station logo, and your board, the
+outcome, the catalog reveal and any rank change all vanished in the frame
+that produced them. Verified in the browser before building: setting
+`archived` by hand on a closed region dropped the app to `NO ACTIVE
+ASSIGNMENT` with the sidebar reading *"the field is shown for reference
+only"*. The report is a prerequisite for the archive, not a nicety
+alongside it.
+
+Four decisions worth keeping:
+
+- **A panel, not a modal.** The report is a view of a *closed log entry*,
+  re-opened by a `Result` button on the Log. That gets "review and then
+  return" for free and means a player who clicks past it too fast has lost
+  nothing. It also gives the Log somewhere better to point than a read-only
+  board.
+- **Everything it shows lives on the entry.** The rank change in particular
+  is now persisted as `SurveyLogEntry.rankEvent`, where it used to exist
+  only in Star Map local state — state that closing now unmounts. A report
+  opened a week later still shows the promotion it caused.
+- **Return goes to the Log**, never to the blank page. That page is the
+  thing this exists to stop you landing on.
+- **Confirmed regions reveal the catalog too.** The Star Map's `revealed`
+  rule excludes `confirmed`, on the reasoning that a correct board is
+  already the catalog. True of *sectors* — but types are secret until close
+  and are the actual payoff for finishing, so the report doesn't inherit
+  that exclusion. `ResultField` decides per signature rather than per
+  outcome (teal ring on a match, dashed catalog ring plus tether on a miss,
+  dashed ring alone on one never placed), which also handles a withdrawal
+  made with half the palette still unplaced — something the board's rule
+  could not draw.
+
+The dial itself was the other half of the point. The catalog reveal — the
+dashed rings tethered to where you actually filed — is the best thing in
+the endgame and it was being drawn into a 260px sidebar. `field.tsx` now
+holds the geometry and the two inert chrome layers, shared by the Star Map
+and the report, and the report drops the sidebar while it is open to spend
+those 380px on the field: measured at **392px against the sidebar's 260**,
+with ring and segment labels going from 10.6px to 16.0px.
+
 ### Rank
 
 Implemented as designed. `ranks.ts` holds the ladder and the thresholds as
