@@ -425,6 +425,41 @@ for Sweep Scope references and quadrant censuses, which is a bigger change:
 it makes every instrument read a decision, and the ~10–14 pass figure above
 wants playtesting against real sessions rather than a guess.
 
+### The survey cap — the other half of "closing costs something"
+
+Shipped 2026-08-03. `ACTIVE_SURVEY_LIMIT = 3` in `survey-log.ts`, with
+`activeSurveys(log)` defining what occupies a slot: **unarchived and not
+closed**.
+
+The filing budget makes a *wrong* answer cost something, but until this
+landed, never answering cost nothing at all. You could hold a dozen
+half-finished regions, and any one you were unsure about could simply sit
+open forever — the review window only ever sees regions you chose to close,
+so avoidance was a dominant strategy that the rank ladder couldn't see.
+Capping the open set means reaching for a fourth region requires resolving
+a third: file it, or withdraw it and take the neutral outcome deliberately.
+That gives withdrawal a second job — it was the honest escape, and it is
+now also the cheap one.
+
+Three rather than one, because cross-referencing a stuck region against a
+fresh one is legitimate play, and because generated regions survive a
+reload (`5ebfa7d`) — the Briefing picker lists every unarchived survey, so
+the cap keeps that row readable by construction rather than by good
+housekeeping.
+
+Two decisions worth keeping:
+
+- **Archiving frees a slot.** It's the low-stakes way back under the cap,
+  and it keeps the history rather than deleting it. The alternative —
+  making only *closure* free a slot — turns the cap into a demand that you
+  file on regions you'd rather abandon, which is exactly the coerced guess
+  the filing budget exists to discourage.
+- **Nothing is auto-archived.** Every existing save is over the cap on the
+  first load after this ships. Those players keep everything and are only
+  blocked from opening *more*, with the count and the reason shown on the
+  Log. Silently tidying someone's board to enforce a rule introduced after
+  they built it is not a fix.
+
 ### Rank
 
 Implemented as designed. `ranks.ts` holds the ladder and the thresholds as

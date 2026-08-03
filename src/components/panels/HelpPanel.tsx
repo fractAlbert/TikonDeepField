@@ -1,6 +1,6 @@
 import { LcarsPanel } from "@/components/LcarsShell";
 import { PANEL_LABELS } from "@/lib/copy";
-import { RING_SCAN_LIMIT, currentFilingLimit } from "@/lib/survey-log";
+import { ACTIVE_SURVEY_LIMIT, RING_SCAN_LIMIT, currentFilingLimit } from "@/lib/survey-log";
 import { DEMOTION_RETRACTED, PROMOTION_CONFIRMED, REVIEW_WINDOW } from "@/lib/ranks";
 
 export function HelpPanel() {
@@ -59,7 +59,10 @@ export function HelpPanel() {
             <strong className="text-lcars-orange">{PANEL_LABELS.surveyNewRegion}</strong>{" "}
             in the navigation generates a fresh field and takes you straight
             to its Briefing &mdash; a random 6-8 signatures with a fresh set
-            of bearings to work from.
+            of bearings to work from. You can have{" "}
+            {ACTIVE_SURVEY_LIMIT} unfinished surveys at once; past that,
+            finish one, withdraw it, or archive it on the{" "}
+            <strong className="text-lcars-amber">Log</strong> to free a slot.
           </li>
         </ol>
       </LcarsPanel>

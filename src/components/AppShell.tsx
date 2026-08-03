@@ -7,8 +7,11 @@ import { assessSolvability } from "@/lib/solvability";
 import { Region } from "@/lib/puzzle-types";
 import { BUTTON_COLORS, ButtonColor } from "@/lib/lcars-colors";
 import {
+  ACTIVE_SURVEY_LIMIT,
   EMPTY_LOG,
+  activeSurveys,
   getSurveyLog,
+  resolveEntryRegion,
   setArchived,
   subscribeSurveyLog,
   touchSurvey,
@@ -135,9 +138,15 @@ export function AppShell() {
   const panel: PanelId =
     !isMobile && MOBILE_ONLY_PANELS.includes(requestedPanel) ? "briefing" : requestedPanel;
 
-  const [regions, setRegions] = useState<Region[]>(builtInRegions);
-  const [regionId, setRegionId] = useState(builtInRegions[0].id);
-  const region = regions.find((r) => r.id === regionId) ?? regions[0];
+  // Starts empty on purpose. The app used to ship with a built-in region
+  // already active, which quietly implied surveys arrive from somewhere; a
+  // player now starts with nothing and opens their first field themselves.
+  // Everything downstream of this is null-tolerant as a result - see
+  // `activeRegion` below, which is the single place that decides whether
+  // there is a survey to render.
+  const [regions, setRegions] = useState<Region[]>([]);
+  const [regionId, setRegionId] = useState<string | null>(null);
+  const region = regions.find((r) => r.id === regionId) ?? null;
 
   // Sweep Scope's clock starts the moment it first mounts, so mounting it
   // eagerly (hidden) at app load would mean it's already partway through
@@ -169,6 +178,10 @@ export function AppShell() {
     setMounted(true);
   }, []);
 
+  // The roster is now *entirely* restored from the log - there is no
+  // built-in seed left to fall back on, so this effect is the only thing
+  // that puts regions on the board at all.
+  //
   // Generated regions used to exist only in the state above, so a refresh
   // stranded whichever survey you were in the middle of - it stayed in the
   // Log, viewable but no longer selectable. Nothing was actually lost: the
@@ -179,13 +192,18 @@ export function AppShell() {
   // It also makes Archive mean what it says. The Briefing picker is meant
   // to list your unarchived surveys, but generated ones vanished on reload
   // regardless, so archiving them changed nothing.
+  //
+  // `resolveEntryRegion` rather than reading `e.region` directly: a player
+  // who started before the default region was removed has a `builtin`
+  // entry carrying only an id, and that entry has to come back too or
+  // removing the default would delete a survey they were part-way through.
   const [restoredRoster, setRestoredRoster] = useState(false);
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- one-time restore
        from localStorage on mount; the server has no storage to read. */
     const saved = getSurveyLog()
-      .filter((e) => e.origin === "generated" && e.region)
-      .map((e) => e.region!);
+      .map((e) => resolveEntryRegion(e, builtInRegions))
+      .filter((r): r is Region => !!r);
     if (saved.length > 0) {
       setRegions((prev) => {
         const known = new Set(prev.map((r) => r.id));
@@ -234,17 +252,46 @@ export function AppShell() {
   );
 
   useEffect(() => {
-    touchSurvey(region, builtInIds.has(region.id) ? "builtin" : "generated");
+    if (region) touchSurvey(region, builtInIds.has(region.id) ? "builtin" : "generated");
   }, [region, builtInIds]);
+
+  // Slots against ACTIVE_SURVEY_LIMIT. Gated on `mounted` for the same
+  // reason noActiveAssignment is: before hydration the log reads empty, so
+  // an ungated check would say "0 of 3" on the first frame for a player
+  // who is actually at the cap.
+  const openSurveys = useMemo(() => activeSurveys(log), [log]);
+  const atSurveyCap = mounted && openSurveys.length >= ACTIVE_SURVEY_LIMIT;
+
+  // Set when Survey New Region is refused, so the Log can say why. Kept
+  // here rather than in LogPanel because the refusal happens in the
+  // navigation, one panel away from where it gets explained.
+  const [capRefused, setCapRefused] = useState(false);
 
   function selectPanel(id: string) {
     setRequestedPanel(id as PanelId);
     if (id === "sweep") setVisitedSweep(true);
     if (id !== "log") setLogPreviewRegion(null);
+    // The refusal is about one attempt, not a standing state - leaving the
+    // Log and coming back shouldn't still be scolding you.
+    if (id !== "log") setCapRefused(false);
   }
 
   function handleNavSelect(id: string) {
     if (id === "generate") {
+      // Refuse rather than silently do nothing, and land somewhere you can
+      // act on it: the Log is where surveys get archived, and it lists the
+      // open ones you'd have to close. Nothing is auto-archived - a player
+      // already over the cap (every existing save is) keeps everything and
+      // is only blocked from opening *more*.
+      if (atSurveyCap) {
+        setCapRefused(true);
+        selectPanel("log");
+        return;
+      }
+      // The flavor delay means the new region isn't on the roster (and has
+      // no log entry, so it holds no slot) for another two seconds. Without
+      // this, two quick clicks put you over the cap by opening two.
+      if (generating) return;
       // Generate immediately (it's fast either way) but hold the reveal
       // behind a deliberate delay - the loading screen is purely flavor.
       // Assessed here rather than inside generateRegion: the analysis
@@ -285,23 +332,31 @@ export function AppShell() {
     selectPanel("briefing");
   }
 
+  // Two ways to have nothing to show now, and they're different states:
+  // an archived active region (you have surveys, this one is put away), and
+  // no region at all (a first run, since the default region is gone).
   // Archiving the active region leaves nothing meaningful to show it as -
   // browsing the Log tab is an intentional exception, since a previewed
   // entry may itself be archived without that meaning "nothing is active."
   // Forced true until mounted, so the first paint never guesses wrong.
-  const noActiveAssignment = !mounted || archivedIds.has(region.id);
+  const noActiveAssignment = !mounted || !region || archivedIds.has(region.id);
+
+  // The one gate every panel reads. Non-null means there is a live survey
+  // to render, which is what lets the panels that genuinely need a region
+  // keep taking a non-nullable one instead of each re-deriving the rule.
+  const activeRegion: Region | null = noActiveAssignment ? null : region;
 
   // The Star Map always shows the field itself; it just has nothing
   // selectable when there's no active survey to plot (null region).
   const starMapRegion: Region | null =
-    panel === "log" && logPreviewRegion ? logPreviewRegion : noActiveAssignment ? null : region;
+    panel === "log" && logPreviewRegion ? logPreviewRegion : activeRegion;
 
   // Rendered into the sidebar on desktop and into `main` below `lg`, but
   // never both at once - each call site is gated on `isMobile`, so there is
   // structurally only ever one StarMap alive to write placements.
   const starMapView = (
     <>
-      {panel === "log" && logPreviewRegion && logPreviewRegion.id !== region.id && (
+      {panel === "log" && logPreviewRegion && logPreviewRegion.id !== region?.id && (
         <p className="lcars-caps text-[10px] tracking-wider text-lcars-amber/80 mb-2 px-1">
           Previewing from Log &mdash; not your active survey
         </p>
@@ -402,42 +457,46 @@ export function AppShell() {
               </LcarsPanel>
             ) : (
               <BriefingPanel
-                region={region}
+                region={activeRegion}
                 regions={briefingRegions}
-                noActiveAssignment={noActiveAssignment}
+                /* The whole roster, not the unarchived slice above: with
+                   nothing unarchived those two are both empty, and only
+                   this one can tell "everything is archived" apart from
+                   "you have never surveyed anything". */
+                hasAnySurveys={regions.length > 0}
                 onSelectRegion={setRegionId}
                 onOpenStationInfo={openStationInfo}
               />
             ))}
           {panel === "manifest" &&
-            (noActiveAssignment ? (
+            (activeRegion ? (
+              <StarManifestPanel region={activeRegion} />
+            ) : (
               <LcarsPanel id="manifest-placeholder" title={PANEL_LABELS.manifest} accent="bg-lcars-lilac" className="h-full">
                 <NoActiveAssignmentPanel onOpenStationInfo={openStationInfo} />
               </LcarsPanel>
-            ) : (
-              <StarManifestPanel region={region} />
             ))}
           {/* Mounted on first visit, then never unmounted (just hidden) -
               its sweep clock keeps running in the background against real
               elapsed time while you're on a different panel, instead of
               resetting every time you switch back to it. */}
-          <div id="sweep-scope-container" className={panel === "sweep" && !noActiveAssignment ? "" : "hidden"}>
-            {visitedSweep && (
-              <SweepScopePanel region={region} visible={panel === "sweep" && !noActiveAssignment} />
+          <div id="sweep-scope-container" className={panel === "sweep" && activeRegion ? "" : "hidden"}>
+            {visitedSweep && activeRegion && (
+              <SweepScopePanel region={activeRegion} visible={panel === "sweep"} />
             )}
           </div>
-          {panel === "sweep" && noActiveAssignment && (
+          {panel === "sweep" && !activeRegion && (
             <LcarsPanel id="sweep-placeholder" title={PANEL_LABELS.sweep} accent="bg-lcars-violet" className="h-full">
               <NoActiveAssignmentPanel onOpenStationInfo={openStationInfo} />
             </LcarsPanel>
           )}
           {panel === "ringscan" &&
-            (noActiveAssignment ? (
+            (activeRegion ? (
+              <RingScanPanel region={activeRegion} />
+            ) : (
               <LcarsPanel id="ringscan-placeholder" title={PANEL_LABELS.ringScan} accent="bg-lcars-salmon" className="h-full">
                 <NoActiveAssignmentPanel onOpenStationInfo={openStationInfo} />
               </LcarsPanel>
-            ) : (
-              <RingScanPanel region={region} />
             ))}
           {panel === "station" && (
             <StationInfoPanel showHeader={!isMobile} onBack={() => selectPanel("briefing")} />
@@ -445,17 +504,17 @@ export function AppShell() {
           {panel === "log" && (
             <LogPanel
               builtInRegions={builtInRegions}
-              activeRegionId={region.id}
+              activeRegionId={region?.id ?? null}
               previewRegionId={logPreviewRegion?.id ?? null}
+              openSurveyCount={openSurveys.length}
+              capRefused={capRefused}
               onPreviewRegion={setLogPreviewRegion}
               onResumeRegion={resumeRegion}
             />
           )}
           {panel === "profile" && <ProfilePanel />}
           {panel === "help" && <HelpPanel />}
-          {panel === "prototypes" && (
-            <PrototypesPanel region={noActiveAssignment ? null : region} />
-          )}
+          {panel === "prototypes" && <PrototypesPanel region={activeRegion} />}
           {isMobile && panel === "starmap" && starMapView}
         </main>
 

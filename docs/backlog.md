@@ -18,19 +18,17 @@ says it means today.
 | # | item | where |
 | --- | --- | --- |
 | 1 | `generateRegion()` reads rank, so regions get harder as you rise | Gameplay |
-| 2 | Cap active assignments at 3 | Gameplay |
-| 3 | No `quasar-type` clues are ever emitted | Gameplay |
-| 4 | Remove the default region (`region` becomes nullable) | Design |
-| 5 | First-run welcome, tutorial region, walk-through | Design |
-| 6 | Star Map 50% wider | Design |
-| 7 | Maximize the Star Map (desktop only) | Design |
-| 8 | Mobile menu hub is a wall of fat buttons | Design |
-| 9 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
-| 10 | Star Map hover readout dead on touch, accepted | Interaction |
+| 2 | No `quasar-type` clues are ever emitted | Gameplay |
+| 3 | First-run welcome, tutorial region, walk-through | Design |
+| 4 | Star Map 50% wider | Design |
+| 5 | Maximize the Star Map (desktop only) | Design |
+| 6 | Mobile menu hub is a wall of fat buttons | Design |
+| 7 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
+| 8 | Star Map hover readout dead on touch, accepted | Interaction |
 
 ## Design
 
-### 8 - The mobile menu hub is a wall of fat buttons
+### 6 - The mobile menu hub is a wall of fat buttons
 
 Raised 2026-07-30, on a real phone.
 
@@ -67,58 +65,21 @@ Constraints a redesign has to keep:
 - The panel it leads to is reached by `handleNavSelect`; nothing about the
   navigation model needs to change, only the presentation.
 
-### 4 - No default region, with the Log as the way back in
-
-Direction agreed 2026-08-01. The app ships with a built-in region as the
-initial active assignment; eventually it should ship with none. A player
-starts empty, surveys their first region, and the Log becomes the place
-they see what they have and pick one up again.
-
-The onboarding argument is the good part: an empty first screen plus the
-Log's own copy already reads as instruction — "click an entry to load it",
-"archiving clears a survey from the Briefing panel's selection row". Making
-that the deliberate first-run path is better than a built-in region that
-quietly implies surveys arrive from somewhere.
-
-Two things block it, and only the first is obvious.
-
-**1. ~~The Log can only preview, never resume.~~ Done 2026-08-01.** Log
-entries carry a **Resume** action now, kept separate from the card click so
-previewing a finished region still doesn't pull you out of the game you are
-playing. Offered only on open regions you are not already in — a closed one
-has a read-only board, so activating it would swap a finished survey in for
-your live one and gain nothing preview doesn't already give.
-
-Resuming un-archives on the way through, and that is not optional.
-"Archived" means hidden from the Briefing picker, and it is the same flag
-`noActiveAssignment` keys off — so without it, resuming an archived region
-made it active and then rendered the no-assignment placeholder instead of
-the region.
-
-**2. `region` becomes nullable everywhere.** `AppShell` resolves it as
-`regions.find(...) ?? regions[0]`, which assumes the array is never empty.
-Remove the built-ins and a first run has `region === undefined`, so
-`touchSurvey(region)` throws, `logPreviewRegion.id !== region.id` throws,
-and `RingScanPanel`/`StarManifestPanel` — which take `region: Region`, not
-`Region | null` — have nothing to render. `StarMapPanel` already accepts
-null and is the model to follow. This is a real refactor rather than a
-deletion, and it is the actual cost of the change.
-
-Worth keeping: `noActiveAssignment` already exists and already forces every
-panel to a placeholder, so the states are half-built. But the placeholder
-is not where a new player should land — see below.
-
-### 5 - First-run welcome, with a generated tutorial region
+### 3 - First-run welcome, with a generated tutorial region
 
 Direction agreed 2026-08-01, for once the game settles. A first-time
 welcome page: enough to get started, then it generates the opening survey —
 something deliberately easy, to teach the instruments. Probably with a
 walk-through.
 
-This is the answer to "what does a player with no regions see", so it
-replaces the empty-placeholder idea above rather than sitting beside it.
-The placeholder keeps its current job: *your regions are archived*, which
-is a different state from *you have never surveyed anything*.
+**This is now the only thing missing.** The default region was removed on
+2026-08-03, so "a player with no regions" is a real state that ships today
+— and what it currently lands on is the no-assignment placeholder, with a
+hint pointing at Survey New Region (`COPY.briefing.noSurveysHint`). That is
+honest but it is not a welcome. The two empty states are already told apart
+in the code: `BriefingPanel` takes `hasAnySurveys` and picks between
+*your regions are archived* and *you have never surveyed anything*, so a
+welcome screen has a flag to key off already.
 
 **"Easy to solve" is measurable, not a feeling.** The tooling is already
 here, and it should pick the tutorial region rather than a human judging
@@ -169,7 +130,7 @@ its easiest setting, so building one gets the other most of the way.
 next to the officer profile, and it should be skippable and replayable. Do
 not gate it behind "has never played": people re-read tutorials.
 
-### 6 - Star Map 50% wider
+### 4 - Star Map 50% wider
 
 Raised 2026-08-02. The sidebar is `w-[360px]` and the dial inside it is
 capped at `max-w-[260px]`, which is what makes the ring and segment labels
@@ -183,10 +144,10 @@ the Station Info tab row are built for. So this is not a one-number change
 — either the rails give up width too, or the panels that live in `main`
 have to cope with less.
 
-Item 15 is the other half of the answer: if the map can be maximised on
+Item 5 is the other half of the answer: if the map can be maximised on
 demand, the docked size matters less.
 
-### 7 - Maximize the Star Map (desktop only)
+### 5 - Maximize the Star Map (desktop only)
 
 Raised 2026-08-02. A button that expands the Star Map to fill `main`, with
 the dial drawn much larger, and a Back control to return to the docked
@@ -206,7 +167,7 @@ Notes for whoever builds it:
 - The nav rails should stay reachable; maximising the map should not become
   a mode you can get stuck in.
 
-### 9 - Log, Help and Prototypes flick-scroll on a phone
+### 7 - Log, Help and Prototypes flick-scroll on a phone
 
 They overflow 390x844 by 85px, 41px and 42px and fall back to the
 hidden-scrollbar scroll inside `main`. That's allowed by the project rules —
@@ -216,7 +177,7 @@ or pagination the way the Survey Log does it) rather than layout.
 
 ## Gameplay
 
-### 1, 3 - Rank and the clue vocabulary
+### 1, 2 - Rank and the clue vocabulary
 
 Lives in **`win-conditions.md`** — the whole design, its build order, and
 the two generation constraints (anchor separation, solvability) it depends
@@ -238,37 +199,11 @@ one that fixed the ladder: it separates an average player from a careful
 one, which no threshold setting could. What is still missing is region
 difficulty - a Chief of Survey draws exactly the same fields as a
 technician. That is the other half of item 1, and it is also the lever the
-tutorial region needs (item 8).
-
-### 2 - Cap active assignments at 3
-
-Raised 2026-08-02. You can have any number of surveys on the go. Capping it
-at three means starting a fourth requires finishing or letting go of one,
-which is the pressure the filing budget and the rank ladder are already
-built around — a survey you never close costs you nothing today.
-
-It also fixes a problem this session created. Generated regions now survive
-a refresh (`5ebfa7d`), so the Briefing picker lists every unarchived
-survey rather than just the current session's; a cap keeps that list to
-three by construction instead of relying on the player to archive.
-
-Decisions it needs:
-
-- **What counts as active.** Cleanest is "unarchived and not closed" —
-  confirmed, retracted and withdrawn regions are done and should not
-  occupy a slot. That makes the cap a limit on *unfinished* work, which is
-  the thing worth limiting.
-- **What happens at the cap.** Survey New Region should refuse with a
-  reason rather than silently doing nothing, and point at the way out
-  (close one, or withdraw it). Withdrawal already exists as the honest
-  escape and is rank-neutral, so the cap gives it a second job.
-- **Existing saves are over the cap.** Most players will already have more
-  than three open. Do not delete or auto-archive anything — block *new*
-  surveys until they are back under, and say so.
+tutorial region needs (item 3).
 
 ## Interaction
 
-### 10 - The star map hover readout is dead on touch
+### 8 - The star map hover readout is dead on touch
 
 `StarMap`'s readout uses `onMouseEnter`, which never fires on a touch device,
 so it sits at `--` on a phone for the whole session. Accepted as-is: tapping
