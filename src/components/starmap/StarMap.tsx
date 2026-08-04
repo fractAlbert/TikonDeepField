@@ -21,7 +21,9 @@ import {
   cellPath,
   centerOf,
 } from "@/components/starmap/field";
+import { TargetCallout } from "@/components/starmap/TargetCallout";
 import { QuasarMarker } from "@/components/QuasarMarker";
+import type { TutorialHint } from "@/lib/tutorial";
 import { quasarGlyph } from "@/lib/quasar-glyph";
 import { useQuasarColor } from "@/lib/use-quasar-colors";
 import { starMapStorageKey } from "@/lib/starmap-storage";
@@ -127,6 +129,7 @@ export function StarMap({
   region,
   onClosed,
   onBoardChange,
+  hint,
 }: {
   region: Region | null;
   /**
@@ -150,6 +153,13 @@ export function StarMap({
    * reads that event back off the log entry; this is only the trigger.
    */
   onClosed?: (regionId: string) => void;
+  /**
+   * The walk-through pointing at one signature, and optionally at the cell
+   * it belongs in. Drawn, never enforced: the board stays exactly as
+   * clickable as it was, and the hint disappears when the placement it
+   * describes exists - by whatever route the player got there.
+   */
+  hint?: TutorialHint | null;
 }) {
   const sectors = useMemo(() => buildSectors(), []);
   const colorOf = useQuasarColor(region?.id ?? "");
@@ -364,6 +374,17 @@ export function StarMap({
   // every marker is already right.
   const revealed = closed && outcome !== "confirmed";
 
+  // A hint is answered by the placement it describes rather than by the
+  // step advancing, so the board stops pointing the moment the thing is
+  // done - including when the player got there their own way, or is coming
+  // back to a step they already satisfied.
+  const hintOpen =
+    !!hint &&
+    !closed &&
+    (hint.sector
+      ? placements[hint.quasarId] !== hint.sector
+      : !placements[hint.quasarId]);
+
   function handleCellClick(sectorIdClicked: string) {
     // A closed region is read-only. Editing it would suggest the filing
     // could still change, and the board is now evidence for the outcome
@@ -556,6 +577,10 @@ export function StarMap({
           )}
 
           <FieldLabels />
+
+          {/* Above the labels so the leader isn't cut by one, below the
+              markers so a signature can never end up under it. */}
+          {hintOpen && hint?.sector && <TargetCallout sector={hint.sector} />}
 
           {/* quasar markers and rule-out marks, drawn on top of the grid */}
           {quasars.map((q) => {
@@ -786,6 +811,16 @@ export function StarMap({
               // the background; the hovered one drops that too, or the
               // outline would be sitting on something half-faded.
               const isHovered = hoveredQuasarId === q.id;
+              // Which of the two rings a chip gets, decided in one place
+              // rather than by class order: they set the same property, so
+              // letting both through would leave the winner up to whatever
+              // order the stylesheet happened to emit them in.
+              const isHinted = hintOpen && hint?.quasarId === q.id;
+              const ringClass = isHinted
+                ? "ring-2 ring-lcars-teal"
+                : isHovered
+                ? "ring-2 ring-lcars-ice"
+                : "";
               return (
                 <button
                   key={q.id}
@@ -801,9 +836,7 @@ export function StarMap({
                     armed === q.id
                       ? "bg-lcars-amber text-black font-semibold"
                       : `bg-lcars-panel text-lcars-ice ${closed ? "" : "hover:bg-white/10"}`
-                  } ${sid && !closed && !isHovered ? "opacity-60" : ""} ${
-                    isHovered ? "ring-2 ring-lcars-ice" : ""
-                  }`}
+                  } ${sid && !closed && !isHovered ? "opacity-60" : ""} ${ringClass}`}
                 >
                   <QuasarStar color={q.color} glyph={q.glyph} size={16} />
                   <span>{q.designation}</span>

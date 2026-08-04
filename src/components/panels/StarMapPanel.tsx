@@ -1,15 +1,18 @@
 import { Region } from "@/lib/puzzle-types";
 import { StarMap } from "@/components/starmap/StarMap";
+import type { TutorialHint } from "@/lib/tutorial";
 
 export function StarMapPanel({
   region,
   onClosed,
   onBoardChange,
+  hint,
 }: {
   region: Region | null;
   /** Passed straight through - see StarMap for what they're for. */
   onClosed?: (regionId: string) => void;
   onBoardChange?: (board: { placements: Record<string, string | undefined>; markCount: number }) => void;
+  hint?: TutorialHint | null;
 }) {
   return (
     <div className="bg-lcars-panel rounded-t-xl overflow-hidden">
@@ -35,6 +38,7 @@ export function StarMapPanel({
             region={region}
             onClosed={onClosed}
             onBoardChange={onBoardChange}
+            hint={hint}
           />
         </div>
       </div>

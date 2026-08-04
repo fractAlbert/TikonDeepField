@@ -519,6 +519,14 @@ export function AppShell() {
         onBoardChange={
           tutorialRunning && starMapRegion?.id === TUTORIAL_REGION_ID ? setBoard : undefined
         }
+        /* Same gate as the board callback, and for the same reason: a
+           preview from the Log must not sprout a "place it here" ring for
+           a region the walk-through isn't talking about. */
+        hint={
+          tutorialRunning && starMapRegion?.id === TUTORIAL_REGION_ID
+            ? activeStep?.hint ?? null
+            : null
+        }
       />
     </>
   );

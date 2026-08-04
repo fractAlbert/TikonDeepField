@@ -304,6 +304,73 @@ were invisible to a DOM check that only counted elements:
    anchor and failed only on the dynamic one, which is the kind of thing
    that ships.
 
+### The first placement, guarded (2026-08-04)
+
+The step that taught placement was one step doing two of them: *"click a
+signature to arm it, then click a cell to drop it. Start with the two you
+already know: Mrk 633 at R2S7, and Q3970 at R4S4."* Four things named in one
+sentence, to a player who has not yet clicked anything, with a condition
+that only clears when both are down. Split in two, and the first half
+guarded three ways:
+
+- **One named signature**, not a choice of six.
+- **Its chip is ringed** in the Star Map's signature list, in the
+  walk-through's teal - so the copy naming "Mrk 633" is tied to the thing
+  you have to click. Done as a React class on the chip rather than through
+  `TutorialCoach`'s imperative anchor ring, which sets `border-radius: 4px`
+  and would have squared off a `rounded-full` chip.
+- **Its cell is ringed on the dial**, with a leader out to a label carrying
+  the sector id - `components/starmap/TargetCallout.tsx`, in the station
+  schematic's callout idiom.
+
+The second anchor keeps the chip and loses the cell. The copy still names
+R4S4, so finding it is the first thing the player does unaided, and reading
+the grid is a skill the rest of the region depends on. Guarding it twice
+teaches them to wait for the ring.
+
+Two things the callout had to work around, both measured rather than eyed
+(`scripts/check-tutorial-callout.ts`):
+
+- **There is nowhere to put the label.** The dial is a circle of radius 200
+  in a 440-unit box, so the only empty space is the corners - and the
+  quadrant labels are already there, at radius 236 on the diagonals, with
+  the segment labels at 214. The slot threads between them with ~13 units
+  of margin. The script measures the label box and both leader segments
+  against every label the dial draws, for all 40 cells, so pointing a
+  future step somewhere new is a re-run rather than a guess. It enforces
+  only the cells the step list actually hints at, and prints the rest: a
+  fixed slot per corner means a leader to a cell at the far edge of that
+  quadrant comes in shallow, which is a real limit on *where a hint may
+  point* rather than a bug in the slot.
+- **A dashed cell outline was already taken.** Stroking `cellPath` is the
+  literal reading of "outline the space", but an armed signature dashes
+  every empty cell as its ghost-target hint - so the one cell that mattered
+  would have been saying the same thing as thirty-nine others. A ring at
+  14.5 fits inside a cell's 15.5 units of clearance and reads as a target
+  instead. It cannot be confused with the confirmation ring at 14: that one
+  only ever appears on a cell that already has a marker in it.
+
+The walk-through is eleven steps now, not ten.
+
+### Field references in white (2026-08-04)
+
+The copy is dense with coordinates - *"the briefing puts Mrk 280 in Quadrant
+III, and the scope reads it 1 away from Mrk 633 at R2S7"* is four of them in
+one sentence - and as flat prose they all sit at the same weight, so finding
+the one you have to act on means reading the paragraph again. `tokenizeCopy`
+splits a step body into plain and field-reference runs and the coach bar
+sets the second in white against its dimmed ice.
+
+The rule is deliberately narrow: **only things you can point at on the
+dial** - a signature designation, a sector id, a quadrant, or a spelt-out
+`ring 4` / `segment 4`. Instrument and panel names are out, and so is
+anything merely important. Emphasis covering half a paragraph emphasises
+nothing, and once it stops meaning "go and look at this" it is only bold
+text. The digit in the spelt-out case is what keeps it off "ring-steps",
+"segment-hops" and the Ring Scan, none of which name a place; designations
+are read off the baked region, so a re-bake that renames one cannot leave
+the walk-through pointing at a signature that no longer exists.
+
 ### Verified end to end
 
 Both outcomes, on desktop and at 390x844:

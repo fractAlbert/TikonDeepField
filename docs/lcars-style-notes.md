@@ -152,6 +152,15 @@ Implemented:
   drawn *around* a marker had to move outward - the Ringed glyph's own ring
   sits at 9.2, which was exactly where the catalog reveal used to be.
 
+- Leader callouts on the Star Map - the station schematic's idiom (a thin
+  line, an elbow off the label's edge, a small dot where it lands) reused by
+  the walk-through to point at one cell of the dial. Teal, which is already
+  the tutorial's colour, so it reads as the walk-through talking rather than
+  as a new piece of game state. `components/starmap/TargetCallout.tsx`; the
+  label's position is measured by `scripts/check-tutorial-callout.ts`
+  against every label the dial already draws, because the corners are the
+  only empty space in the box and the quadrant labels are in them.
+
 Not adopted (deliberately):
 - Terse two/three-letter code labeling convention for nav - would hurt
   usability for panel names, though quasar designations (e.g. "PKS 753")

@@ -27,7 +27,7 @@
 // exploring is the thing this game is.
 
 import { useEffect } from "react";
-import { TutorialStep } from "@/lib/tutorial";
+import { TutorialStep, tokenizeCopy } from "@/lib/tutorial";
 import { playButtonClick } from "@/lib/sound";
 
 /**
@@ -140,7 +140,23 @@ export function TutorialCoach({
             </span>
           </div>
 
-          <p className="text-xs md:text-sm text-lcars-ice/80 leading-relaxed">{step.body}</p>
+          {/* Field references in white against the body's dimmed ice, so
+              the coordinates you have to act on are findable without
+              re-reading the sentence. See `tokenizeCopy` for what counts as
+              one and why the rule is kept narrow. Rendered from an array of
+              strings rather than as JSX text, so the whitespace either side
+              of a run survives exactly as written. */}
+          <p className="text-xs md:text-sm text-lcars-ice/80 leading-relaxed">
+            {tokenizeCopy(step.body).map((token, i) =>
+              token.field ? (
+                <strong key={i} className="text-white font-semibold">
+                  {token.text}
+                </strong>
+              ) : (
+                <span key={i}>{token.text}</span>
+              )
+            )}
+          </p>
 
           <div className="flex flex-wrap items-center gap-2 mt-2.5">
             {index > 0 && (
