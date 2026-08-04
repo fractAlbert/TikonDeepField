@@ -15,21 +15,21 @@ priority order — where one is recommended, the entry says so. Shipped items
 are removed and the rest renumbered, so a number only means what this table
 says it means today.
 
-Item 9 (survey result report, auto-archive on close) shipped 2026-08-03 and
-is written up in `win-conditions.md`. Numbers 1–8 never moved — that was the
-point of giving it the next free number rather than the top slot — so
-`tutorial-plan.md` and the cross-references below are still valid.
+Shipped 2026-08-03 and removed from this list: the survey result report and
+auto-archive on close (written up in `win-conditions.md`), and the first-run
+tutorial (written up in `tutorial-plan.md`, which now records what was built
+rather than what was planned). Remaining numbers were left where they were.
 
 | # | item | where |
 | --- | --- | --- |
 | 1 | `generateRegion()` reads rank, so regions get harder as you rise | Gameplay |
 | 2 | No `quasar-type` clues are ever emitted | Gameplay |
-| 3 | First-run welcome, tutorial region, walk-through | Design |
 | 4 | Star Map 50% wider | Design |
 | 5 | Maximize the Star Map (desktop only) | Design |
 | 6 | Mobile menu hub is a wall of fat buttons | Design |
 | 7 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
+| 9 | Sweep Scope / Ring Scan don't dim a signature you've already placed | Interaction |
 
 ## Design
 
@@ -69,62 +69,6 @@ Constraints a redesign has to keep:
   into a grid means per-row caps, not one cap set for the whole grid.
 - The panel it leads to is reached by `handleNavSelect`; nothing about the
   navigation model needs to change, only the presentation.
-
-### 3 - First-run welcome, with a generated tutorial region
-
-Direction agreed 2026-08-01, for once the game settles. A first-time
-welcome page: enough to get started, then it generates the opening survey —
-something deliberately easy, to teach the instruments. Probably with a
-walk-through.
-
-**This is now the only thing missing.** The default region was removed on
-2026-08-03, so "a player with no regions" is a real state that ships today
-— and what it currently lands on is the no-assignment placeholder, with a
-hint pointing at Survey New Region (`COPY.briefing.noSurveysHint`). That is
-honest but it is not a welcome. The two empty states are already told apart
-in the code: `BriefingPanel` takes `hasAnySurveys` and picks between
-*your regions are archived* and *you have never surveyed anything*, so a
-welcome screen has a flag to key off already.
-
-**Planned in full: `docs/tutorial-plan.md`.** Steps, storage, anchors,
-constraints, open decisions and a build order that can stall halfway and
-still leave the app better. Only the headlines are repeated here.
-
-**Two things changed on 2026-08-03**, both from direction given that day,
-and both invert what this entry used to say.
-
-**1. The region is fixed, not generated per player.** The cost is that it
-can be looked up; the gain is that the walk-through can be written against
-the actual solution — "PKS 2083 reads 2 from your anchor and 3 from the
-other, so it can only be R3S6" — instead of gesturing at technique. A
-tutorial over a random region can only teach process.
-
-**2. It must *require* a Ring Scan.** This is the reversal that matters.
-The old bar was "resolves by plain propagation with no scans" — the
-gentlest possible field. That teaches the player, correctly, that the Ring
-Scan is ignorable, and then their second region is unsolvable and they
-don't know why. The scan is the one instrument nobody discovers on their
-own: metered, costly, and silent about everything but its target.
-
-So the tutorial region has to hit a wall on purpose. Re-measured with
-`scripts/find-tutorial-region.ts` (rewritten for the new bars), 4000
-samples:
-
-| | |
-| --- | --- |
-| 6-signature regions that are tutorial grade | **16.6%** |
-| `generateRegion()` calls to find one | **~18** |
-| of scan-requiring regions, share needing only *one* scan | **89.8%** |
-
-Still cheap. The one-scan bar is nearly free and worth demanding: the
-budget is two, and a learner who aims their first scan wrong needs a way
-out.
-
-**The walk-through needs somewhere to remember itself** — on `player.ts`,
-next to the officer profile, so clearing your surveys doesn't resurrect it.
-Store the furthest step reached rather than a boolean so it can resume.
-Skippable and replayable; do not gate it behind "has never played", since
-people re-read tutorials.
 
 ### 4 - Star Map 50% wider
 
@@ -202,10 +146,40 @@ you rise.
 one that fixed the ladder: it separates an average player from a careful
 one, which no threshold setting could. What is still missing is region
 difficulty - a Chief of Survey draws exactly the same fields as a
-technician. That is the other half of item 1, and it is also the lever the
-tutorial region needs (item 3).
+technician. That is the other half of item 1.
+
+**Note for whoever builds it (added 2026-08-03).** The tutorial region is
+now the one region in the game that is *deliberately* pitched, and it is
+fixed rather than generated - so it is unaffected by this and must stay
+that way. `Ember Verge` is baked, and its whole value is that the
+walk-through's copy is written against its exact solution. Whatever reads
+rank inside `generateRegion()` must not be able to reach it.
 
 ## Interaction
+
+### 9 - Placed signatures should dim in the Sweep Scope and Ring Scan
+
+Raised 2026-08-03. The Star Map's signature chips drop to `opacity-60`
+once that signature is on the board, so "what have I still got left to
+place" is answerable at a glance. The Sweep Scope's reference buttons and
+the Ring Scan's signature buttons are the same list of clickable stars and
+should read the same way.
+
+**The catch is that neither panel knows about placements.** They live in
+`StarMap`'s own state, written to `quasar-isolinear:starmap:<regionId>`;
+Sweep Scope and Ring Scan are handed only the region. So this is either a
+`loadStarMapSave` read in each panel - cheap, but a snapshot that goes
+stale the moment a marker moves on a desktop where both are visible - or
+placements get lifted into `AppShell` and passed down, which is the honest
+fix and the larger one. The tutorial work already added an
+`onPlacements` callback from `StarMap` to `AppShell` for its step
+conditions, so the lifted state is now half-built.
+
+Worth keeping in mind: dimming is *not* the same signal in these panels.
+On the Star Map a dimmed chip means "already placed, nothing more to do
+with it". On the Ring Scan a placed signature is still a perfectly
+legitimate scan target - you may have placed it on a guess. So the dim
+should read as "you have put this one down", not as "disabled".
 
 ### 8 - The star map hover readout is dead on touch
 

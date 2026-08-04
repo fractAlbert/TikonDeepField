@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Region } from "@/lib/puzzle-types";
 import { RING_COUNT, SEGMENT_COUNT, buildSectors, quadrantOf, sectorId } from "@/lib/grid";
 import {
@@ -126,8 +126,19 @@ const OUTCOME_COPY: Record<SurveyOutcome, { label: string; tone: string; detail:
 export function StarMap({
   region,
   onClosed,
+  onBoardChange,
 }: {
   region: Region | null;
+  /**
+   * Fired whenever the board changes, with the placements and how many
+   * annotation marks exist. Only the tutorial listens: its steps advance on
+   * what the board *shows* rather than on intercepting clicks, which is
+   * what lets a player wander off and still satisfy them.
+   *
+   * Reported from the same effect that persists the board, so it cannot
+   * report a state that was never saved.
+   */
+  onBoardChange?: (board: { placements: Placements; markCount: number }) => void;
   /**
    * Fired the moment a filing or a withdrawal closes the region, so the
    * shell can open the survey result report.
@@ -232,12 +243,25 @@ export function StarMap({
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [region]);
 
+  // Held in a ref because callers pass an inline arrow, so depending on it
+  // directly would re-run the persist effect on every parent render.
+  const onBoardChangeRef = useRef(onBoardChange);
+  useEffect(() => {
+    onBoardChangeRef.current = onBoardChange;
+  }, [onBoardChange]);
+
   useEffect(() => {
     if (!loaded || !region) return;
     const serializedRuledOut: Record<string, string[]> = {};
     for (const qid in ruledOut) serializedRuledOut[qid] = [...ruledOut[qid]];
     const serializedMaybe: Record<string, string[]> = {};
     for (const qid in maybe) serializedMaybe[qid] = [...maybe[qid]];
+    onBoardChangeRef.current?.({
+      placements,
+      markCount:
+        Object.values(serializedRuledOut).reduce((n, s) => n + s.length, 0) +
+        Object.values(serializedMaybe).reduce((n, s) => n + s.length, 0),
+    });
     window.localStorage.setItem(
       starMapStorageKey(region.id),
       JSON.stringify({
@@ -466,6 +490,7 @@ export function StarMap({
             the whole viewBox scales together, a bigger map buys bigger
             labels without crowding the dial any further. */}
         <svg
+          id="starmap-field"
           viewBox="0 0 440 440"
           className="w-full max-w-[260px] max-lg:max-w-[420px] h-auto"
           /* Only while a rule-out sweep is actually possible. Left on
@@ -687,7 +712,7 @@ export function StarMap({
         {/* Nothing on a closed board responds to a click, so the mode
             switch would only advertise an interaction that no longer
             exists. */}
-        <div className={closed ? "invisible" : ""}>
+        <div id="starmap-modes" className={closed ? "invisible" : ""}>
           <div className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50 mb-1.5">
             Click action
           </div>
@@ -752,7 +777,7 @@ export function StarMap({
           <div className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50 mb-1.5">
             Signatures
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div id="starmap-signatures" className="flex flex-wrap gap-1.5">
             {quasars.map((q) => {
               const sid = placements[q.id];
               // Hovering a marker on the dial outlines its chip here, which
@@ -797,7 +822,7 @@ export function StarMap({
         </div>
 
         {!closed && (
-          <div className="flex flex-wrap items-center gap-2">
+          <div id="starmap-actions" className="flex flex-wrap items-center gap-2">
             {/* Disabled until every signature is placed. A partial filing
                 would be a free probe - place one marker, file, read the
                 count, and you've tested a single cell in isolation, which is

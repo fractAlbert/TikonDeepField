@@ -38,6 +38,13 @@ import { OfficerBadge } from "@/components/OfficerBadge";
 import { StationEmblem } from "@/components/StationEmblem";
 import { StationLoadingScreen } from "@/components/StationLoadingScreen";
 import { SurveyReportPanel } from "@/components/panels/SurveyReportPanel";
+import { WelcomePanel } from "@/components/panels/WelcomePanel";
+import { TutorialCoach } from "@/components/TutorialCoach";
+import { TUTORIAL_STEPS, TutorialProgress } from "@/lib/tutorial";
+import { TUTORIAL_REGION_ID, tutorialRegion } from "@/data/regions/tutorial";
+import { endTutorial, setTutorialStep, tutorialState } from "@/lib/player";
+import { usePlayer } from "@/lib/use-player";
+import { ringScansUsed } from "@/lib/survey-log";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { GAME_NAME, OUTPOST_NAME, PANEL_LABELS } from "@/lib/copy";
 
@@ -306,6 +313,108 @@ export function AppShell() {
     selectPanel("report");
   }
 
+  // ------------------------------------------------------------------
+  // The first-run walk-through.
+  //
+  // A controller, not a component: `tutorial.ts` holds the steps as data,
+  // and the only thing that lives here is which step is current, what the
+  // board looks like, and the rule that a step's target panel wins over
+  // whatever the player last clicked. See docs/tutorial-plan.md.
+
+  const { player } = usePlayer();
+  const tutorial = tutorialState(player, regions.length > 0);
+  // Running, as opposed to merely unfinished: the walk-through only drives
+  // the app once its region is actually on the roster.
+  const [tutorialRunning, setTutorialRunning] = useState(false);
+  const [tutorialStep, setTutorialStepIndex] = useState(0);
+  const [board, setBoard] = useState<{ placements: Record<string, string | undefined>; markCount: number }>({
+    placements: {},
+    markCount: 0,
+  });
+
+  const tutorialEntry = useMemo(
+    () => log.find((e) => e.regionId === TUTORIAL_REGION_ID),
+    [log]
+  );
+
+  const tutorialProgress: TutorialProgress = {
+    placements: board.placements,
+    markCount: board.markCount,
+    scansSpent: tutorialEntry ? ringScansUsed(tutorialEntry).length : 0,
+    closed: tutorialEntry ? !!tutorialEntry.outcome : false,
+  };
+
+  const activeStep = tutorialRunning ? TUTORIAL_STEPS[tutorialStep] : null;
+  const stepSatisfied = activeStep?.done ? activeStep.done(tutorialProgress) : true;
+
+  /**
+   * Offered only to a player with nothing on record who hasn't finished or
+   * skipped it. Everyone else keeps the ordinary placeholder - see
+   * `tutorialState` for why an existing save reads as done.
+   */
+  const showWelcome = mounted && !tutorial.done && regions.length === 0 && !tutorialRunning;
+
+  function beginTutorial() {
+    // Idempotent: replaying after finishing re-uses the same region and its
+    // saved board rather than stacking a second copy on the roster.
+    setRegions((prev) =>
+      prev.some((r) => r.id === TUTORIAL_REGION_ID) ? prev : [...prev, tutorialRegion]
+    );
+    setRegionId(TUTORIAL_REGION_ID);
+    setTutorialRunning(true);
+    // Resumes where it was left. The panel follows from the effect below,
+    // so there is nothing to set here.
+    setTutorialStepIndex(tutorial.step);
+  }
+
+  /** Declined the walk-through from the welcome screen: open a real field instead. */
+  function declineTutorial() {
+    endTutorial(0);
+    handleNavSelect("generate");
+  }
+
+  function advanceTutorial(to: number) {
+    if (to > TUTORIAL_STEPS.length - 1) {
+      endTutorial(TUTORIAL_STEPS.length - 1);
+      setTutorialRunning(false);
+      return;
+    }
+    const next = Math.max(0, to);
+    setTutorialStepIndex(next);
+    setTutorialStep(next);
+  }
+
+  function skipTutorial() {
+    endTutorial(tutorialStep);
+    setTutorialRunning(false);
+  }
+
+  /**
+   * The step's panel wins.
+   *
+   * "starmap" is a real destination only below `lg`; on desktop the map is
+   * permanently in the sidebar, so navigating for those steps would drag
+   * the player off the Briefing for no reason. Runs as an effect rather
+   * than during render because it is a navigation, and it deliberately does
+   * not depend on `requestedPanel` - the player is free to click away
+   * mid-step, and only a step *change* pulls them back.
+   */
+  useEffect(() => {
+    if (!activeStep) return;
+    if (activeStep.panel === "starmap" && !isMobile) return;
+    // Through `selectPanel`, not `setRequestedPanel`. Selecting a panel is
+    // not only a state change: it is also what sets `visitedSweep`, which
+    // is what mounts the Sweep Scope at all. Setting the panel directly
+    // navigated to an *empty* Sweep Scope - the step told the player to
+    // read an instrument that had never been mounted. Found by walking the
+    // tutorial and measuring the container at height 0.
+    // Deliberately not depending on `selectPanel`: it is redeclared every
+    // render, so depending on it would re-navigate constantly and pin the
+    // player to the step's panel. Only a *step change* pulls them back,
+    // which is what "points, does not block" means here.
+    selectPanel(activeStep.panel);
+  }, [activeStep, isMobile]);
+
   function selectPanel(id: string) {
     setRequestedPanel(id as PanelId);
     if (id === "sweep") setVisitedSweep(true);
@@ -405,6 +514,11 @@ export function AppShell() {
         /* Only the live survey can close; a previewed entry from the Log
            is already closed and read-only. */
         onClosed={starMapRegion === activeRegion ? handleSurveyClosed : undefined}
+        /* Only while the walk-through is driving, and only for its own
+           region - a preview from the Log must not feed step conditions. */
+        onBoardChange={
+          tutorialRunning && starMapRegion?.id === TUTORIAL_REGION_ID ? setBoard : undefined
+        }
       />
     </>
   );
@@ -413,7 +527,16 @@ export function AppShell() {
     // The viewport shell never scrolls, on any width - that's a standing
     // LCARS rule (see docs/lcars-style-notes.md). Anything too tall falls
     // back to a hidden-scrollbar flick-scroll inside `main`.
-    <div id="app-shell" className="flex-1 flex flex-col gap-3 p-3 md:p-6 h-full overflow-hidden">
+    <div
+      id="app-shell"
+      className="flex-1 flex flex-col gap-3 p-3 md:p-6 h-full overflow-hidden"
+      /* Reserved rather than overlaid. The coach bar is `fixed`, so without
+         this it would sit on top of whatever is at the bottom of the
+         screen - and since the shell never scrolls, covered content is
+         unreachable rather than merely hidden. Shrinking the shell keeps
+         every panel fully visible while the walk-through runs. */
+      style={activeStep ? { paddingBottom: isMobile ? 210 : 168 } : undefined}
+    >
       {/* Phone-sized type here is doing real work, not just tidying: at the
           desktop sizes the title and subtitle each wrapped to two lines,
           making the header 108px of an 844px screen. One line each brings
@@ -483,10 +606,28 @@ export function AppShell() {
           data-panel={panel}
           className="flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar"
         >
-          {panel === "menu" && (
+          {/* The hub is the phone's landing view, so on a phone it - not
+              Briefing - is what a first run actually opens on. Without this
+              the welcome screen shipped desktop-only, which is backwards:
+              the hub's eleven destinations are the least useful thing to
+              hand someone who has never played and has no survey to open. */}
+          {panel === "menu" && !showWelcome && (
             <MobileMenu id="mobile-menu" items={MOBILE_NAV} onSelect={handleNavSelect} />
           )}
+          {/* The welcome takes the Briefing slot rather than being a
+              destination of its own: it is what a first run lands on, and
+              Briefing is where the app already opens. It also keeps the
+              phone hub at eleven entries, which is full (backlog item 6). */}
+          {(panel === "briefing" || panel === "menu") && showWelcome && (
+            <WelcomePanel
+              officerName={player.name}
+              resuming={tutorial.step > 0}
+              onBeginTutorial={beginTutorial}
+              onSkip={declineTutorial}
+            />
+          )}
           {panel === "briefing" &&
+            !showWelcome &&
             (generating ? (
               /* Titled to match the placeholder this replaces. Without the
                  title bar the content box is ~30px taller and starts
@@ -613,6 +754,18 @@ export function AppShell() {
           </div>
         )}
       </div>
+
+      {activeStep && (
+        <TutorialCoach
+          step={activeStep}
+          index={tutorialStep}
+          total={TUTORIAL_STEPS.length}
+          satisfied={stepSatisfied}
+          onNext={() => advanceTutorial(tutorialStep + 1)}
+          onBack={() => advanceTutorial(tutorialStep - 1)}
+          onSkip={skipTutorial}
+        />
+      )}
     </div>
   );
 }

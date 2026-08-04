@@ -14,7 +14,14 @@ import {
   reviewOutlook,
   tallyOutcomes,
 } from "@/lib/ranks";
-import { RankEvent, renamePlayer, requestReinstatement, rerollPlayerName, reviewWindow } from "@/lib/player";
+import {
+  RankEvent,
+  renamePlayer,
+  requestReinstatement,
+  rerollPlayerName,
+  restartTutorial,
+  reviewWindow,
+} from "@/lib/player";
 import { usePlayer } from "@/lib/use-player";
 import { playButtonClick, playVerifySuccess } from "@/lib/sound";
 import { LcarsPanel } from "@/components/LcarsShell";
@@ -179,7 +186,27 @@ export function ProfilePanel() {
               Request Reinstatement
             </LcarsButton>
           )}
+          {/* Replay rather than "if you've never played": people re-read
+              tutorials, and the walk-through is the only place several of
+              the instruments are actually explained by using them. It takes
+              effect on the next empty board - the welcome screen is what
+              offers it, and that only appears with nothing on the roster. */}
+          <LcarsButton
+            color="violet"
+            className="text-sm"
+            onClick={() => {
+              playButtonClick();
+              restartTutorial();
+            }}
+          >
+            Replay Training
+          </LcarsButton>
         </div>
+        <p className="text-[11px] text-lcars-ice/40 leading-relaxed mt-2">
+          Training replays from the welcome screen, which appears when you
+          have no surveys on the roster. Archive what you have open to get
+          back to it.
+        </p>
       </LcarsPanel>
 
       <LcarsPanel title="Standing" accent="bg-lcars-amber">
