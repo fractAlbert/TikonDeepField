@@ -161,3 +161,52 @@ viewport, a same-origin harness page in `public/` holding
 `<iframe src="/" width="390">` works, and an iframe can be *wider* than the
 window too, which is how desktop was checked at 1280px inside a 560px
 window.
+
+## The menu hub, redesigned (2026-08-04)
+
+The "fat and crude" note above was backlog item 6, and it stayed open long
+enough to become a blocker: by the time Station joined on 2026-08-02 the run
+was **full**. Measured on a cold load at 320x568, all eleven buttons landed
+at exactly 44px - the `min-h-11` touch floor, with nothing left over. It
+fitted, and it fitted by nothing, so a twelfth destination either scrolled
+or broke the floor.
+
+What changed, and why each part:
+
+- **Two columns, not one.** Six rows of two at the touch floor is 294px of
+  the 480px `main` gets at 320x568, so there is now 186px of headroom and a
+  twelfth entry costs one row rather than the whole layout.
+- **The buttons stopped stretching.** `flex-1` on a vertical run is the
+  desktop rail's idiom, and the rail earns it by being permanent chrome at
+  the edge of a busy screen. A landing page does not, and the direction
+  agreed on the day was explicit: small buttons with generous empty space
+  are fine here, because this is the one screen with nothing competing for
+  the room.
+- **Each row is a run, with its own caps.** `runShape` per row, per the
+  style notes' wrapped-run rule, so a row reads as one bracket rather than
+  as two loose pills. The odd item at the end comes back as a full pill,
+  which is what `runShape(0, 1)` already says should happen.
+- **A titled sub-panel around it.** A colour block with "Main Menu" resting
+  at its bottom-left (the reference image's shelf move), over a
+  `bg-lcars-panel` body. The body colour is load-bearing: a black tint over
+  a black page is invisible, and without it the empty space below the
+  buttons reads as a void instead of as room the layout is deliberately
+  leaving.
+- **`LcarsButton` gained a `size` prop.** Padding could not be overridden
+  through `className` - two padding utilities on one element are settled by
+  the order Tailwind emits them in, not the order they are written. Two
+  columns of a 320px screen leave about 116px of usable width, and 24px of
+  that going to horizontal padding is what pushed "Survey New Region" onto
+  three lines.
+
+Verified at 320x568 and 390x844 in the iframe harness described above: hub
+present, eleven buttons, every one at 44px, nothing scrolling in either
+direction.
+
+**One thing this pass found and did not fix.** At 320x568 the *header*
+overflows horizontally - `scrollWidth` 362 against a 320 viewport, from the
+officer badge and sound toggle, which are `shrink-0` next to a title that
+will not give up enough room. Confirmed pre-existing by stashing the hub
+work and re-measuring: identical 362. It is clipped rather than scrollable
+(`#app-shell` is `overflow-hidden`), so nothing is lost, but "SOUND: ON" is
+cut in half. Logged as backlog item 10.

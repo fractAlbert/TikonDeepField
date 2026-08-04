@@ -169,7 +169,7 @@ scenario("The window resets on a rank change, so one bad run is charged once", (
   expectRank("window refilled with withdrawals only", STARTING_RANK - 1);
 });
 
-scenario("Falling off the bottom, and coming back", () => {
+scenario("Falling off the bottom ends the career", () => {
   feed([R, R, R, W, W, W, W, W]); // 2 -> 1
   expectRank("first demotion", 1);
   feed([R, R, R, W, W, W, W, W]); // 1 -> 0
@@ -177,15 +177,43 @@ scenario("Falling off the bottom, and coming back", () => {
   feed([R, R, R, W, W, W, W, W]); // 0 -> relieved
   expectRank("relieved", RELIEVED);
 
-  // No review runs while off the ladder - a relieved officer has no rank
-  // to move, and their filings just accumulate on the record.
-  feed([C, C, C, C, C, C, C, C]);
-  expectRank("8 confirmed while relieved", RELIEVED);
+  // Relief is terminal since 2026-08-04 (docs/rank-ladder.md, "Career
+  // end"). It used to be recoverable, and that made the loss state
+  // weightless: nothing gated surveying on rank, no review ran while
+  // relieved, and the window reset on the way back - so the whole state
+  // had no consequence in either direction.
+  checks++;
+  if (player.getPlayer().ended?.reason === "relieved") console.log("  ok   career ended on relief");
+  else {
+    failures++;
+    console.log("  FAIL relief did not end the career");
+  }
 
-  player.requestReinstatement();
-  expectRank("after reinstatement", 0);
+  // And nothing can close against it any more.
   feed([C, C, C, C, C, C, C, C]);
-  expectRank("8 confirmed after reinstatement", 1);
+  expectRank("8 confirmed after the career ended", RELIEVED);
+  checks++;
+  if (player.getPlayer().outcomes.length === 24) console.log("  ok   no outcomes recorded after the end");
+  else {
+    failures++;
+    console.log(`  FAIL outcomes kept accruing (${player.getPlayer().outcomes.length}, expected 24)`);
+  }
+});
+
+scenario("Retiring closes the career at whatever rank was held", () => {
+  feed([C, C, C, C, C, C, C, C]); // 2 -> 3
+  expectRank("promoted", 3);
+  player.retireCareer();
+  checks++;
+  const p = player.getPlayer();
+  if (p.ended?.reason === "retired" && p.rank === 3) console.log("  ok   retired at Senior Science Officer");
+  else {
+    failures++;
+    console.log(`  FAIL retirement (ended=${p.ended?.reason}, rank=${p.rank})`);
+  }
+  // Retiring twice must not double up on the record.
+  player.retireCareer();
+  expectHistoryLength("history", 3); // commission + promotion + retirement
 });
 
 scenario("The top of the ladder holds", () => {
@@ -246,9 +274,12 @@ scenario("Filings shrink as rank rises", () => {
     console.log("  FAIL a rank gets one filing, which removes the cross-check");
   }
 
+  // Not a spec, a guard. A relieved officer never files again - the career
+  // is over - so this only asserts that the out-of-range lookup still lands
+  // on a usable number rather than NaN, in case something reaches for it.
   checks++;
   if (filingsForRank(RELIEVED) === ladder[0])
-    console.log("  ok   a relieved officer files as a technician");
+    console.log("  ok   out-of-range rank falls back to a real budget");
   else {
     failures++;
     console.log("  FAIL relieved rank has no filing budget");

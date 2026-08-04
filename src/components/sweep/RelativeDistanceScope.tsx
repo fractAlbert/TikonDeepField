@@ -15,6 +15,12 @@ export interface ScopeSignature {
   glyph: QuasarGlyph;
   ring: number;
   seg: number;
+  /**
+   * Already placed on the Star Map, which dims it in the reference palette
+   * and the legend. Only ever a note about the board - it changes nothing
+   * about what the scope will read for you.
+   */
+  placed?: boolean;
 }
 
 const VISIBILITY_RANGE = 5;
@@ -267,7 +273,9 @@ export function RelativeDistanceScope({
           <button
             key={s.id}
             type="button"
-            className={`${styles.refBtn} ${s.id === ref.id ? styles.active : ""}`}
+            className={`${styles.refBtn} ${s.id === ref.id ? styles.active : ""} ${
+              s.placed ? styles.placed : ""
+            }`}
             onClick={() => {
               playButtonClick();
               setRefId(s.id);
@@ -360,7 +368,10 @@ export function RelativeDistanceScope({
 
       <div className={styles.legend}>
         {signatures.map((s) => (
-          <div key={s.id} className={styles.legendItem}>
+          <div
+            key={s.id}
+            className={`${styles.legendItem} ${s.placed ? styles.placed : ""}`}
+          >
             <span className={styles.legendDot}>
               <QuasarStar color={s.color} glyph={s.glyph} size={14} />
             </span>

@@ -17,17 +17,19 @@ import {
 import {
   RankEvent,
   renamePlayer,
-  requestReinstatement,
   rerollPlayerName,
-  restartTutorial,
+  retireCareer,
   reviewWindow,
 } from "@/lib/player";
+import { restartTutorial } from "@/lib/station";
 import { usePlayer } from "@/lib/use-player";
-import { playButtonClick, playVerifySuccess } from "@/lib/sound";
+import { useStation } from "@/lib/use-station";
+import { playButtonClick, playReset } from "@/lib/sound";
 import { LcarsPanel } from "@/components/LcarsShell";
 import { LcarsButton } from "@/components/LcarsButton";
 import { RankInsignia } from "@/components/RankInsignia";
 import { RankLadderModal } from "@/components/RankLadderModal";
+import { ServiceRecord } from "@/components/ServiceRecord";
 
 const OUTCOME_STYLE: Record<SurveyOutcome, { label: string; chip: string }> = {
   confirmed: { label: "Confirmed", chip: "bg-lcars-teal text-black" },
@@ -40,6 +42,10 @@ const REASON_LABEL: Record<RankEvent["reason"], string> = {
   promotion: "Promoted",
   demotion: "Demoted",
   relieved: "Relieved of duty",
+  retired: "Retired",
+  // Reinstatement no longer happens - relief ends the career - but a
+  // profile from before 2026-08-04 can still carry one in its history, and
+  // the history is the point of the record.
   reinstatement: "Reinstated",
 };
 
@@ -54,8 +60,13 @@ function formatDate(ts: number): string {
 
 export function ProfilePanel() {
   const { player, commissioned } = usePlayer();
+  const station = useStation();
   const [draftName, setDraftName] = useState<string | null>(null);
   const [showLadder, setShowLadder] = useState(false);
+  // Retirement is irreversible, so it takes the same two-click arming the
+  // Star Map's Withdraw does rather than a dialog - easy to reach,
+  // impossible to hit by accident.
+  const [confirmingRetire, setConfirmingRetire] = useState(false);
 
   if (!commissioned) {
     // Pre-hydration and the first frame after it. Deliberately not a
@@ -160,9 +171,7 @@ export function ProfilePanel() {
               {rankTitle(player.rank)}
             </div>
             <p className="text-xs text-lcars-ice/60 leading-relaxed mt-1 max-w-prose">
-              {relieved
-                ? "Off the survey roster pending reinstatement."
-                : rank?.blurb}
+              {relieved ? "Off the survey roster. The commission is withdrawn." : rank?.blurb}
             </p>
             <p className="font-mono text-[11px] text-lcars-ice/40 mt-2">
               Personnel file {player.serviceNumber} &middot; commissioned{" "}
@@ -175,17 +184,6 @@ export function ProfilePanel() {
           <LcarsButton color="lilac" onClick={() => setShowLadder(true)} className="text-sm">
             Rank Structure
           </LcarsButton>
-          {relieved && (
-            <LcarsButton
-              color="teal"
-              className="text-sm"
-              onClick={() => {
-                if (requestReinstatement()) playVerifySuccess();
-              }}
-            >
-              Request Reinstatement
-            </LcarsButton>
-          )}
           {/* Replay rather than "if you've never played": people re-read
               tutorials, and the walk-through is the only place several of
               the instruments are actually explained by using them. It takes
@@ -207,6 +205,41 @@ export function ProfilePanel() {
           have no surveys on the roster. Archive what you have open to get
           back to it.
         </p>
+
+        {/* Stand down. Kept at the bottom of the file it closes, and away
+            from the row above - the controls up there are all reversible
+            and this one is not. Available at any rank, including mid-survey:
+            the confirmation carries the weight, and "you may not retire
+            while you have work open" is a rule with nothing behind it. */}
+        <div className="mt-5 pt-4 border-t border-white/10">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (!confirmingRetire) {
+                  playButtonClick();
+                  setConfirmingRetire(true);
+                  return;
+                }
+                playReset();
+                retireCareer();
+              }}
+              onBlur={() => setConfirmingRetire(false)}
+              className={`lcars-caps text-xs px-4 py-1.5 rounded-full font-semibold cursor-pointer transition-colors ${
+                confirmingRetire
+                  ? "bg-lcars-red text-black hover:bg-lcars-salmon"
+                  : "bg-lcars-panel text-lcars-ice/80 hover:bg-white/15"
+              }`}
+            >
+              {confirmingRetire ? "Confirm retirement" : "Retire"}
+            </button>
+            <span className="text-[11px] text-lcars-ice/40 leading-relaxed max-w-prose">
+              {confirmingRetire
+                ? "This closes the career for good. Open surveys end with it, and a new officer starts from Science Officer."
+                : "Stand down at your current rank. The file closes on your terms and stays on the service record — which is the difference between retiring and being relieved."}
+            </span>
+          </div>
+        </div>
       </LcarsPanel>
 
       <LcarsPanel title="Standing" accent="bg-lcars-amber">
@@ -218,8 +251,9 @@ export function ProfilePanel() {
               Relieved of Survey Duty
             </div>
             <p className="text-xs text-lcars-ice/70 leading-relaxed mt-1.5">
-              Your filings are still recorded, but no review runs while you hold no rank. Request
-              reinstatement above to return as a Survey Technician with a clean window.
+              The career is over. There is no route back onto the ladder from
+              here &mdash; the record stands as it is, and a new officer starts
+              a new file.
             </p>
           </div>
         ) : (
@@ -297,6 +331,10 @@ export function ProfilePanel() {
           </ul>
         )}
       </LcarsPanel>
+
+      {/* Renders nothing until there is a career on file, so a first-career
+          player never sees an empty panel asking them to notice it. */}
+      <ServiceRecord careers={station.careers} />
     </div>
   );
 }

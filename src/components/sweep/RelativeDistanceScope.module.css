@@ -28,6 +28,15 @@
   box-shadow: 0 0 0 1px #ffcf7a inset;
 }
 
+/* Already on the Star Map. The same 0.6 the map's own signature chips use,
+   so "I have put this one down" looks the same wherever the list of stars
+   is drawn. Never applied to the active reference: that button is what the
+   whole readout is measured from, and fading it would read as the
+   instrument going stale rather than as a note about the board. */
+.placed:not(.active) {
+  opacity: 0.6;
+}
+
 .refDot {
   width: 9px;
   height: 9px;

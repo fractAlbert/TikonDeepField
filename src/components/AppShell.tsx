@@ -42,7 +42,10 @@ import { WelcomePanel } from "@/components/panels/WelcomePanel";
 import { TutorialCoach } from "@/components/TutorialCoach";
 import { TUTORIAL_STEPS, TutorialProgress } from "@/lib/tutorial";
 import { TUTORIAL_REGION_ID, tutorialRegion } from "@/data/regions/tutorial";
-import { endTutorial, setTutorialStep, tutorialState } from "@/lib/player";
+import { beginNewCareer } from "@/lib/player";
+import { endTutorial, setTutorialStep, tutorialState } from "@/lib/station";
+import { useStation } from "@/lib/use-station";
+import { CareerEndPanel } from "@/components/panels/CareerEndPanel";
 import { usePlayer } from "@/lib/use-player";
 import { ringScansUsed } from "@/lib/survey-log";
 import { LcarsPanel } from "@/components/LcarsShell";
@@ -180,6 +183,13 @@ export function AppShell() {
   // Whether Survey New Region's flavor delay is in progress - Briefing shows
   // the loading screen instead of its normal content while this is true.
   const [generating, setGenerating] = useState(false);
+
+  // The Star Map filling `main` instead of the 360px sidebar (desktop only;
+  // below `lg` the map is already a full-width panel of its own). See the
+  // render for how this expands *without* remounting the map, which is the
+  // whole constraint - StarMap owns the board and writes it to
+  // localStorage, so two live instances would fight over one key.
+  const [mapMaximized, setMapMaximized] = useState(false);
 
   // Archived-state (and therefore noActiveAssignment) isn't known until the
   // survey log has synced from localStorage post-hydration - defaulting to
@@ -322,24 +332,48 @@ export function AppShell() {
   // whatever the player last clicked. See docs/tutorial-plan.md.
 
   const { player } = usePlayer();
-  const tutorial = tutorialState(player, regions.length > 0);
+  // Read off the station record, not the profile - it has to survive the
+  // career that finished, or a second career would be taught to place a
+  // signature by someone who has just retired from doing it.
+  const station = useStation();
+  const tutorial = tutorialState(regions.length > 0);
   // Running, as opposed to merely unfinished: the walk-through only drives
   // the app once its region is actually on the roster.
   const [tutorialRunning, setTutorialRunning] = useState(false);
   const [tutorialStep, setTutorialStepIndex] = useState(0);
-  const [board, setBoard] = useState<{ placements: Record<string, string | undefined>; markCount: number }>({
-    placements: {},
-    markCount: 0,
-  });
+
+  /**
+   * The Star Map's board, lifted.
+   *
+   * `StarMap` still owns it - this is a copy reported on every change, not
+   * the source - because two things a level up need to know about it and
+   * neither can reach into the component. The tutorial's step conditions
+   * ask what the board *shows*, and the Sweep Scope and Ring Scan dim a
+   * signature you have already placed.
+   *
+   * The alternative for the second was a `loadStarMapSave` read inside each
+   * panel, which is cheaper and wrong: on a desktop the map and the scope
+   * are on screen together, so a snapshot taken at mount goes stale the
+   * moment a marker moves.
+   */
+  const [board, setBoard] = useState<{
+    regionId: string;
+    placements: Record<string, string | undefined>;
+    markCount: number;
+  } | null>(null);
 
   const tutorialEntry = useMemo(
     () => log.find((e) => e.regionId === TUTORIAL_REGION_ID),
     [log]
   );
 
+  // Only ever the tutorial's own board. `board` now follows whatever survey
+  // is active, so without this check a step condition could be satisfied by
+  // a placement made in an entirely different region.
+  const tutorialBoard = board?.regionId === TUTORIAL_REGION_ID ? board : null;
   const tutorialProgress: TutorialProgress = {
-    placements: board.placements,
-    markCount: board.markCount,
+    placements: tutorialBoard?.placements ?? {},
+    markCount: tutorialBoard?.markCount ?? 0,
     scansSpent: tutorialEntry ? ringScansUsed(tutorialEntry).length : 0,
     closed: tutorialEntry ? !!tutorialEntry.outcome : false,
   };
@@ -417,6 +451,11 @@ export function AppShell() {
 
   function selectPanel(id: string) {
     setRequestedPanel(id as PanelId);
+    // Going anywhere restores the map. Maximised, the map *is* the content
+    // area, so a nav click that left it expanded would look like the
+    // destination failed to open - which is exactly the "mode you can get
+    // stuck in" this feature had to avoid.
+    setMapMaximized(false);
     if (id === "sweep") setVisitedSweep(true);
     if (id !== "log") setLogPreviewRegion(null);
     // The refusal is about one attempt, not a standing state - leaving the
@@ -494,10 +533,43 @@ export function AppShell() {
   // keep taking a non-nullable one instead of each re-deriving the rule.
   const activeRegion: Region | null = noActiveAssignment ? null : region;
 
+  /**
+   * Which signatures are already on the board, for the instruments that
+   * list them.
+   *
+   * The Star Map's chips drop to 60% once a signature is placed, so "what
+   * have I still got left" is answerable at a glance; the Sweep Scope's
+   * references and the Ring Scan's targets are the same list of stars and
+   * now read the same way. Note the dim means "you have put this one
+   * down", *not* "disabled" - a placed signature is still a perfectly
+   * legitimate scan target, since you may well have placed it on a guess.
+   *
+   * Guarded on the region id rather than trusting whatever the board last
+   * reported: `board` outlives any one survey, and dimming the wrong six
+   * names for a frame is worse than dimming none.
+   */
+  const placedQuasarIds = useMemo(() => {
+    if (!activeRegion || board?.regionId !== activeRegion.id) return new Set<string>();
+    return new Set(
+      Object.entries(board.placements)
+        .filter(([, sector]) => !!sector)
+        .map(([quasarId]) => quasarId)
+    );
+  }, [activeRegion, board]);
+
   // The Star Map always shows the field itself; it just has nothing
   // selectable when there's no active survey to plot (null region).
   const starMapRegion: Region | null =
     panel === "log" && logPreviewRegion ? logPreviewRegion : activeRegion;
+
+  // Maximising is a *restyle* of the sidebar, never a move: the map stays
+  // at the same place in the tree and only the widths change, because
+  // StarMap owns the board and persists it, and a remount would drop the
+  // armed signature and the current filing snapshot on the way through.
+  // Held here (rather than in the state itself) so every reader agrees -
+  // the report drops the sidebar entirely, and below `lg` there is nothing
+  // to expand into.
+  const mapMaximised = mapMaximized && !isMobile && panel !== "report";
 
   // Rendered into the sidebar on desktop and into `main` below `lg`, but
   // never both at once - each call site is gated on `isMobile`, so there is
@@ -514,11 +586,10 @@ export function AppShell() {
         /* Only the live survey can close; a previewed entry from the Log
            is already closed and read-only. */
         onClosed={starMapRegion === activeRegion ? handleSurveyClosed : undefined}
-        /* Only while the walk-through is driving, and only for its own
-           region - a preview from the Log must not feed step conditions. */
-        onBoardChange={
-          tutorialRunning && starMapRegion?.id === TUTORIAL_REGION_ID ? setBoard : undefined
-        }
+        /* Only for the live survey - a preview from the Log is a different
+           region's board and must not feed step conditions or dim the
+           instruments' signature lists. */
+        onBoardChange={starMapRegion === activeRegion ? setBoard : undefined}
         /* Same gate as the board callback, and for the same reason: a
            preview from the Log must not sprout a "place it here" ring for
            a region the walk-through isn't talking about. */
@@ -527,9 +598,25 @@ export function AppShell() {
             ? activeStep?.hint ?? null
             : null
         }
+        maximized={mapMaximised}
+        /* Below `lg` there is nothing to maximise into - the map is already
+           a full-width panel - so the control is simply absent there. */
+        onToggleMaximize={isMobile ? undefined : () => setMapMaximized((v) => !v)}
       />
     </>
   );
+
+  /**
+   * The career is over - relieved, or retired. This replaces the entire
+   * layout rather than being a panel you can navigate away from, which is
+   * the point: surveying has stopped, so leaving the rails up would offer
+   * eleven destinations that all say the same "no active assignment".
+   *
+   * Gated on `mounted` for the same reason `noActiveAssignment` is - the
+   * profile reads as the placeholder until localStorage has been read, and
+   * a first frame that guessed wrong here would flash the whole app.
+   */
+  const careerOver = mounted && !!player.ended;
 
   return (
     // The viewport shell never scrolls, on any width - that's a standing
@@ -578,10 +665,20 @@ export function AppShell() {
         </div>
       </header>
 
+      {careerOver && (
+        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+          <CareerEndPanel player={player} careers={station.careers} onBeginNewCareer={beginNewCareer} />
+        </div>
+      )}
+
       {/* `main` keeps the same position in the tree either way, so crossing
           the breakpoint restyles the layout without remounting any panel -
           Sweep Scope's background clock in particular survives a resize. */}
-      <div className={isMobile ? "flex flex-col flex-1 min-h-0 gap-3" : "flex flex-1 min-h-0"}>
+      <div
+        className={`${
+          isMobile ? "flex flex-col flex-1 min-h-0 gap-3" : "flex flex-1 min-h-0"
+        } ${careerOver ? "hidden" : ""}`}
+      >
         {isMobile && panel !== "menu" && (
           <MobilePanelBar
             id="mobile-panel-bar"
@@ -609,10 +706,17 @@ export function AppShell() {
           />
         )}
 
+        {/* Hidden rather than unmounted while the map is maximised. `main`
+            holds the Sweep Scope, whose clock has been running since its
+            first mount and must not be restarted by a panel expanding next
+            to it - and the same reasoning that keeps the scope mounted when
+            you navigate away applies here. */}
         <main
           id="main-content"
           data-panel={panel}
-          className="flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar"
+          className={`flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar ${
+            mapMaximised ? "hidden" : ""
+          }`}
         >
           {/* The hub is the phone's landing view, so on a phone it - not
               Briefing - is what a first run actually opens on. Without this
@@ -675,7 +779,11 @@ export function AppShell() {
               resetting every time you switch back to it. */}
           <div id="sweep-scope-container" className={panel === "sweep" && activeRegion ? "" : "hidden"}>
             {visitedSweep && activeRegion && (
-              <SweepScopePanel region={activeRegion} visible={panel === "sweep"} />
+              <SweepScopePanel
+                region={activeRegion}
+                visible={panel === "sweep"}
+                placedQuasarIds={placedQuasarIds}
+              />
             )}
           </div>
           {panel === "sweep" && !activeRegion && (
@@ -685,7 +793,7 @@ export function AppShell() {
           )}
           {panel === "ringscan" &&
             (activeRegion ? (
-              <RingScanPanel region={activeRegion} />
+              <RingScanPanel region={activeRegion} placedQuasarIds={placedQuasarIds} />
             ) : (
               <LcarsPanel id="ringscan-placeholder" title={PANEL_LABELS.ringScan} accent="bg-lcars-salmon" className="h-full">
                 <NoActiveAssignmentPanel onOpenStationInfo={openStationInfo} />
@@ -737,9 +845,17 @@ export function AppShell() {
             closed: StarMap re-reads its board from localStorage on remount,
             and a closed board can't have changed meanwhile. */}
         {!isMobile && panel !== "report" && (
+          /* Same element either way - only the width classes change, which
+             is what lets the map expand without React unmounting anything
+             inside it. Both rails stay where they are, so maximising never
+             takes the navigation away. */
           <div
             id="starmap-sidebar"
-            className="w-[360px] shrink-0 min-h-0 overflow-y-auto no-scrollbar ml-[20px] max-lg:hidden"
+            className={
+              mapMaximised
+                ? "flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar"
+                : "w-[360px] shrink-0 min-h-0 overflow-y-auto no-scrollbar ml-[20px] max-lg:hidden"
+            }
           >
             {starMapView}
           </div>
@@ -763,7 +879,7 @@ export function AppShell() {
         )}
       </div>
 
-      {activeStep && (
+      {activeStep && !careerOver && (
         <TutorialCoach
           step={activeStep}
           index={tutorialStep}

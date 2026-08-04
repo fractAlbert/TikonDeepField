@@ -161,6 +161,29 @@ Implemented:
   against every label the dial already draws, because the corners are the
   only empty space in the box and the quadrant labels are in them.
 
+- The phone hub as a titled block of paired runs, not a stretched column -
+  see `mobile-layout-plan.md`. The two things worth carrying over here: a
+  wrapped run takes its caps per row, so each row is its own bracket and the
+  odd item at the end comes back as a full pill; and a nested sub-panel has
+  to be lighter than the page, because black over black is invisible and the
+  empty space stops reading as deliberate.
+- **Dimming means "you have already put this one down."** The Star Map's
+  signature chips drop to 60% once placed, and as of 2026-08-04 so do the
+  Sweep Scope's reference buttons and legend and the Ring Scan's targets. It
+  is a note about the board, never a disabled state: a placed signature is
+  still a legitimate scan target, since the placement may have been a guess.
+  Which is why the Ring Scan says so in as many words, and why the Sweep
+  Scope never dims the *active* reference - the whole readout is measured
+  from it, so fading it would read as the instrument going stale.
+- Maximising the Star Map (desktop). The dial scales with its box - the
+  viewBox is 440 units and every label size is in user units - so a larger
+  box buys larger labels with no second set of sizes to keep in step. Two
+  constraints shaped it: the map may not be **remounted** on the way (it
+  owns the board and persists it, so the expansion is a restyle of the
+  sidebar and `main` is hidden rather than unmounted), and the dial has to
+  be capped by *height* as well as width, or maximising hands you a bigger
+  map you have to scroll to see.
+
 Not adopted (deliberately):
 - Terse two/three-letter code labeling convention for nav - would hurt
   usability for panel names, though quasar designations (e.g. "PKS 753")

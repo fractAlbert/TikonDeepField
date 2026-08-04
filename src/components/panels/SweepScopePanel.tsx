@@ -14,7 +14,22 @@ import { quasarGlyph } from "@/lib/quasar-glyph";
 // field for everyone).
 const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
 
-export function SweepScopePanel({ region, visible }: { region: Region; visible: boolean }) {
+export function SweepScopePanel({
+  region,
+  visible,
+  placedQuasarIds,
+}: {
+  region: Region;
+  visible: boolean;
+  /**
+   * Signatures already on the Star Map. Resolved to `placed` here rather
+   * than passed down as a set, because the scope keys its signatures by
+   * designation and the board keys by quasar id - the same string for a
+   * generated region, but not guaranteed to be, and this panel is the one
+   * place that holds both.
+   */
+  placedQuasarIds: Set<string>;
+}) {
   const colorOf = useQuasarColor(region.id);
   const signatures: ScopeSignature[] = useMemo(
     () =>
@@ -27,9 +42,10 @@ export function SweepScopePanel({ region, visible }: { region: Region; visible: 
           glyph: quasarGlyph(i),
           ring: sector.ring,
           seg: sector.seg,
+          placed: placedQuasarIds.has(q.id),
         };
       }),
-    [region, colorOf]
+    [region, colorOf, placedQuasarIds]
   );
 
   return (
