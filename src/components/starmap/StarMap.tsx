@@ -21,7 +21,9 @@ import {
   cellPath,
   centerOf,
 } from "@/components/starmap/field";
+import { TargetCallout } from "@/components/starmap/TargetCallout";
 import { QuasarMarker } from "@/components/QuasarMarker";
+import type { TutorialHint } from "@/lib/tutorial";
 import { quasarGlyph } from "@/lib/quasar-glyph";
 import { useQuasarColor } from "@/lib/use-quasar-colors";
 import { starMapStorageKey } from "@/lib/starmap-storage";
@@ -127,18 +129,34 @@ export function StarMap({
   region,
   onClosed,
   onBoardChange,
+  hint,
+  maximized = false,
 }: {
   region: Region | null;
   /**
    * Fired whenever the board changes, with the placements and how many
-   * annotation marks exist. Only the tutorial listens: its steps advance on
-   * what the board *shows* rather than on intercepting clicks, which is
-   * what lets a player wander off and still satisfy them.
+   * annotation marks exist.
+   *
+   * Two listeners, and they want different things. The tutorial's steps
+   * advance on what the board *shows* rather than on intercepting clicks,
+   * which is what lets a player wander off and still satisfy them; the
+   * Sweep Scope and Ring Scan use it to dim a signature you have already
+   * put down. Neither can read this component's state, and neither should
+   * be re-reading localStorage behind its back.
+   *
+   * The region id travels with the board because the receiver is a level up
+   * and outlives any one region: without it, switching surveys leaves the
+   * shell holding the previous board until this component remounts and
+   * reports again, which is a frame or two of dimming the wrong signatures.
    *
    * Reported from the same effect that persists the board, so it cannot
    * report a state that was never saved.
    */
-  onBoardChange?: (board: { placements: Placements; markCount: number }) => void;
+  onBoardChange?: (board: {
+    regionId: string;
+    placements: Placements;
+    markCount: number;
+  }) => void;
   /**
    * Fired the moment a filing or a withdrawal closes the region, so the
    * shell can open the survey result report.
@@ -150,6 +168,20 @@ export function StarMap({
    * reads that event back off the log entry; this is only the trigger.
    */
   onClosed?: (regionId: string) => void;
+  /**
+   * The walk-through pointing at one signature, and optionally at the cell
+   * it belongs in. Drawn, never enforced: the board stays exactly as
+   * clickable as it was, and the hint disappears when the placement it
+   * describes exists - by whatever route the player got there.
+   */
+  hint?: TutorialHint | null;
+  /**
+   * Filling `main` rather than the 360px sidebar. The dial scales with its
+   * box - the viewBox is 440 units and every label size is in user units -
+   * so the whole point of the feature is that a larger box buys larger
+   * labels for free, with no second set of sizes to keep in step.
+   */
+  maximized?: boolean;
 }) {
   const sectors = useMemo(() => buildSectors(), []);
   const colorOf = useQuasarColor(region?.id ?? "");
@@ -257,6 +289,7 @@ export function StarMap({
     const serializedMaybe: Record<string, string[]> = {};
     for (const qid in maybe) serializedMaybe[qid] = [...maybe[qid]];
     onBoardChangeRef.current?.({
+      regionId: region.id,
       placements,
       markCount:
         Object.values(serializedRuledOut).reduce((n, s) => n + s.length, 0) +
@@ -363,6 +396,17 @@ export function StarMap({
   // withdrawal teaches nothing at all. A confirmed region needs no reveal:
   // every marker is already right.
   const revealed = closed && outcome !== "confirmed";
+
+  // A hint is answered by the placement it describes rather than by the
+  // step advancing, so the board stops pointing the moment the thing is
+  // done - including when the player got there their own way, or is coming
+  // back to a step they already satisfied.
+  const hintOpen =
+    !!hint &&
+    !closed &&
+    (hint.sector
+      ? placements[hint.quasarId] !== hint.sector
+      : !placements[hint.quasarId]);
 
   function handleCellClick(sectorIdClicked: string) {
     // A closed region is read-only. Editing it would suggest the filing
@@ -476,7 +520,7 @@ export function StarMap({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={`flex flex-col gap-4 ${maximized ? "h-full min-h-0" : ""}`}>
       {region && (
         <p className="text-xs text-lcars-ice/60 leading-relaxed -mb-1">
           {closed
@@ -484,15 +528,36 @@ export function StarMap({
             : "Arm a signature, then click a cell to place it. Rule Out marks cells it definitely isn't at; Maybe marks the ones it still could be. Both paint across a sweep."}
         </p>
       )}
-      <div className="flex items-center justify-center">
+      {/* Maximised, the dial and the controls sit side by side; docked, this
+          wrapper is `display: contents` and disappears from the layout
+          entirely, so the column below is exactly the one that was always
+          there rather than a second arrangement to keep in step. */}
+      <div className={maximized ? "flex gap-6 items-stretch min-w-0 flex-1 min-h-0" : "contents"}>
+      <div
+        className={
+          maximized
+            ? "flex-1 min-w-0 min-h-0 flex items-start justify-center"
+            : "flex items-center justify-center"
+        }
+      >
         {/* 260px is what fits the desktop sidebar. Below `lg` the map is a
             full-width panel instead, so it's allowed to grow - and because
             the whole viewBox scales together, a bigger map buys bigger
-            labels without crowding the dial any further. */}
+            labels without crowding the dial any further. Maximised is the
+            same trick with the sidebar's width constraint removed. */}
         <svg
           id="starmap-field"
           viewBox="0 0 440 440"
-          className="w-full max-w-[260px] max-lg:max-w-[420px] h-auto"
+          /* `max-h-full` is what stops a maximised dial running past the
+             fold. The svg is square, so CSS resolves the taller-than-wide
+             case by clamping the height and pulling the width back with it
+             - which is why the width cap and the height cap can both be
+             stated plainly here rather than being reconciled in script. */
+          className={
+            maximized
+              ? "w-full max-w-[560px] max-h-full h-auto"
+              : "w-full max-w-[260px] max-lg:max-w-[420px] h-auto"
+          }
           /* Only while a rule-out sweep is actually possible. Left on
              permanently it would swallow the page scroll on a phone, where
              the map is tall enough that you need to scroll past it. */
@@ -556,6 +621,10 @@ export function StarMap({
           )}
 
           <FieldLabels />
+
+          {/* Above the labels so the leader isn't cut by one, below the
+              markers so a signature can never end up under it. */}
+          {hintOpen && hint?.sector && <TargetCallout sector={hint.sector} />}
 
           {/* quasar markers and rule-out marks, drawn on top of the grid */}
           {quasars.map((q) => {
@@ -701,8 +770,15 @@ export function StarMap({
         </svg>
       </div>
 
+      {/* Maximised the controls become a column beside the dial, and get
+          their own scroll rather than pushing the panel taller - content
+          may scroll inside its own panel, the shell may not. */}
       {region && (
-      <div className="flex flex-col gap-4 w-full">
+      <div
+        className={`flex flex-col gap-4 ${
+          maximized ? "w-[340px] shrink-0 min-h-0 overflow-y-auto no-scrollbar" : "w-full"
+        }`}
+      >
         {/* Wraps because the mode switch grew a third button and the
             desktop sidebar is the tight case - the map is 260px there and
             the panel around it barely wider. If the switch and the Sector
@@ -786,6 +862,16 @@ export function StarMap({
               // the background; the hovered one drops that too, or the
               // outline would be sitting on something half-faded.
               const isHovered = hoveredQuasarId === q.id;
+              // Which of the two rings a chip gets, decided in one place
+              // rather than by class order: they set the same property, so
+              // letting both through would leave the winner up to whatever
+              // order the stylesheet happened to emit them in.
+              const isHinted = hintOpen && hint?.quasarId === q.id;
+              const ringClass = isHinted
+                ? "ring-2 ring-lcars-teal"
+                : isHovered
+                ? "ring-2 ring-lcars-ice"
+                : "";
               return (
                 <button
                   key={q.id}
@@ -801,9 +887,7 @@ export function StarMap({
                     armed === q.id
                       ? "bg-lcars-amber text-black font-semibold"
                       : `bg-lcars-panel text-lcars-ice ${closed ? "" : "hover:bg-white/10"}`
-                  } ${sid && !closed && !isHovered ? "opacity-60" : ""} ${
-                    isHovered ? "ring-2 ring-lcars-ice" : ""
-                  }`}
+                  } ${sid && !closed && !isHovered ? "opacity-60" : ""} ${ringClass}`}
                 >
                   <QuasarStar color={q.color} glyph={q.glyph} size={16} />
                   <span>{q.designation}</span>
@@ -926,6 +1010,7 @@ export function StarMap({
         </div>
       </div>
       )}
+      </div>
     </div>
   );
 }

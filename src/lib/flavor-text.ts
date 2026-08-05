@@ -1,46 +1,10 @@
 // Templated random flavor text for generated regions. These are deep-space
 // quasar fields, not star systems, so descriptions stay in sensor/field
 // terms - no planets, no orbital mechanics.
-
-const NAME_ADJECTIVES = [
-  "Thanix",
-  "Veridian",
-  "Kessik",
-  "Ashen",
-  "Umbral",
-  "Pallid",
-  "Coral",
-  "Ferrous",
-  "Glacial",
-  "Ember",
-  "Hollow",
-  "Silt",
-  "Wraith",
-  "Bruma",
-  "Nocturne",
-  "Cinder",
-  "Fallow",
-  "Brindle",
-];
-
-const NAME_NOUNS = [
-  "Drift",
-  "Expanse",
-  "Nebula",
-  "Reach",
-  "Rift",
-  "Basin",
-  "Corridor",
-  "Shoal",
-  "Field",
-  "Void",
-  "Trench",
-  "Span",
-  "Fringe",
-  "Gulf",
-  "Verge",
-  "Hollow",
-];
+//
+// Region *names* used to live here too and now have their own module,
+// `region-name.ts` - they grew four grammars and started reading the field
+// they are naming, which is more than a sibling of the briefing text.
 
 const CONDITIONS = [
   "Ion storms have scattered the sensor buoys across this field.",
@@ -67,10 +31,6 @@ const TASKS = [
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
-}
-
-export function generateRegionName(): string {
-  return `${pick(NAME_ADJECTIVES)} ${pick(NAME_NOUNS)}`;
 }
 
 export function generateBriefing(quasarCount: number): string {

@@ -65,6 +65,10 @@ cost you the post.
 
 ### The ladder
 
+**The rungs, the two per-rank levers and the review thresholds now live in
+`rank-ladder.md`**, as tables meant to be edited. This section keeps the
+*why*; that file holds the values, and it is the one to change.
+
 Deliberately short, and framed as what the station actually staffs:
 
 1. Survey Technician
@@ -77,6 +81,12 @@ Deliberately short, and framed as what the station actually staffs:
 Starting mid-ladder means there is somewhere to fall to that isn't game
 over. Demotion below Survey Technician is the only true loss state, and it
 should be reachable but rare.
+
+**Superseded 2026-08-04 — relief now ends the career.** It is no longer
+recoverable within a career: the game ends and you begin a new one, and
+**Retire** joins it as the way out that isn't losing. Everything above still
+holds about *reaching* it; what changed is what happens next. The spec is in
+`rank-ladder.md` under *Career end*.
 
 ### Review, not scoring
 
@@ -373,6 +383,15 @@ still tops out 96–100%), so it would need to be considerably steeper than
 that to create a real equilibrium where holding Chief of Survey is work.
 Until then the top of the ladder is a terminus rather than a position.
 
+**Planned 2026-08-04 in `region-difficulty.md`**, with every generation
+lever measured. Two of them behave the opposite of how this document's
+`duty` copy assumes — more signatures make a region *easier*, and stripping
+the briefing's quadrant clues moves difficulty by three points. The
+proposal reaches a 3.3× swing in the band that costs a ring scan. Note the
+currency mismatch: the gradient simulated above is an abstract accuracy
+penalty, so `tune-rank-thresholds.ts` has to be taught to consume a
+per-rank scan rate before it can say whether that swing is steep enough.
+
 ### Consequences for rank (written against the old ~19% floor)
 
 A ~19% floor is the reason **withdrawal has to be rank-neutral and
@@ -539,6 +558,14 @@ Being relieved is recoverable: the profile grows a **Request
 Reinstatement** control that puts you back on as a Survey Technician with a
 clean window. The record is kept — that's the point of it — but the stretch
 that cost you the post isn't charged twice.
+
+> **Reversed 2026-08-04.** Relief ends the career outright, and
+> `requestReinstatement` goes with it. The reason is that recoverable relief
+> made the loss state weightless: nothing gated surveying on rank, no review
+> ran while relieved, and the window reset on the way back — so play in that
+> state had no consequence in either direction, and the "loss" was a button
+> press away from being undone. Retirement is the replacement for the
+> graceful exit reinstatement was standing in for. See `rank-ladder.md`.
 
 ### The officer record
 

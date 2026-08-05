@@ -54,11 +54,34 @@ export interface TutorialProgress {
   closed: boolean;
 }
 
+/**
+ * The one signature a step is about, and - for the first one only - the
+ * cell it belongs in.
+ *
+ * Two separate pieces of pointing, because they answer different questions
+ * and fade at different rates. `quasarId` rings that signature's chip in
+ * the Star Map's list, which is the only way copy naming a signature can be
+ * connected to the thing you have to click; `sector` draws a ring on the
+ * cell with a leader out to a label, which answers "where".
+ *
+ * The second anchor deliberately gets the chip and not the cell. By then
+ * the interaction has been demonstrated once and the copy still names the
+ * sector, so finding R4S4 on the dial is the first thing the player does
+ * for themselves - and reading the grid is a skill the rest of the region
+ * depends on. Guarding it twice would teach them to wait for the ring.
+ */
+export interface TutorialHint {
+  quasarId: string;
+  sector?: string;
+}
+
 export interface TutorialStep {
   id: string;
   panel: TutorialPanel;
   title: string;
   body: string;
+  /** Pointed at on the Star Map itself. See `TutorialHint`. */
+  hint?: TutorialHint;
   /**
    * Element to ring while this step is up, if it happens to be on screen.
    * Never required: a coach mark may not scroll the page to bring itself
@@ -88,14 +111,29 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     body:
       "Six signatures are out there and the station has logged four bearings on them — two exact positions, and two that name only a quadrant. That is every fact you get for free. Everything else you work out from the instruments.",
   },
+  // The two anchors were one step until 2026-08-04, which asked a player
+  // who had never touched the board to arm a signature, find a cell, and do
+  // it twice, off a sentence naming four things. Split, and the first half
+  // guarded: one named signature, its chip ringed, and its cell ringed on
+  // the dial with a leader out to a label. Nothing is blocked - the ring is
+  // where to look, not a track to run on.
   {
-    id: "anchors",
+    id: "anchor-first",
     panel: "starmap",
-    anchorId: "starmap-signatures",
-    title: "Place what you were given",
+    title: "Place your first signature",
     body:
-      "On the Star Map, click a signature to arm it, then click a cell to drop it. Start with the two you already know: Mrk 633 at R2S7, and Q3970 at R4S4. These are your reference points — everything else is measured against them.",
-    done: (p) => at(p, "Mrk 633", "R2S7") && at(p, "Q3970", "R4S4"),
+      "Two of the six came with positions attached, so start there. On the Star Map, click Mrk 633 in the signature list to arm it, then click the ringed cell — R2S7. Arm, then place: that is the whole interaction, and every signature goes down the same way.",
+    hint: { quasarId: "Mrk 633", sector: "R2S7" },
+    done: (p) => at(p, "Mrk 633", "R2S7"),
+  },
+  {
+    id: "anchor-second",
+    panel: "starmap",
+    title: "Now the other one",
+    body:
+      "Q3970 is the second position the briefing gave you: R4S4. Find it yourself this time — ring 4 counting out from the centre, segment 4 counting clockwise. These two are your reference points, and every reading you take from here is measured against them.",
+    hint: { quasarId: "Q3970" },
+    done: (p) => at(p, "Q3970", "R4S4"),
   },
   {
     id: "sweep",
@@ -174,4 +212,60 @@ export { TUTORIAL_SCAN_TARGET };
 
 export function stepDone(step: TutorialStep, progress: TutorialProgress): boolean {
   return step.done ? step.done(progress) : false;
+}
+
+// ----------------------------------------------------------------------
+// Emphasis
+//
+// The copy above is dense with coordinates - "the briefing puts Mrk 280 in
+// Quadrant III, and the scope reads it 1 away from Mrk 633 at R2S7" is four
+// field references in one sentence - and set as flat prose they all read at
+// the same weight, so finding the one you have to act on means reading the
+// whole paragraph again. Naming them in white pulls them out of the
+// sentence and gives the eye somewhere to land.
+//
+// The rule is deliberately narrow: **only things that name something on the
+// field.** A signature, a sector, a quadrant, a ring or a segment - things
+// you can point at on the dial. Instrument and panel names are not
+// included, and neither is anything merely important; emphasis that covers
+// half a paragraph emphasises nothing, and the moment it stops meaning "go
+// and look at this" it is just bold text.
+
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Signature designations come from the baked region rather than a list
+ * written out here, so a re-bake that renames one cannot leave the
+ * walk-through emphasising a signature that no longer exists.
+ */
+const FIELD_REFERENCE = new RegExp(
+  [
+    ...tutorialRegion.quasars.map((q) => escapeRegExp(q.designation)),
+    "R\\d+S\\d+", // a sector id
+    "Quadrant [IVX]+",
+    // Spelt-out coordinates, as in "ring 4 counting out from the centre".
+    // The digit is what keeps this off "ring-steps", "segment-hops" and
+    // the Ring Scan itself, none of which name a place.
+    "(?:ring|segment) \\d+",
+  ].join("|"),
+  "gi"
+);
+
+export interface CopyToken {
+  text: string;
+  /** True for a run that names something on the field. */
+  field: boolean;
+}
+
+/** Splits a step's body into plain and field-reference runs, in order. */
+export function tokenizeCopy(body: string): CopyToken[] {
+  const tokens: CopyToken[] = [];
+  let last = 0;
+  for (const match of body.matchAll(FIELD_REFERENCE)) {
+    if (match.index > last) tokens.push({ text: body.slice(last, match.index), field: false });
+    tokens.push({ text: match[0], field: true });
+    last = match.index + match[0].length;
+  }
+  if (last < body.length) tokens.push({ text: body.slice(last), field: false });
+  return tokens;
 }

@@ -38,7 +38,19 @@ const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
  * the rank ladder something to grade. Working out *which* signature you are
  * stuck on is itself the deduction step.
  */
-export function RingScanPanel({ region }: { region: Region }) {
+export function RingScanPanel({
+  region,
+  placedQuasarIds,
+}: {
+  region: Region;
+  /**
+   * Signatures already on the Star Map, dimmed here the way the map's own
+   * chips are. Deliberately *not* a lock: a placed signature is still a
+   * legitimate target, since you may have placed it on a guess and a scan
+   * is exactly how you settle that.
+   */
+  placedQuasarIds: Set<string>;
+}) {
   const colorOf = useQuasarColor(region.id);
   const log = useSyncExternalStore(subscribeSurveyLog, getSurveyLog, () => EMPTY_LOG);
   const entry = log.find((e) => e.regionId === region.id);
@@ -112,6 +124,10 @@ export function RingScanPanel({ region }: { region: Region }) {
           {signatures.map((s) => {
             const used = scanned.includes(s.id);
             const locked = !used && (remaining === 0 || closed);
+            // Never on the one whose return is currently up: that button is
+            // filled salmon and is the thing you are looking at, so fading
+            // it would read as the readout going stale.
+            const placed = placedQuasarIds.has(s.id) && !locked && s.id !== shownId;
             return (
               <button
                 key={s.id}
@@ -124,7 +140,7 @@ export function RingScanPanel({ region }: { region: Region }) {
                 }}
                 className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition-colors ${
                   locked ? "cursor-not-allowed opacity-35" : "cursor-pointer"
-                } ${
+                } ${placed ? "opacity-60" : ""} ${
                   s.id === shown?.id
                     ? "bg-lcars-salmon text-black font-semibold"
                     : used
@@ -141,6 +157,17 @@ export function RingScanPanel({ region }: { region: Region }) {
             );
           })}
         </div>
+
+        {/* Only once there is something dimmed to explain. The dim is a
+            reminder, not a rule, and saying so matters here more than on
+            the Star Map: there the faded chip is finished business, here it
+            is still a target. */}
+        {placedQuasarIds.size > 0 && !closed && (
+          <p className="text-[11px] text-lcars-ice/40 leading-relaxed mt-2">
+            Dimmed signatures are already placed on the Star Map. Scanning one
+            is still allowed &mdash; a placement can be a guess.
+          </p>
+        )}
 
         {closed && scanned.length === 0 && (
           <p className="text-xs text-lcars-ice/45 mt-3">

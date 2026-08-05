@@ -7,6 +7,11 @@
 //
 // See docs/win-conditions.md for why the ladder is short, why it starts in
 // the middle, and why withdrawal has to stay neutral.
+//
+// **docs/rank-ladder.md is the spec for everything in this file** - every
+// rung, both per-rank levers, and the review thresholds, as tables meant to
+// be edited. Change it there and apply it here, so the two never disagree
+// about what the ladder is.
 
 import { ButtonColor } from "./lcars-colors";
 

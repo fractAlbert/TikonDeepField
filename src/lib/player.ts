@@ -10,8 +10,14 @@
 // The dependency runs one way - `survey-log.ts` imports this to report a
 // closed region, and nothing here knows the survey log exists. A career is
 // a stream of outcomes; where those outcomes came from is not its problem.
+//
+// **This file is one career, not the save.** Since 2026-08-04 relief is
+// terminal (docs/rank-ladder.md, "Career end"), so a profile has an end as
+// well as a beginning, and the things that outlive it - tutorial
+// completion, the roll of finished careers - live in `station.ts`.
 
 import { randomOfficerName, randomServiceNumber } from "./officer-name";
+import { CareerEnding, TutorialState, recordCareer } from "./station";
 import {
   RELIEVED,
   REVIEW_WINDOW,
@@ -22,11 +28,17 @@ import {
   tallyOutcomes,
 } from "./ranks";
 
+// "reinstatement" is gone: it put a relieved officer back on the ladder at
+// rank 0, which is exactly what relief becoming terminal removes. Old
+// profiles may still carry one in `history`, so the type keeps it - the
+// record is the point, and rewriting history to match a rule change would
+// be the wrong kind of tidy.
 export type RankChangeReason =
   | "commission"
   | "promotion"
   | "demotion"
   | "relieved"
+  | "retired"
   | "reinstatement";
 
 export interface RankEvent {
@@ -48,22 +60,6 @@ export interface OutcomeRecord {
   regionName: string;
 }
 
-/**
- * How far through the first-run walk-through the player has got.
- *
- * On the profile rather than in the survey log, deliberately: clearing your
- * surveys must not resurrect the tutorial. The furthest step is stored
- * rather than a boolean so it can resume mid-way, and `done` is separate
- * from `step` because finishing and skipping both end it but only one of
- * them reached the last step.
- */
-export interface TutorialState {
-  /** Furthest step index reached. */
-  step: number;
-  /** Finished, or skipped. Either way it stops offering itself. */
-  done: boolean;
-}
-
 export interface PlayerProfile {
   name: string;
   serviceNumber: string;
@@ -72,8 +68,21 @@ export interface PlayerProfile {
   rank: number;
   /** Every closed region, oldest first. Append-only. */
   outcomes: OutcomeRecord[];
-  /** Undefined for profiles written before the tutorial existed - which is what makes it not fire retroactively for them. See `tutorialState`. */
+  /**
+   * **Legacy.** Tutorial state lives on the station record now, because it
+   * has to outlive the career (see station.ts). Still read off old profiles
+   * so the migration has something to find; never written.
+   */
   tutorial?: TutorialState;
+  /**
+   * Set once, when the career is over. Its presence *is* the game-over
+   * condition - there is no separate flag, and no way back.
+   *
+   * The ended career stays the current profile rather than being cleared on
+   * the spot, because the career-end screen has to render something and
+   * that something is this record. `beginNewCareer` is what replaces it.
+   */
+  ended?: { at: number; reason: CareerEnding };
   /**
    * Index into `outcomes` where the current review window starts. Reset to
    * the end of the stream on every rank change, so a single bad stretch
@@ -126,6 +135,7 @@ function read(): PlayerProfile | null {
       windowStart: parsed.windowStart ?? 0,
       history: parsed.history ?? [],
       tutorial: parsed.tutorial,
+      ended: parsed.ended,
     };
   } catch {
     return null;
@@ -219,42 +229,9 @@ export function rerollPlayerName(): string {
   return next;
 }
 
-/**
- * The tutorial's state, defaulted for anyone whose profile predates it.
- *
- * The fallback keys off whether they have surveys, not off rank or age of
- * profile: someone mid-campaign is treated as **done**, so the walk-through
- * cannot ambush them the next time a board happens to be empty. Someone
- * with an empty roster is offered it regardless of rank - which does mean a
- * senior officer who archived everything gets the welcome, and that is the
- * right call, because the alternative on that screen is the bare "no
- * surveys on record" placeholder. It is one click to decline.
- */
-export function tutorialState(profile: PlayerProfile, hasAnySurveys: boolean): TutorialState {
-  return profile.tutorial ?? { step: 0, done: hasAnySurveys };
-}
-
-/** Records progress through the walk-through. Never moves backwards. */
-export function setTutorialStep(step: number) {
-  const current = getPlayer();
-  if (!isCommissioned(current)) return;
-  const existing = current.tutorial ?? { step: 0, done: false };
-  if (existing.step >= step && !existing.done) return;
-  commit({ ...current, tutorial: { step: Math.max(existing.step, step), done: false } });
-}
-
-/** Finished it, or skipped it. Both stop it offering itself again. */
-export function endTutorial(step: number) {
-  const current = getPlayer();
-  if (!isCommissioned(current)) return;
-  commit({ ...current, tutorial: { step, done: true } });
-}
-
-/** Replay from the top, from the Officer panel. */
-export function restartTutorial() {
-  const current = getPlayer();
-  if (!isCommissioned(current)) return;
-  commit({ ...current, tutorial: { step: 0, done: false } });
+/** True while there is a career to play. False once it has ended, either way. */
+export function isServing(profile: PlayerProfile): boolean {
+  return isCommissioned(profile) && !profile.ended;
 }
 
 /** The slice of closed regions the current review is judging. */
@@ -280,18 +257,14 @@ export function recordOutcome(
 ): RankEvent | null {
   if (typeof window === "undefined") return null;
   const current = getPlayer();
-  if (!isCommissioned(current)) return null;
+  // Nothing can close on a career that is over - there is no board left to
+  // file from. Guarded anyway, because this is reachable from storage
+  // handlers rather than only from a button.
+  if (!isServing(current)) return null;
 
   const now = Date.now();
   const outcomes = [...current.outcomes, { at: now, outcome, regionId, regionName }];
   let next: PlayerProfile = { ...current, outcomes };
-
-  // A relieved officer has no rank to move, so nothing is reviewed until
-  // they're reinstated. Their filings still land in the record.
-  if (current.rank === RELIEVED) {
-    commit(next);
-    return null;
-  }
 
   const windowOutcomes = reviewWindow(next);
   const verdict = reviewVerdict(windowOutcomes);
@@ -331,31 +304,135 @@ export function recordOutcome(
     history: [...next.history, event],
   };
   commit(next);
+
+  // Falling below Survey Technician is the end of the career, not a rung.
+  // Committed first so the ending is written against a profile that already
+  // holds the demotion - the career-end screen shows both.
+  if (to === RELIEVED) endCareer("relieved", next);
+
   return event;
 }
 
 /**
- * Back onto the ladder at the bottom rung after being relieved. The record
- * is kept - the history is the point - but the review window starts clean,
- * so the stretch that cost you the post can't immediately cost it again.
+ * Closes the career. Final either way - there is no path back onto the
+ * ladder, which is the whole point of relief being terminal.
+ *
+ * Files the career on the station's service record on the way out, so
+ * retiring at Chief of Survey is a thing that stays said. `recordCareer` is
+ * idempotent on the commissioning date, so calling this twice cannot put
+ * two copies on the roll.
+ *
+ * `profile` is an override for the one caller that has just committed a
+ * newer profile than the cache would hand back.
  */
-export function requestReinstatement(): RankEvent | null {
-  const current = getPlayer();
-  if (!isCommissioned(current) || current.rank !== RELIEVED) return null;
-  const event: RankEvent = {
-    at: Date.now(),
-    from: RELIEVED,
-    to: 0,
-    reason: "reinstatement",
-    confirmed: 0,
-    retracted: 0,
-    withdrawn: 0,
-  };
-  commit({
-    ...current,
-    rank: 0,
-    windowStart: current.outcomes.length,
-    history: [...current.history, event],
+export function endCareer(reason: CareerEnding, profile?: PlayerProfile): PlayerProfile | null {
+  const current = profile ?? getPlayer();
+  if (!isServing(current)) return null;
+
+  const now = Date.now();
+  const t = tallyOutcomes(current.outcomes.map((o) => o.outcome));
+
+  // Retirement is a rank event too. It is not a rank *change* - you retire
+  // at whatever you held - but the history is what the record is made of,
+  // and a career that just stops mid-list reads as a bug.
+  const history =
+    reason === "retired"
+      ? [
+          ...current.history,
+          {
+            at: now,
+            from: current.rank,
+            to: current.rank,
+            reason: "retired" as const,
+            confirmed: t.confirmed,
+            retracted: t.retracted,
+            withdrawn: t.withdrawn,
+          },
+        ]
+      : current.history;
+
+  const next: PlayerProfile = { ...current, history, ended: { at: now, reason } };
+  commit(next);
+
+  recordCareer({
+    name: next.name,
+    serviceNumber: next.serviceNumber,
+    commissionedAt: next.commissionedAt,
+    endedAt: now,
+    finalRank: next.rank,
+    ending: reason,
+    confirmed: t.confirmed,
+    retracted: t.retracted,
+    withdrawn: t.withdrawn,
   });
-  return event;
+
+  return next;
+}
+
+/** The officer's own choice, from the Officer panel. Available at any rank. */
+export function retireCareer(): PlayerProfile | null {
+  return endCareer("retired");
+}
+
+/**
+ * Everything a career owns, as storage key prefixes.
+ *
+ * Matched by prefix rather than listed exactly because two of them are
+ * per-region (`starmap:<id>`, `observations:<id>`) and a new one would
+ * otherwise be forgotten here and quietly survive into the next career -
+ * which is the kind of leak that shows up as a stranger's notes on your
+ * first board.
+ *
+ * Not in the list, deliberately: the station record (it outlives careers,
+ * that is its job) and the sound preference (a device setting, not a
+ * career's).
+ */
+const CAREER_OWNED_PREFIXES = [
+  "quasar-isolinear:survey-log",
+  "quasar-isolinear:active-region",
+  "quasar-isolinear:starmap:",
+  "quasar-isolinear:observations:",
+  "quasar-isolinear:colors",
+];
+
+/**
+ * Starts over. The finished career is already on the service record, so
+ * this only has to clear what belonged to it and commission someone new.
+ *
+ * **Reloads the page**, and that is deliberate rather than lazy. Half a
+ * dozen modules hold cached snapshots of the storage this wipes, and
+ * `AppShell` holds the region roster in React state restored once on mount;
+ * resetting each of them by hand is five chances to miss one and hand the
+ * new officer a stale board. A career change is a deliberate, once-in-a-
+ * while act - it can afford a reload, and the loading screen already exists
+ * for exactly this kind of moment.
+ */
+export function beginNewCareer(): void {
+  if (typeof window === "undefined") return;
+  for (const key of Object.keys(window.localStorage)) {
+    if (CAREER_OWNED_PREFIXES.some((p) => key.startsWith(p))) {
+      window.localStorage.removeItem(key);
+    }
+  }
+  const now = Date.now();
+  commit({
+    name: randomOfficerName(),
+    serviceNumber: randomServiceNumber(),
+    commissionedAt: now,
+    rank: STARTING_RANK,
+    outcomes: [],
+    windowStart: 0,
+    history: [
+      {
+        at: now,
+        from: STARTING_RANK,
+        to: STARTING_RANK,
+        reason: "commission",
+        confirmed: 0,
+        retracted: 0,
+        withdrawn: 0,
+      },
+    ],
+  });
+  window.location.reload();
 }
