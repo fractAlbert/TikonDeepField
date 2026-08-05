@@ -126,9 +126,12 @@ rank inside `generateRegion()` must not be able to reach it.
 has is measured there, and two of them do not behave the way the ladder's
 own `duty` copy assumes - more signatures make a region *easier*, not
 harder, and dropping the briefing's quadrant clues entirely moves
-difficulty by three points. The gradient it proposes is built from
-signature count, anchor separation and quadrant clue count, and lands at a
-3.3x swing in the band that costs a ring scan. Read it before touching
+difficulty by three points *on solvability* - while being the single
+biggest lever on how much searching the player actually does, which is a
+separate axis the first pass missed entirely. The gradient it proposes is
+built from signature count, anchor separation and quadrant clue count, and
+moves both axes: 3.1x on the band that costs a ring scan, 6x on the
+signatures ordinary elimination cannot reach. Read it before touching
 `generateRegion()`.
 
 ## Interaction
