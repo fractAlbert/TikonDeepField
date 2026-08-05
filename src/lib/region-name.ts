@@ -73,6 +73,17 @@ const CHARTERS = [
 // The general pool, drawn for every region. The shape pools below are added
 // to it rather than replacing it, so a field leans its name without any
 // name becoming impossible.
+// The register that works here is nautical and geological - Shoal, Trench,
+// Reach, Marches, Bight, Sound, Scarp all read as somewhere a chart-maker
+// actually went, which is what the charter grammar is leaning on.
+//
+// **Words the grid already owns are off-limits**: Ring, Sector, Segment,
+// Quadrant, Sweep, Range, Scan, Survey, Bearing, Signature. A region called
+// "Kemble's Ring" reads as a place *and* as a ring index, and the tutorial
+// copy says things like "ring 4 counting out from the centre". `Field` is
+// the one survivor of that rule and is borderline - the app calls the
+// 40-cell board "the field" - kept for now, but it is the first thing to
+// retire if a name ever reads ambiguously.
 const NOUNS_GENERAL = [
   "Drift",
   "Field",
@@ -86,14 +97,20 @@ const NOUNS_GENERAL = [
   "Wash",
   "Hollow",
   "Reach",
+  "Sound",
 ];
 
 /** Signatures sitting mostly in the outer rings. */
-const NOUNS_OUTER = ["Fringe", "Verge", "Rim", "Marches", "Threshold"];
+const NOUNS_OUTER = ["Fringe", "Verge", "Rim", "Marches", "Threshold", "Palisade"];
 /** Signatures huddled near the centre. */
-const NOUNS_INNER = ["Basin", "Well", "Throat", "Hollow", "Bight"];
-/** Tightly clustered, whatever ring they are in. */
-const NOUNS_TIGHT = ["Shoal", "Knot", "Cluster", "Cascade", "Chain", "Braid"];
+const NOUNS_INNER = ["Basin", "Well", "Throat", "Hollow", "Bight", "Cauldron", "Chasm"];
+/**
+ * Tightly clustered, whatever ring they are in.
+ *
+ * `Trap` and `Swarm` both say *why* the signatures are bunched rather than
+ * only that they are, which is the most a name of this kind can do.
+ */
+const NOUNS_TIGHT = ["Shoal", "Knot", "Cluster", "Cascade", "Chain", "Braid", "Swarm", "Trap"];
 /** Scattered right across the field. */
 const NOUNS_WIDE = ["Expanse", "Gulf", "Void", "Span", "Spread", "Barrens"];
 
