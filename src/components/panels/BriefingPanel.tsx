@@ -99,7 +99,7 @@ export function BriefingPanel({
       </LcarsPanel>
 
       <LcarsPanel id="logged-bearings" title="Logged Bearings" accent="bg-lcars-lilac">
-        <ClueLog clues={region.clues} />
+        <ClueLog region={region} />
       </LcarsPanel>
     </div>
   );

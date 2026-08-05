@@ -152,6 +152,15 @@ Implemented:
   drawn *around* a marker had to move outward - the Ringed glyph's own ring
   sits at 9.2, which was exactly where the catalog reveal used to be.
 
+  Extended to the Briefing's Logged Bearings on 2026-08-04, which was the
+  one place a signature was named in prose and left for you to find. Every
+  other panel drew it as colour plus shape; now "Mrk 633 is at R2S7" and the
+  marker you are about to place are recognisably the same thing before you
+  have read either. The glyph slot is reserved even on the bearings that
+  name no signature - the built-in regions have clue kinds that describe
+  "the Dormant Core signature" without saying which one - so the text stays
+  in one column instead of stepping left.
+
 - Leader callouts on the Star Map - the station schematic's idiom (a thin
   line, an elbow off the label's edge, a small dot where it lands) reused by
   the walk-through to point at one cell of the dial. Teal, which is already

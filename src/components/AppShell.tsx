@@ -43,7 +43,13 @@ import { TutorialCoach } from "@/components/TutorialCoach";
 import { TUTORIAL_STEPS, TutorialProgress } from "@/lib/tutorial";
 import { TUTORIAL_REGION_ID, tutorialRegion } from "@/data/regions/tutorial";
 import { beginNewCareer } from "@/lib/player";
-import { endTutorial, setTutorialStep, tutorialState } from "@/lib/station";
+import {
+  claimRegionName,
+  endTutorial,
+  isRegionNameUsed,
+  setTutorialStep,
+  tutorialState,
+} from "@/lib/station";
 import { useStation } from "@/lib/use-station";
 import { CareerEndPanel } from "@/components/panels/CareerEndPanel";
 import { usePlayer } from "@/lib/use-player";
@@ -394,6 +400,9 @@ export function AppShell() {
     setRegions((prev) =>
       prev.some((r) => r.id === TUTORIAL_REGION_ID) ? prev : [...prev, tutorialRegion]
     );
+    // Ember Verge is a real name on a real map; a generated region turning
+    // up with it later would read as the bug it looks like.
+    claimRegionName(tutorialRegion.name);
     setRegionId(TUTORIAL_REGION_ID);
     setTutorialRunning(true);
     // Resumes where it was left. The panel follows from the effect below,
@@ -484,7 +493,11 @@ export function AppShell() {
       // Assessed here rather than inside generateRegion: the analysis
       // scripts generate regions precisely to measure solvability, so
       // handing them a verdict would be circular. Costs about 0.4ms.
-      const raw = generateRegion();
+      // No two regions in a save share a name. Claimed immediately rather
+      // than after the reveal delay, or opening two fields quickly could
+      // name them both the same thing.
+      const raw = generateRegion({ nameTaken: isRegionNameUsed });
+      claimRegionName(raw.name);
       const generated: Region = { ...raw, solvability: assessSolvability(raw) };
       setGenerating(true);
       selectPanel("briefing");

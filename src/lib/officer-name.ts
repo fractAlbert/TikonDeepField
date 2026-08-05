@@ -1,11 +1,16 @@
 // Names for the officer sitting at the console. Deliberately a wide mix of
 // origins - Tikon draws long rotations from everywhere, and a crew roster
 // that all reads from one language would say something about the setting
-// that isn't true.
+// that isn't true. Not all of them are human, for the same reason.
 //
 // Sibling of `name-generator.ts`, which does the same job for quasar
 // designations. Kept separate because the two never share a list and the
 // rules are nothing alike.
+//
+// Also kept clear of the charter names in `region-name.ts`, which are the
+// people fields are named after. There are more than enough names to go
+// around, and an overlap would quietly imply the officer at the console had
+// charted the region they were being handed.
 
 const GIVEN_NAMES = [
   "Adaeze", "Alandra", "Anneke", "Arun", "Beatriz", "Bexley", "Cai", "Calla",
@@ -16,6 +21,7 @@ const GIVEN_NAMES = [
   "Priya", "Quill", "Rafael", "Rasha", "Rhiannon", "Rune", "Sable", "Sanjay",
   "Saoirse", "Selin", "Solveig", "Tam", "Tarquin", "Thandiwe", "Tobias",
   "Ume", "Valko", "Vesna", "Wren", "Xiulan", "Yara", "Yosef", "Zephyr", "Zuri",
+  "Aszel", "Ka'el", "Oreth", "Sivaan", "Tessik", "Vaun", "Emeth", "Ilvani",
 ];
 
 const SURNAMES = [
@@ -27,6 +33,7 @@ const SURNAMES = [
   "Ravenna", "Saito", "Selvaraj", "Silvermoor", "Sorenson", "Tavares",
   "Thornbury", "Ualtar", "Vandermeer", "Vasquez", "Voronin", "Whitlock",
   "Wycliffe", "Xander", "Yelverton", "Zabala", "Zheng",
+  "Ossiran", "Trellum", "Vekk", "Ashenvar", "Ozhek", "Nuur-Sel", "Sekaya",
 ];
 
 function pick<T>(items: T[]): T {

@@ -15,44 +15,18 @@ npx tsx scripts/analyze-names.ts
 
 ## Region names
 
-**Source:** `src/lib/flavor-text.ts`, `generateRegionName()`.
+**Source:** `src/lib/region-name.ts`, `generateRegionName(field, isTaken)`.
+Split out of `flavor-text.ts` on 2026-08-04, when it outgrew one line.
 
-One line, and there is no other rule:
+### What it was, and why that was the problem
 
-```ts
-`${pick(NAME_ADJECTIVES)} ${pick(NAME_NOUNS)}`
-```
+One rule, `${pick(ADJECTIVES)} ${pick(NOUNS)}`, over 18 × 16 lists. That is
+288 names, with the first repeat landing after **21.9 regions** on average
+and as early as the second — routine inside a single sitting at three open
+surveys.
 
-**18 adjectives** — Thanix, Veridian, Kessik, Ashen, Umbral, Pallid, Coral,
-Ferrous, Glacial, Ember, Hollow, Silt, Wraith, Bruma, Nocturne, Cinder,
-Fallow, Brindle.
-
-**16 nouns** — Drift, Expanse, Nebula, Reach, Rift, Basin, Corridor, Shoal,
-Field, Void, Trench, Span, Fringe, Gulf, Verge, Hollow.
-
-Both picked uniformly and independently. Nothing is remembered between
-draws, and nothing about the region — its size, its layout, its
-classifications — influences the name.
-
-### What that measures out at
-
-| | |
-| --- | --- |
-| Distinct names possible | **288** (18 × 16) |
-| Regions opened before the first repeat | **21.9** on average |
-| Soonest repeat seen in 50,000 simulated careers | **2** |
-
-At three open surveys and a steady pace, a repeat inside a single sitting is
-routine rather than unlucky.
-
-**"Hollow" is in both lists**, so `Hollow Hollow` is a name the generator
-can produce, at 1 in 288. That is a bug rather than a design choice.
-
-### Where the repetition actually comes from
-
-Not the list size. **The grammar never varies.** Every region in the game is
-`<Adjective> <Noun>`, two words, same rhythm, forever. Twelve consecutive
-draws:
+But list size was the smaller half. **The grammar never varied.** Twelve
+consecutive draws from the old generator:
 
 ```
 Umbral Rift       Ferrous Void      Fallow Verge      Umbral Nebula
@@ -60,45 +34,68 @@ Fallow Shoal      Ashen Void        Cinder Expanse    Pallid Gulf
 Nocturne Gulf     Brindle Hollow    Ferrous Corridor  Thanix Hollow
 ```
 
-Read as a set, those are one name with the nouns swapped. Tripling the word
-lists would take the collision point from ~22 regions to ~38 and change
-nothing about that paragraph.
+Read as a set, that is one name with the nouns swapped. Tripling the lists
+would have moved the collision point to ~38 and changed nothing about that
+paragraph — which is why all four fixes shipped together.
 
-### Four things that would help, in order of effect per unit of work
+### What it is now
 
-**1. Never repeat a name within a save.** The cheapest fix with the largest
-felt effect, because the thing that actually reads as cheap is seeing the
-same name twice, not the sameness of the pattern. Remember used names and
-reroll on collision. `station.ts` is the natural home — it already outlives
-careers, so a name used by your first officer stays used. Needs (2) or (4)
-alongside it before the pool of 288 gets tight.
+**Four grammars**, weighted so the two-word form stays the house style:
 
-**2. More than one grammar.** This is the one that changes how the names
-*read*, and each pattern multiplies the space as well as breaking the
-rhythm. Weight them so the familiar `Ashen Drift` stays the common case and
-roughly one region in three or four arrives differently. Candidates:
+| Grammar | Share | Examples |
+| --- | ---: | --- |
+| `<Adj> <Noun>` | 55% | Umbral Cluster · Ashen Basin · Ember Shoal |
+| `<Charter>'s <Noun>` | 15% | Kemble's Cascade · Vaskir's Marches · Achebe's Rift |
+| `<Adj> <Noun> <Roman>` | 15% | Hoary Cluster V · Cobalt Barrens VII |
+| `<Adj>-<Adj> <Noun>` | 15% | Brindle-Ember Hollow · Glacial-Cobalt Throat |
 
-| Pattern | Example | Notes |
+A station-survey designation (*Tikon Deep 41*) was considered and dropped:
+these are regions of space and should be named like places. The signatures
+already carry the catalog register.
+
+**Charter names** are whoever first charted the place — Kemble is Lucian
+Kemble, who has a real asterism named after him. The list deliberately
+shares nothing with `officer-name.ts`: an overlap would quietly imply the
+officer at the console had charted the field they were being handed. Not all
+of them are human, for the same reason the crew roster isn't.
+
+**The field names itself.** The noun pool leans on where the signatures
+actually sit and how spread they are; the adjective pool leans on the
+classifications present. Leaning, not dictating — shape pools are *added* to
+the general pool, so no name is ever impossible. Measured on two opposite
+fields:
+
+```
+outer + tight (Ancient Relic): Cascade 6.8%  Cluster 6.8%  Marches 6.8%  Rim 6.7%
+inner + wide  (Pulsar-Class):  Hollow  8.8%  Barrens 6.9%  Gulf    6.7%  Basin 6.7%
+```
+
+This makes the name a very soft clue. It describes the *shape* of a field —
+how far out, how spread — and never any one signature's sector, so it gives
+away nothing the Sweep Scope wouldn't.
+
+**No repeats within a save.** `station.ts` keeps every name ever charted and
+`generateRegion` retries up to 40 times against it. On the station record
+rather than the career, so a field your first officer surveyed does not get
+rediscovered and renamed by your second — and the tutorial's fixed `Ember
+Verge` is claimed too, so a generated region can never turn up wearing it.
+
+**Longer lists**: 29 adjectives, 12 general nouns plus four shape pools, 16
+charter names.
+
+### Where it lands
+
+| | Before | After |
 | --- | --- | --- |
-| `<Adj> <Noun>` | Ashen Drift | today's, kept as the majority case |
-| `<Surname>'s <Noun>` | Halloran's Reach | `officer-name.ts` already ships a surname list; implies the field was charted by someone |
-| `<Station survey> <n>` | Tikon Deep 41 | grounds a region in the station's own catalog rather than folklore |
-| `<Adj> <Noun> <Roman>` | Ember Verge II | implies a field big enough to have been split |
-| `<Adj>-<Adj> <Noun>` | Coral-Ashen Drift | cheap multiplier, and reads as a compound catalog entry |
+| Distinct names in 200,000 draws | 288 | **12,640** |
+| Regions before a repeat, grammar alone | 21.9 | **40.4** |
+| Repeats actually possible in a save | yes | **no** |
+| `Hollow Hollow` | 1 in 288 | impossible — "Hollow" is a noun and nowhere else |
 
-**3. Let the field name itself.** Pick the noun from where the signatures
-actually sit and the adjective from the classifications present — mostly
-outer rings gives *Fringe*, *Verge*, *Rim*; a tight cluster gives *Shoal*,
-*Knot*; a spread one gives *Expanse*, *Gulf*; a field heavy with Dormant
-Cores gives *Ashen*, *Fallow*. Costs nothing in list size and is the only
-option here that makes a name feel *earned* instead of drawn. It also makes
-the name a (very soft) clue, which is worth thinking about before building
-it — probably fine, since it describes the shape of the field rather than
-any signature's sector.
-
-**4. Longer lists.** Real, but the weakest per unit of work. 18 × 16 = 288;
-28 × 26 = 728, which moves the first repeat from ~22 regions to ~35. Worth
-doing *with* the others, not instead of them.
+The grammar-alone figure is lower than the raw name count suggests because
+the plain form is 55% of draws over the smallest space. It does not matter
+much: the save-level check is what guarantees you never see one twice, and
+the other three exist to stop the names *sounding* alike.
 
 ---
 
@@ -153,12 +150,20 @@ channels on the dial, but the *name* is what the briefing, the Sweep Scope,
 the Ring Scan and the walk-through all refer to a signature by — and two
 names sharing a prefix are the two you misread.
 
-### The fix is one line
+### The fix is one line, and it was declined
 
 **Draw prefixes without replacement within a region.** There are thirteen
 prefixes and at most eight signatures, so every signature on a board can
 have a different one, and the repeat rate goes from 86% to zero. Nothing
 else about the generator has to change.
+
+**Left as-is on 2026-08-04** — the repetition that actually bothered anyone
+was in the region names, and real catalogs do carry several entries from the
+same survey in one patch of sky, so two `Mrk`s is more authentic than
+thirteen tidy prefixes. Recorded here rather than dropped, because the
+argument for it is still good if signatures ever start getting confused for
+each other in play: colour and glyph separate them on the dial, but the
+*name* is what every panel refers to them by.
 
 Two smaller things worth considering at the same time:
 

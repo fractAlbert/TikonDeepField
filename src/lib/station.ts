@@ -62,6 +62,18 @@ export interface StationRecord {
   tutorial?: TutorialState;
   /** Oldest first. Append-only. */
   careers: PastCareer[];
+  /**
+   * Every region name this save has ever used, so no two are alike.
+   *
+   * Here rather than on the career because the station is what did the
+   * charting: a field your first officer surveyed does not get rediscovered
+   * and renamed by your second. It also means the list survives the wipe
+   * that starting a new career performs, which is the point.
+   *
+   * Names only, never regions - this is a "has this been used" set, and the
+   * survey log is where regions actually live.
+   */
+  regionNames?: string[];
 }
 
 /** Stable reference for the pre-hydration render - see `player.ts`. */
@@ -78,7 +90,11 @@ function read(): StationRecord {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<StationRecord>;
-      return { tutorial: parsed.tutorial, careers: parsed.careers ?? [] };
+      return {
+        tutorial: parsed.tutorial,
+        careers: parsed.careers ?? [],
+        regionNames: parsed.regionNames,
+      };
     }
   } catch {
     // fall through to the migration
@@ -179,6 +195,25 @@ export function restartTutorial() {
  * roll, and `endCareer` is reachable from both a review verdict and a
  * button.
  */
+/** Has this save charted a region by this name before? */
+export function isRegionNameUsed(name: string): boolean {
+  return getStation().regionNames?.includes(name) ?? false;
+}
+
+/**
+ * Marks a region name as charted.
+ *
+ * Called for every region that joins a roster, including the tutorial's
+ * fixed one - `Ember Verge` is a real name on a real map, and a generated
+ * region turning up with it later would read as the bug it looks like.
+ */
+export function claimRegionName(name: string) {
+  const current = getStation();
+  const used = current.regionNames ?? [];
+  if (used.includes(name)) return;
+  commit({ ...current, regionNames: [...used, name] });
+}
+
 export function recordCareer(career: PastCareer) {
   const current = getStation();
   if (current.careers.some((c) => c.commissionedAt === career.commissionedAt)) return;

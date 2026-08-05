@@ -7,7 +7,7 @@
 //
 // Usage: npx tsx scripts/analyze-names.ts
 
-import { generateRegionName } from "../src/lib/flavor-text";
+import { FieldCharacter, generateRegionName } from "../src/lib/region-name";
 import { generateQuasarNames } from "../src/lib/name-generator";
 
 const SAMPLES = 200_000;
@@ -82,16 +82,30 @@ console.log("\n" + "=".repeat(64));
 console.log("REGION NAMES");
 console.log("=".repeat(64));
 
+const shape = (n: string) => {
+  if (n.includes("'s ")) return "charter";
+  if (/ (I{2,3}|IV|V|VI{0,3}|IX)$/.test(n)) return "numbered";
+  if (n.includes("-")) return "compound";
+  return "plain";
+};
+
 const seen = new Map<string, number>();
+const byShape = new Map<string, number>();
 for (let i = 0; i < SAMPLES; i++) {
   const name = generateRegionName();
   seen.set(name, (seen.get(name) ?? 0) + 1);
+  const s = shape(name);
+  byShape.set(s, (byShape.get(s) ?? 0) + 1);
 }
-console.log(`\n${seen.size} distinct names exist. Every one is "<Adjective> <Noun>".`);
+console.log(`\n${seen.size.toLocaleString()} distinct names seen in ${SAMPLES.toLocaleString()} draws.\n`);
+for (const [s, n] of [...byShape].sort((a, b) => b[1] - a[1])) {
+  console.log(`  ${s.padEnd(10)} ${((n / SAMPLES) * 100).toFixed(1).padStart(5)}%`);
+}
 
-// How long until a player sees a name twice. The birthday problem, but
-// measured by drawing until a repeat rather than trusting the formula.
-const RUNS = 50_000;
+// How long until a player sees a name twice, with no de-duplication. The
+// live game also refuses repeats outright (station.ts), so this is the
+// floor the grammar provides on its own.
+const RUNS = 20_000;
 let totalDraws = 0;
 let earliest = Infinity;
 for (let r = 0; r < RUNS; r++) {
@@ -107,30 +121,67 @@ for (let r = 0; r < RUNS; r++) {
   earliest = Math.min(earliest, draws);
 }
 console.log(
-  `\nRegions opened before the first repeated name: ${(totalDraws / RUNS).toFixed(1)} on average` +
-    `\n(the soonest, in ${RUNS.toLocaleString()} careers, was ${earliest}).`
+  `\nRegions before a repeat, from the grammar alone: ${(totalDraws / RUNS).toFixed(1)} on average` +
+    `\n(soonest of ${RUNS.toLocaleString()} runs: ${earliest}). The save refuses repeats on top of this.`
 );
 
-// A word in both lists can pair with itself.
+// A word in two pools can pair with itself.
 const dupes = [
   ...new Set(
     [...seen.keys()]
       .map((n) => n.split(" "))
-      .filter(([a, b]) => a === b)
-      .map(([a]) => a)
+      .filter((parts) => parts.length === 2 && parts[0] === parts[1])
+      .map((parts) => parts[0])
   ),
 ];
 console.log(
   dupes.length
-    ? `\nWords that appear in BOTH lists, so the generator can double them: ${dupes.join(", ")}`
-    : "\nNo word appears in both lists."
+    ? `\nWords that can double: ${dupes.join(", ")}`
+    : "\nNo name can repeat a word."
 );
 
-console.log("\nA sample of twelve, to read as a set:\n");
+// Does the field actually lean the name? Two extreme fields, same generator.
+const OUTER_TIGHT: FieldCharacter = { meanRing: 3.9, spread: 2.4, types: ["Ancient Relic"] };
+const INNER_WIDE: FieldCharacter = { meanRing: 1.1, spread: 5.6, types: ["Pulsar-Class"] };
+const sampleNouns = (f: FieldCharacter) => {
+  const counts = new Map<string, number>();
+  for (let i = 0; i < 40_000; i++) {
+    const parts = generateRegionName(f).replace(/^[^ ]+'s /, "").split(" ");
+    const noun = parts[1] ?? parts[0];
+    counts.set(noun, (counts.get(noun) ?? 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1]).slice(0, 5);
+};
+console.log("\nThe field leans the name. Top nouns for two opposite fields:\n");
 console.log(
-  "  " +
-    Array.from({ length: 12 }, () => generateRegionName())
-      .map((n) => n.padEnd(18))
-      .join("")
-      .replace(/(.{72})/g, "$1\n  ")
+  "  outer + tight (Ancient Relic): " +
+    sampleNouns(OUTER_TIGHT).map(([n, c]) => `${n} ${((c / 40000) * 100).toFixed(1)}%`).join("  ")
+);
+console.log(
+  "  inner + wide  (Pulsar-Class):  " +
+    sampleNouns(INNER_WIDE).map(([n, c]) => `${n} ${((c / 40000) * 100).toFixed(1)}%`).join("  ")
+);
+
+console.log("\nThree of each grammar, to read as a set:\n");
+const examples = new Map<string, string[]>();
+for (let i = 0; examples.size < 4 || [...examples.values()].some((v) => v.length < 3); i++) {
+  if (i > 100_000) break;
+  const name = generateRegionName(i % 2 ? OUTER_TIGHT : INNER_WIDE);
+  const s = shape(name);
+  const bucket = examples.get(s) ?? [];
+  if (bucket.length < 3 && !bucket.includes(name)) bucket.push(name);
+  examples.set(s, bucket);
+}
+for (const s of ["plain", "charter", "numbered", "compound"]) {
+  console.log(`  ${s.padEnd(10)} ${(examples.get(s) ?? []).map((n) => n.padEnd(24)).join("")}`);
+}
+
+// The name the whole charter grammar exists for.
+let tries = 0;
+const TIGHT: FieldCharacter = { meanRing: 2.2, spread: 2.8, types: [] };
+while (tries < 200_000 && generateRegionName(TIGHT) !== "Kemble's Cascade") tries++;
+console.log(
+  tries < 200_000
+    ? `\n"Kemble's Cascade" is reachable (found after ${tries.toLocaleString()} draws on a tight field).`
+    : "\nWARNING: Kemble's Cascade is not reachable."
 );

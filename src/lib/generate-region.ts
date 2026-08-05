@@ -1,7 +1,8 @@
 import { Clue, Quasar, Region, Sector, Solution } from "./puzzle-types";
 import { buildSectors, orthogonalDistanceSigned, quadrantOf } from "./grid";
 import { generateQuasarNames } from "./name-generator";
-import { generateBriefing, generateRegionName } from "./flavor-text";
+import { generateBriefing } from "./flavor-text";
+import { FieldCharacter, generateRegionName } from "./region-name";
 
 const TYPE_CATALOG = [
   "Pulsar-Class",
@@ -52,7 +53,15 @@ function shuffle<T>(items: T[]): T[] {
  * field, with exactly 4 briefing clues (2 exact-coordinate anchors + 2
  * quadrant-only). See `buildMandatoryClues` for why that's the whole set.
  */
-export function generateRegion(): Region {
+export function generateRegion(options?: {
+  /**
+   * Names already used in this save, so a region is never called something
+   * you have surveyed before. Optional because this function is also run
+   * by the analysis scripts, which have no save and want the raw
+   * distribution.
+   */
+  nameTaken?: (name: string) => boolean;
+}): Region {
   const sectors = buildSectors();
   const sectorLookup = new Map(sectors.map((s) => [s.id, s]));
 
@@ -76,9 +85,19 @@ export function generateRegion(): Region {
     solution[name] = { type: shuffledTypes[i], sector: chosenSectors[i].id };
   });
 
+  // What the field looks like, so it can be named after itself rather than
+  // beside itself. Only its shape - how far out the signatures sit, how
+  // spread they are, what is out there - never any one position, so the
+  // name cannot leak a sector. See region-name.ts.
+  const character: FieldCharacter = {
+    meanRing: chosenSectors.reduce((n, s) => n + s.ring, 0) / chosenSectors.length,
+    spread: meanPairwiseDistance(chosenSectors),
+    types: chosenTypes,
+  };
+
   const region: Region = {
     id: `region-generated-${Date.now()}-${randomInt(1000, 9999)}`,
-    name: generateRegionName(),
+    name: generateRegionName(character, options?.nameTaken),
     briefing: generateBriefing(quasarCount),
     quasarTypes: chosenTypes,
     quasars,
@@ -88,6 +107,19 @@ export function generateRegion(): Region {
 
   region.clues = buildMandatoryClues(region, sectorLookup);
   return region;
+}
+
+/** How spread out a field is, in the same orthogonal steps the instruments read in. */
+function meanPairwiseDistance(sectors: Sector[]): number {
+  let total = 0;
+  let pairs = 0;
+  for (let i = 0; i < sectors.length; i++) {
+    for (let j = i + 1; j < sectors.length; j++) {
+      total += Math.abs(orthogonalDistanceSigned(sectors[i], sectors[j]));
+      pairs++;
+    }
+  }
+  return pairs === 0 ? 0 : total / pairs;
 }
 
 function sectorOf(region: Region, sectorLookup: Map<string, Sector>, name: string): Sector {
