@@ -244,6 +244,17 @@ const PROFILES: Profile[] = [
   { label: "4 Chief", signatures: [6], separation: [2, 3], quadrantClues: 0 },
 ];
 
+/**
+ * A shallower bottom half, measured because the career simulation says the
+ * shipped one is *too* kind: a careless player recovers off the bottom rung
+ * and is never relieved at all, which deletes the loss state. These two
+ * rows are the candidate fix - the top three rungs are untouched.
+ */
+const SOFTER_BOTTOM: Profile[] = [
+  { label: "0 Technician (alt)", signatures: [8], separation: [4, 5], quadrantClues: 3 },
+  { label: "1 Assistant (alt)", signatures: [7, 8], separation: [3, 5], quadrantClues: 2 },
+];
+
 function reshape(r: Region, p: Profile): Region | null {
   const names = Object.keys(r.solution);
   const pairs: [string, string][] = [];
@@ -320,6 +331,25 @@ for (const p of PROFILES) {
       `${(elims / shaped.length).toFixed(0).padStart(8)}` +
       `${(stuck / shaped.length).toFixed(2).padStart(8)}`
   );
+}
+
+console.log("\n  (c) candidate fix for the bottom rungs - see the note on SOFTER_BOTTOM\n");
+console.log(HEAD);
+for (const p of SOFTER_BOTTOM) {
+  const t = empty();
+  const shaped: Region[] = [];
+  for (const r of pool) {
+    if (!p.signatures.includes(r.quasars.length)) continue;
+    const out = reshape(r, p);
+    if (out) {
+      shaped.push(out);
+      record(t, out);
+    }
+  }
+  console.log(row(p.label, t));
+  let stuck = 0;
+  for (const r of shaped) stuck += solveByPropagation(r, { label: "", ringBudget: 0 }).stuck;
+  console.log(`  ${"".padEnd(26)} stuck ${(stuck / shaped.length).toFixed(2)}`);
 }
 
 console.log(`\nSampled ${SAMPLES} generated regions.\n`);

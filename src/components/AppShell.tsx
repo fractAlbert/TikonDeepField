@@ -43,6 +43,7 @@ import { TutorialCoach } from "@/components/TutorialCoach";
 import { TUTORIAL_STEPS, TutorialProgress } from "@/lib/tutorial";
 import { TUTORIAL_REGION_ID, tutorialRegion } from "@/data/regions/tutorial";
 import { beginNewCareer } from "@/lib/player";
+import { difficultyForRank } from "@/lib/ranks";
 import {
   claimRegionName,
   endTutorial,
@@ -496,7 +497,18 @@ export function AppShell() {
       // No two regions in a save share a name. Claimed immediately rather
       // than after the reveal delay, or opening two fields quickly could
       // name them both the same thing.
-      const raw = generateRegion({ nameTaken: isRegionNameUsed });
+      //
+      // The rank read here is the other half of "rank changes the work"
+      // (backlog item 1): a Chief of Survey draws six signatures with the
+      // anchors almost on top of each other and no quadrant named, a
+      // technician draws eight with the anchors wide and four named. This
+      // is the *only* call that conditions on rank - the tutorial adds its
+      // baked region directly and never comes through here, which is what
+      // keeps `Ember Verge` exactly as the walk-through describes it.
+      const raw = generateRegion({
+        nameTaken: isRegionNameUsed,
+        difficulty: difficultyForRank(player.rank),
+      });
       claimRegionName(raw.name);
       const generated: Region = { ...raw, solvability: assessSolvability(raw) };
       setGenerating(true);

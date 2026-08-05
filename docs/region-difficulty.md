@@ -5,8 +5,10 @@ Survey as for a technician. Every rung's `duty` line promises otherwise —
 *"draws larger, thinner-briefed regions"*, *"the fields nobody else has
 resolved"* — and nothing implements it.
 
-Status: **planned, not built.** Every number below is measured by
+Status: **shipped 2026-08-05.** Every number below is measured by
 `scripts/measure-difficulty-levers.ts`; re-run it after changing generation.
+`scripts/verify-puzzles.ts` asserts that each rank's profile actually comes
+out of the generator, and that `Ember Verge` is untouched by any of it.
 
 ```
 npx tsx scripts/measure-difficulty-levers.ts 2000
@@ -332,11 +334,57 @@ The existing simulation found a gradient of 0.06 per rank "barely dented
 saturation", but its currency is an abstract accuracy penalty rather than a
 scan-rate, so the two are not comparable as they stand.
 
+## The acceptance test, run
+
+`tune-rank-thresholds.ts` now consumes the measured per-rank `needsScan` and
+`stuck` tables instead of an abstract accuracy penalty. Both rescalings are
+anchored at rank 2, because rank 2's profile *is* the old generator — so
+"no gradient" reproduces the previous tables exactly and the two are
+comparable. 4000 careers per cell, shipped thresholds, shipped filing
+ladder:
+
+| | careless | average | careful |
+| --- | --- | --- | --- |
+| flat difficulty *(before)* | −0.20, **60% relieved** | 3.39, **54% reach top** | 4.00, **100% reach top** |
+| measured profiles *(now)* | 1.51, 1% relieved | 2.60, **5% reach top** | 3.91, **91% reach top** |
+
+**The top of the ladder now holds.** The average player stops saturating —
+54% reached Chief of Survey before, 5% do now, and they settle around
+Senior Science Officer instead. Even the careful player is no longer
+guaranteed it. That was the whole point of the item: no threshold could do
+this, because attempts are unlimited and the window resets on promotion.
+
+### The one thing that went too far
+
+**The careless player is now almost never relieved: 60% → 1%.** The
+gradient cuts both ways, and the bottom rungs turn out to be a very
+effective recovery ramp — fall to Survey Technician and you draw eight
+signatures with four quadrants named, which is gentle enough to climb back
+out of.
+
+That is the stated design ("demotion is a recovery path rather than a
+spiral") working harder than intended, because the other half of the design
+says relief should be **reachable but rare**, and 1% is nearer unreachable.
+Relief is also terminal now, so it is the only real stake a career has.
+
+The candidate fix is measured and sitting in both scripts: give Survey
+Technician **3** quadrant clues instead of 4 and Assistant **2** instead of
+3, leaving the top three rungs alone.
+
+| | careless | average | careful |
+| --- | --- | --- | --- |
+| measured profiles *(shipped)* | 1.51, **1% relieved** | 2.60, 5% top | 3.91, 91% top |
+| softer bottom rungs *(candidate)* | 1.18, **3% relieved** | 2.59, 5% top | 3.92, 92% top |
+
+It triples the relief rate and costs nothing at the top. **Not applied** —
+how punishing the bottom of the ladder should be is a design call, not a
+measurement, and the shipped numbers are the ones that were specified.
+Changing it is two numbers in `RANKS`.
+
 ## Open questions
 
-1. **Is this steep enough?** 3.1x on scans and 6x on `stuck`, but only
-   step 4 can answer it. If not, the next lever is the ring scan budget,
-   not a steeper version of this.
+1. **Should the bottom rungs be less generous?** See above. Measured, not
+   applied.
 2. **Should the player be told?** The `duty` line on each rung already says
    the work changes, but nothing says *how*. A Briefing that named its
    difficulty tier would make the gradient legible — at the cost of turning

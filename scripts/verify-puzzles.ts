@@ -15,12 +15,14 @@
 // Usage: npx tsx scripts/verify-puzzles.ts
 
 import { Region } from "../src/lib/puzzle-types";
-import { buildSectors } from "../src/lib/grid";
+import { buildSectors, orthogonalDistanceSigned } from "../src/lib/grid";
 import { assignmentSatisfiesRegion } from "../src/lib/clue-eval";
 import { solveRegion, solutionsEqual } from "../src/lib/solver";
 import { regions } from "../src/data/regions";
 import { TUTORIAL_SCAN_TARGET, tutorialRegion } from "../src/data/regions/tutorial";
 import { uniqueWithRingsKnown } from "../src/lib/solvability";
+import { RANKS, difficultyForRank } from "../src/lib/ranks";
+import { generateRegion } from "../src/lib/generate-region";
 
 function verifyRegion(region: Region): { ok: boolean; message: string } {
   const sectors = buildSectors();
@@ -134,6 +136,73 @@ for (const [name, ok, detail] of bars) {
   console.log(`[${ok ? "PASS" : "FAIL"}] ${name} - ${detail}`);
   if (!ok) allOk = false;
 }
+
+// ---------------------------------------------------------------------
+// Rank-conditioned generation (backlog item 1, docs/region-difficulty.md).
+//
+// Every profile has to actually come out of the generator, and two floors
+// have to hold at every rank: never fewer than two anchors, and never
+// adjacent ones. One anchor is not a triangulation baseline at all, and two
+// neighbouring points barely constrain the field - either would be a
+// different puzzle rather than a harder one.
+console.log("\n--- Region difficulty by rank ---");
+
+const SAMPLES_PER_RANK = 300;
+const sectorById = new Map(buildSectors().map((s) => [s.id, s]));
+
+for (const rank of RANKS) {
+  const want = difficultyForRank(rank.index);
+  let badSize = 0;
+  let badSep = 0;
+  let badQuads = 0;
+  let badAnchorCount = 0;
+
+  for (let i = 0; i < SAMPLES_PER_RANK; i++) {
+    const r = generateRegion({ difficulty: want });
+    if (!want.signatures.includes(r.quasars.length)) badSize++;
+
+    const anchors = r.clues.filter((c) => c.kind === "quasar-sector");
+    if (anchors.length !== 2) badAnchorCount++;
+    if (anchors.length === 2) {
+      const [a, b] = anchors.map((c) =>
+        sectorById.get(c.kind === "quasar-sector" ? c.sector : "")!
+      );
+      const d = Math.abs(orthogonalDistanceSigned(a, b));
+      // The band is a preference, not a guarantee - `buildMandatoryClues`
+      // falls back to the closest qualifying pair when no pair fits. The
+      // floor of 2 is the part that must never break.
+      if (d < 2) badSep++;
+    }
+
+    const quads = r.clues.filter((c) => c.kind === "quasar-quadrant").length;
+    if (quads !== Math.min(want.quadrantClues, r.quasars.length - 2)) badQuads++;
+  }
+
+  const ok = badSize === 0 && badSep === 0 && badQuads === 0 && badAnchorCount === 0;
+  if (!ok) allOk = false;
+  console.log(
+    `[${ok ? "PASS" : "FAIL"}] ${rank.title.padEnd(26)} ` +
+      `signatures ${want.signatures.join("/")}, anchors ${want.anchorSeparation.join("-")} apart, ` +
+      `${want.quadrantClues} quadrant clue${want.quadrantClues === 1 ? "" : "s"}` +
+      (ok ? "" : ` - size:${badSize} sep:${badSep} quads:${badQuads} anchors:${badAnchorCount}`)
+  );
+}
+
+// The one region rank must not be able to touch. It is baked rather than
+// generated, and the walk-through's copy is written against its exact
+// solution - so this asserts the shape the tutorial describes, not merely
+// that some region exists.
+const tutorialAnchors = tutorialRegion.clues.filter((c) => c.kind === "quasar-sector");
+const tutorialQuads = tutorialRegion.clues.filter((c) => c.kind === "quasar-quadrant");
+const tutorialUntouched =
+  tutorialRegion.quasars.length === 6 &&
+  tutorialAnchors.length === 2 &&
+  tutorialQuads.length === 2;
+if (!tutorialUntouched) allOk = false;
+console.log(
+  `[${tutorialUntouched ? "PASS" : "FAIL"}] ${"Ember Verge is untouched".padEnd(26)} ` +
+    `6 signatures, 2 anchors, 2 quadrant clues - fixed, never generated`
+);
 
 if (!allOk) {
   console.error("\nOne or more regions failed verification.");

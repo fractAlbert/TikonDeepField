@@ -114,15 +114,74 @@ const LADDERS: { label: string; filings: FilingLadder }[] = [
   { label: "3 3 2 2 1", filings: [3, 3, 2, 2, 1] },
 ];
 
+/**
+ * The measured difficulty of the fields each rank draws, from
+ * `scripts/measure-difficulty-levers.ts` and specified in
+ * `docs/region-difficulty.md`. Index 0 = Survey Technician.
+ *
+ * `needsScan` is the share of regions that stall without a well-aimed ring
+ * scan. `stuck` is the mean number of signatures ordinary elimination
+ * cannot reach at all - the closest thing to "how many times did this
+ * region make me stop and think", and the number that separates the rungs
+ * most cleanly.
+ */
+const NEEDS_SCAN = [0.096, 0.136, 0.181, 0.247, 0.295];
+const STUCK = [0.53, 0.75, 1.3, 2.03, 3.18];
+
+/**
+ * The same ladder with the bottom two rungs less generous - Technician on
+ * three quadrant clues instead of four, Assistant on two instead of three.
+ * Also measured. Exists because the shipped profiles turn out to make
+ * relief unreachable, and this is the candidate fix.
+ */
+const NEEDS_SCAN_ALT = [0.1, 0.13, 0.181, 0.247, 0.295];
+const STUCK_ALT = [0.58, 1.15, 1.3, 2.03, 3.18];
+
+/** The floor even careful play cannot get under (docs/instrument-analysis.md). */
+const UNSOLVABLE_FLOOR = 0.01;
+
+const atRank = (table: number[], rank: number) =>
+  table[Math.max(0, Math.min(table.length - 1, rank))];
+
+/**
+ * Translates a player profile, which is calibrated against today's
+ * generator, onto a rank that draws different fields.
+ *
+ * Both rescalings are anchored at `STARTING_RANK`, because rank 2's
+ * difficulty profile *is* today's generator - so a gradient of "none"
+ * reproduces the existing tables exactly and the two are comparable.
+ *
+ *  - **Unsolvable-for-this-player** is their scan-aiming miss rate applied
+ *    to however many regions actually need a scan. A careful player misses
+ *    none of them, which is why their rate sits on the floor.
+ *  - **Accuracy** decays per genuinely-hard signature. If a board carries
+ *    `stuck` signatures that plain elimination cannot reach, and this
+ *    player gets a whole board right `accuracy` of the time at rank 2, then
+ *    their per-hard-signature success is the `stuck`-th root of that.
+ */
+function difficultyAdjusted(p: Player, rank: number, alt = false) {
+  const scan = alt ? NEEDS_SCAN_ALT : NEEDS_SCAN;
+  const stuck = alt ? STUCK_ALT : STUCK;
+  const missRate = (p.unsolvable - UNSOLVABLE_FLOOR) / scan[STARTING_RANK];
+  const unsolvable = UNSOLVABLE_FLOOR + atRank(scan, rank) * Math.max(0, missRate);
+  const perHard = Math.pow(p.accuracy, 1 / stuck[STARTING_RANK]);
+  const accuracy = Math.pow(perHard, atRank(stuck, rank));
+  return { unsolvable, accuracy };
+}
+
 function playRegion(
   p: Player,
   rank: number,
   difficultyPerRank: number,
-  filings: FilingLadder
+  filings: FilingLadder,
+  measured: false | "shipped" | "alt" = false
 ): SurveyOutcome {
   const step = Math.max(0, rank - STARTING_RANK) * difficultyPerRank;
-  const unsolvable = p.unsolvable + step * 0.5;
-  const accuracy = Math.max(0.02, p.accuracy - step);
+  const adjusted = measured ? difficultyAdjusted(p, rank, measured === "alt") : null;
+  const unsolvable = adjusted ? adjusted.unsolvable : p.unsolvable + step * 0.5;
+  const accuracy = adjusted
+    ? Math.max(0.02, adjusted.accuracy)
+    : Math.max(0.02, p.accuracy - step);
   const attempts = filings[Math.max(0, Math.min(filings.length - 1, rank))];
   const solveRate = 1 - Math.pow(1 - accuracy, attempts);
   const solvable = Math.random() >= unsolvable;
@@ -135,12 +194,13 @@ function runCareer(
   p: Player,
   t: Thresholds,
   difficultyPerRank = 0,
-  filings: FilingLadder = FLAT
+  filings: FilingLadder = FLAT,
+  measured: false | "shipped" | "alt" = false
 ): number {
   let rank = STARTING_RANK;
   let window: SurveyOutcome[] = [];
   for (let i = 0; i < REGIONS_PER_CAREER; i++) {
-    window.push(playRegion(p, rank, difficultyPerRank, filings));
+    window.push(playRegion(p, rank, difficultyPerRank, filings, measured));
     if (rank === RELIEVED) continue;
     const v = verdict(window, t);
     if (v === "promote" || v === "demote") {
@@ -154,9 +214,16 @@ function runCareer(
   return rank;
 }
 
-function profile(p: Player, t: Thresholds, difficultyPerRank = 0, filings: FilingLadder = FLAT) {
+function profile(
+  p: Player,
+  t: Thresholds,
+  difficultyPerRank = 0,
+  filings: FilingLadder = FLAT,
+  measured: false | "shipped" | "alt" = false
+) {
   const ranks: number[] = [];
-  for (let i = 0; i < CAREERS; i++) ranks.push(runCareer(p, t, difficultyPerRank, filings));
+  for (let i = 0; i < CAREERS; i++)
+    ranks.push(runCareer(p, t, difficultyPerRank, filings, measured));
   const mean = ranks.reduce((a, b) => a + b, 0) / ranks.length;
   const top = ranks.filter((r) => r === TOP_RANK).length / ranks.length;
   const off = ranks.filter((r) => r === RELIEVED).length / ranks.length;
@@ -219,4 +286,35 @@ for (const ladder of LADDERS) {
     return `${mean.toFixed(2)} top${(top * 100).toFixed(0).padStart(3)}% off${(off * 100).toFixed(0).padStart(3)}%`.padStart(22);
   });
   console.log(ladder.label.padEnd(22) + cells.join(""));
+}
+
+// ---------------------------------------------------------------------
+// The acceptance test for backlog item 1.
+//
+// Everything above holds difficulty constant across the ladder, which is
+// what the game did until 2026-08-05. These two rows are the same shipped
+// thresholds and the same shipped filing ladder, run against the *measured*
+// per-rank difficulty profiles in docs/region-difficulty.md.
+//
+// The question is narrow: does a careful player still saturate at Chief of
+// Survey, or does the top of the ladder finally hold?
+console.log(`
+
+Region difficulty by rank, at the shipped thresholds and filing ladder:
+`);
+console.log(head);
+console.log("-".repeat(head.length));
+const SHIPPED_FILINGS: FilingLadder = [4, 4, 3, 2, 2];
+for (const [label, measured] of [
+  ["flat (before)", false],
+  ["measured profiles", "shipped"],
+  ["softer bottom rungs", "alt"],
+] as [string, false | "shipped" | "alt"][]) {
+  const cells = PLAYERS.map((p) => {
+    const { mean, top, off } = profile(p, SHIPPED, 0, SHIPPED_FILINGS, measured);
+    return `${mean.toFixed(2)} top${(top * 100).toFixed(0).padStart(3)}% off${(off * 100)
+      .toFixed(0)
+      .padStart(3)}%`.padStart(22);
+  });
+  console.log(label.padEnd(22) + cells.join(""));
 }
