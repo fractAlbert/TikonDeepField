@@ -383,6 +383,15 @@ still tops out 96–100%), so it would need to be considerably steeper than
 that to create a real equilibrium where holding Chief of Survey is work.
 Until then the top of the ladder is a terminus rather than a position.
 
+**Planned 2026-08-04 in `region-difficulty.md`**, with every generation
+lever measured. Two of them behave the opposite of how this document's
+`duty` copy assumes — more signatures make a region *easier*, and stripping
+the briefing's quadrant clues moves difficulty by three points. The
+proposal reaches a 3.3× swing in the band that costs a ring scan. Note the
+currency mismatch: the gradient simulated above is an abstract accuracy
+penalty, so `tune-rank-thresholds.ts` has to be taught to consume a
+per-rank scan rate before it can say whether that swing is steep enough.
+
 ### Consequences for rank (written against the old ~19% floor)
 
 A ~19% floor is the reason **withdrawal has to be rank-neutral and

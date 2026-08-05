@@ -122,6 +122,15 @@ that way. `Ember Verge` is baked, and its whole value is that the
 walk-through's copy is written against its exact solution. Whatever reads
 rank inside `generateRegion()` must not be able to reach it.
 
+**Item 1 now has a plan: `region-difficulty.md`.** Every lever generation
+has is measured there, and two of them do not behave the way the ladder's
+own `duty` copy assumes - more signatures make a region *easier*, not
+harder, and dropping the briefing's quadrant clues entirely moves
+difficulty by three points. The gradient it proposes is built from
+signature count, anchor separation and quadrant clue count, and lands at a
+3.3x swing in the band that costs a ring scan. Read it before touching
+`generateRegion()`.
+
 ## Interaction
 
 ### 8 - The star map hover readout is dead on touch
