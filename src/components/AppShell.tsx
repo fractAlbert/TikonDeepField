@@ -20,6 +20,7 @@ import { loadActiveRegionId, saveActiveRegionId } from "@/lib/active-region";
 import { unlockAudio } from "@/lib/sound";
 import { BELOW_LG, useMediaQuery } from "@/lib/use-media-query";
 import { NavRail, NavItem } from "@/components/NavRail";
+import { MobileJumpBar } from "@/components/MobileJumpBar";
 import { MobileMenu } from "@/components/MobileMenu";
 import { MobilePanelBar } from "@/components/MobilePanelBar";
 import { SoundToggle } from "@/components/SoundToggle";
@@ -81,6 +82,12 @@ type PanelId =
   | "report";
 
 const MOBILE_ONLY_PANELS: PanelId[] = ["starmap", "menu"];
+
+// The panels you actually solve a region from, as opposed to read about one
+// or administer the career. These are the four that get a one-tap hop to the
+// Star Map on a phone, and the only four the map offers to return you to -
+// see MobileJumpBar.
+const SOLVING_PANELS: PanelId[] = ["briefing", "manifest", "sweep", "ringscan"];
 
 const PRIMARY_NAV: NavItem[] = [
   { id: "briefing", label: "Briefing", color: "orange" },
@@ -197,6 +204,12 @@ export function AppShell() {
   // whole constraint - StarMap owns the board and writes it to
   // localStorage, so two live instances would fight over one key.
   const [mapMaximized, setMapMaximized] = useState(false);
+
+  // Which instrument the phone's Star Map was opened from, so it can offer
+  // the way back. Null when the map was reached any other way - from the hub
+  // or by the walk-through - where the panel bar's Back already goes exactly
+  // where you came from and a second return button would be noise.
+  const [mapOrigin, setMapOrigin] = useState<PanelId | null>(null);
 
   // Archived-state (and therefore noActiveAssignment) isn't known until the
   // survey log has synced from localStorage post-hydration - defaulting to
@@ -461,6 +474,11 @@ export function AppShell() {
 
   function selectPanel(id: string) {
     setRequestedPanel(id as PanelId);
+    // Recorded on the way in, from the panel being left. Computed on every
+    // navigation rather than only on the way to the map, so it can't go
+    // stale: a later hub -> Star Map trip must not still be offering the
+    // instrument you were on two visits ago.
+    setMapOrigin(id === "starmap" && SOLVING_PANELS.includes(panel) ? panel : null);
     // Going anywhere restores the map. Maximised, the map *is* the content
     // area, so a nav click that left it expanded would look like the
     // destination failed to open - which is exactly the "mode you can get
@@ -587,6 +605,23 @@ export function AppShell() {
   const starMapRegion: Region | null =
     panel === "log" && logPreviewRegion ? logPreviewRegion : activeRegion;
 
+  /**
+   * Where the phone's bottom bar goes from here, as the nav entry for the
+   * destination - the bar takes its label and its colour from it, so the
+   * button is always the thing you are about to open.
+   *
+   * Only with a live survey. Without one the four survey panels are all
+   * showing the same "no active assignment" placeholder and the map has
+   * nothing selectable on it, so a permanent hop between them would be
+   * offering to carry you between two empty rooms.
+   */
+  const jumpTarget = useMemo(() => {
+    if (!isMobile || !activeRegion) return null;
+    const targetId =
+      panel === "starmap" ? mapOrigin : SOLVING_PANELS.includes(panel) ? "starmap" : null;
+    return targetId ? MOBILE_NAV.find((item) => item.id === targetId) ?? null : null;
+  }, [isMobile, activeRegion, panel, mapOrigin]);
+
   // Maximising is a *restyle* of the sidebar, never a move: the map stays
   // at the same place in the tree and only the widths change, because
   // StarMap owns the board and persists it, and a remount would drop the
@@ -701,7 +736,14 @@ export function AppShell() {
           Sweep Scope's background clock in particular survives a resize. */}
       <div
         className={`${
-          isMobile ? "flex flex-col flex-1 min-h-0 gap-3" : "flex flex-1 min-h-0"
+          /* 8px rather than 12 between the phone's three stacked bands.
+             The jump bar below `main` costs 44px of touch floor plus a gap,
+             and the Sweep Scope missed fitting outright by exactly 4px with
+             `gap-3` here - two gaps at 8px hand that back and then some. The
+             rule is to prefer making it fit, and this is the cheapest 8px in
+             the layout: chrome sitting closer to its own content reads
+             tighter on a phone, not more cramped. */
+          isMobile ? "flex flex-col flex-1 min-h-0 gap-2" : "flex flex-1 min-h-0"
         } ${careerOver ? "hidden" : ""}`}
       >
         {isMobile && panel !== "menu" && (
@@ -861,6 +903,19 @@ export function AppShell() {
           {panel === "prototypes" && <PrototypesPanel region={activeRegion} />}
           {isMobile && panel === "starmap" && starMapView}
         </main>
+
+        {/* Below `main`, not inside it - a sibling on `shrink-0`, exactly as
+            the panel bar is above. `main` keeps being the only scroller, so
+            this can't scroll out from under the thumb that is reaching for
+            it. */}
+        {jumpTarget && (
+          <MobileJumpBar
+            id="mobile-jump-bar"
+            label={jumpTarget.label}
+            color={jumpTarget.color}
+            onSelect={() => selectPanel(jumpTarget.id)}
+          />
+        )}
 
         {/* Dropped while the report is up. The report draws the same field
             itself, much larger, so leaving the sidebar there would show it

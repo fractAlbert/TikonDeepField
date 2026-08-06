@@ -203,7 +203,82 @@ Verified at 320x568 and 390x844 in the iframe harness described above: hub
 present, eleven buttons, every one at 44px, nothing scrolling in either
 direction.
 
-**One thing this pass found and did not fix.** At 320x568 the *header*
+## The jump bar, and pills instead of pairs (2026-08-05)
+
+Two changes from playing the thing on a phone, plus the bug that playing it
+turned up.
+
+### The hub's buttons no longer touch
+
+The rows were touching runs taking their caps per row. Correct rule, wrong
+subject: a run is for siblings you read as one group, and Briefing and Star
+Map are unrelated destinations that happen to be adjacent. Joining them said
+they belonged together. They are separate pills in a gapped grid now, which
+is also straight off the reference image - its lower-left blocks are exactly
+that. Nothing else changed; all eleven still land at exactly 44px at
+320x568, with the run still fitting outright.
+
+### Getting to the map and back is one tap
+
+Solving a region is a loop - read a bearing, go place a marker, come back -
+and on a desktop that loop is free, because the map is a permanent sidebar
+beside whatever you are reading. Through the hub it was three taps each way.
+So the four survey panels (Briefing, Star Manifest, Sweep Scope, Ring Scan)
+carry a Star Map button, and the Star Map carries one back to whichever of
+them you arrived from. `MobileJumpBar.tsx`; the origin is recorded in
+`AppShell`'s `mapOrigin`, computed on every navigation so a later trip in
+from the hub can't still be offering the instrument you left two visits ago.
+
+Reaching the map any other way - from the hub, or because the walk-through
+navigated there - leaves the bar off, since the panel bar's Back already
+goes exactly where you came from.
+
+**Why the bottom and not the panel bar.** The obvious home was
+`MobilePanelBar`, which is already the fixed spot on every phone panel and
+would have cost no height at all. It doesn't fit: that bar carries the
+panel's title, which with no nav on screen is the only thing saying where
+you are, and a third element squeezes it to a truncated stub at 390px.
+Reach agrees with the measurement - this is pressed dozens of times a
+survey, and the top-right corner is the worst place on a phone for that.
+
+Structurally it is the panel bar mirrored: a `shrink-0` sibling of `main`,
+never inside it, so `main` stays the only scroller and the bar cannot scroll
+out from under the thumb reaching for it. The label is always the
+destination and the fill is always that destination's own colour, so the bar
+reads as "one tap puts you here" rather than as a back button that happens
+to be labelled.
+
+**What it cost, measured at 390x844.** 44px of touch floor plus a gap. That
+pushed the Sweep Scope from fitting outright to overflowing by 4px, so the
+phone column's gaps went from 12px to 8px - two of them, which hands back 8
+and leaves the Scope fitting with room. Briefing, Ring Scan, Sweep Scope and
+the hub all fit outright; the Star Manifest overflows by 78px, of which 30px
+is not the bar's doing. That last number also corrects this doc: the
+Manifest is listed above as fitting outright as of 2026-07-29, and it has
+not for some time.
+
+### The map froze in Rule Out and Maybe
+
+Found by the same pass, and older than any of it. Arming a signature in an
+annotation mode set `touch-action: none` on the dial, which is what a
+drag-paint needs to stop the browser claiming the gesture as a scroll - and
+on a phone the map is a full-width panel taller than the screen, so the
+panel stopped scrolling for as long as a signature was armed. The comment
+on the line said it was only on "while a rule-out sweep is actually
+possible", which is exactly the state you are in while using the feature.
+
+A finger marks one cell per tap now, and only a mouse or a stylus sweeps.
+The tap is handled on `pointerup` rather than `click`, which is what tells a
+tap from a scroll for free: the moment the browser decides a touch is a
+scroll it sends `pointercancel` and never sends `pointerup` at all, so a
+drag down the panel leaves no marks behind it without anything here needing
+to know about distances or thresholds. Verified by dispatching synthetic
+pointer events at every branch - touch-down alone marks nothing, touch-up
+marks, touch-down-then-cancel marks nothing, mouse-down still marks
+immediately so a sweep starts on the press, and the click that follows a
+mouse stroke does not toggle it back off.
+
+**One thing an earlier pass found and did not fix.** At 320x568 the *header*
 overflows horizontally - `scrollWidth` 362 against a 320 viewport, from the
 officer badge and sound toggle, which are `shrink-0` next to a title that
 will not give up enough room. Confirmed pre-existing by stashing the hub

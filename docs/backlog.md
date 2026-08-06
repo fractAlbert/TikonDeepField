@@ -72,6 +72,15 @@ content may scroll inside its own panel — and it was accepted knowingly. The
 three are all long prose, so the fix, if wanted, is editorial (shorter copy,
 or pagination the way the Survey Log does it) rather than layout.
 
+**The Star Manifest joined them**, found while measuring the jump bar on
+2026-08-05. It overflows by 78px at 390x844 on a six-signature region, of
+which 30px predates the bar — it is listed as fitting outright in
+`mobile-layout-plan.md` and has not for some time. Different fix from the
+other three, because this one is a list rather than prose and it grows with
+the region: eight signatures is the technician's profile, so the worst case
+is worse than what was measured. Pagination, or a denser row, rather than
+shorter copy.
+
 ### 10 - The header overflows horizontally at 320px
 
 Found 2026-08-04 while measuring the menu hub, and confirmed pre-existing by
