@@ -918,6 +918,9 @@ export function AppShell() {
             label={jump.to.label}
             color={jump.to.color}
             fromColor={jump.from.color}
+            /* Leaning the way you're going: out to the map on the right,
+               back from it on the left. */
+            side={panel === "starmap" ? "left" : "right"}
             onSelect={() => selectPanel(jump.to.id)}
           />
         )}

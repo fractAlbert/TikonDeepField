@@ -60,6 +60,29 @@ import { LcarsButton } from "@/components/LcarsButton";
  * Small matters. A wide slab of colour across the foot of every panel is
  * loud, and the stub is what the image actually does.
  *
+ * ## Half a width, which half, and off the edge (2026-08-06)
+ *
+ * The run is half the *viewport* wide and pushed flush against one outer
+ * edge, and which edge is the direction of travel: leaving an instrument it
+ * sits on the right, on the Star Map it mirrors, so the way back sits on the
+ * left. Leaning the way you are going is the one thing a two-stop shuttle
+ * can say for free. The empty half is not wasted space; it is the gap the
+ * reference leaves between a run and whatever is not next to it.
+ *
+ * Every segment is now **rounded on its inner side and flat on the side
+ * facing the glass**, and the run touches the glass - the one place in the
+ * app, along with the panel bar, that breaks the shell's 12px gutter, and
+ * deliberately. It is the same rule as above followed one step further:
+ * flat means the run continues, and here what it continues into is
+ * off-screen. That only reads if it actually reaches the screen edge - flat
+ * with a strip of black beyond it is the amputated look this bar had on its
+ * first build. So the caps did not disappear, they changed ends, and the
+ * whole thing reads as a strip running in from off-frame.
+ *
+ * Half the viewport rather than half the panel because the run has to line
+ * up with the screen, not with the gutter: `w-[50vw]` plus a negative outer
+ * margin lands it on 195-390 of a 390px phone exactly.
+ *
  * ## Why two colours
  *
  * The stub carries the colour of the panel you are **on**; the button
@@ -74,32 +97,68 @@ export function MobileJumpBar({
   label,
   color,
   fromColor,
+  side,
   onSelect,
   id,
 }: {
   label: string;
   color: ButtonColor;
   fromColor: ButtonColor;
+  /** Which outer edge the run is flush against - see "Half a width". */
+  side: "left" | "right";
   onSelect: () => void;
   id?: string;
 }) {
+  const onRight = side === "right";
+
+  // The reference's index tab: narrow, colour-coded, carries no text, and
+  // takes the run's one rounded cap - which is at the *inner* end now, the
+  // end that actually stops - so it swaps sides along with everything else.
+  const stub = (
+    <div
+      key="stub"
+      className={`w-10 shrink-0 ${onRight ? "rounded-l-full" : "rounded-r-full"} ${SOLID_BG[fromColor]}`}
+    />
+  );
+
+  const button = (
+    <LcarsButton
+      key="button"
+      color={color}
+      /* Flipped rather than squared off. The cap did not disappear, it
+         changed ends: rounded on the inner side, flat on the side facing
+         the glass, same as the stub beside it. */
+      shape={onRight ? "cap-start" : "cap-end"}
+      orientation="horizontal"
+      onClick={onSelect}
+      /* Half a bar leaves 151px at 390 and 116px at 320, and the widest
+         label ("Star Manifest") measures 80px - so the default padding is
+         what breaks it, not the type. Compact padding plus `nowrap` keeps
+         it to one line at 320 too, and looks identical at 390 because the
+         label is centred with room to spare either way. Two lines here
+         would be worse than tight: the bar is `shrink-0`, so every pixel
+         it grows comes off the panel above it. */
+      size="compact"
+      className="flex-1 min-w-0 min-h-11 text-sm whitespace-nowrap"
+    >
+      {label}
+    </LcarsButton>
+  );
+
   return (
-    <div id={id} className="flex items-stretch gap-1 shrink-0">
-      {/* The reference's index tab: narrow, colour-coded, carries no text,
-          and takes the rounded cap at the run's outer edge. */}
-      <div className={`w-10 shrink-0 rounded-l-full ${SOLID_BG[fromColor]}`} />
-      <LcarsButton
-        color={color}
-        shape="cap-end"
-        orientation="horizontal"
-        onClick={onSelect}
-        /* Everything the stub leaves, which is a deliberately oversized
-           target: the whole point is that this is hit repeatedly,
-           mid-puzzle, one-handed. */
-        className="flex-1 min-w-0 min-h-11 text-sm"
-      >
-        {label}
-      </LcarsButton>
+    // The negative margin cancels the shell's gutter on this one side only,
+    // so the flat end lands on the glass. It has to track the shell's own
+    // padding (`p-3 md:p-6`); the bar only exists below `lg`, so those are
+    // the only two values it can meet.
+    <div
+      id={id}
+      className={`flex shrink-0 ${
+        onRight ? "justify-end -mr-3 md:-mr-6" : "justify-start -ml-3 md:-ml-6"
+      }`}
+    >
+      <div className="flex items-stretch gap-1 w-[50vw] min-w-0">
+        {onRight ? [stub, button] : [button, stub]}
+      </div>
     </div>
   );
 }

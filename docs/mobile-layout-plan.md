@@ -293,6 +293,47 @@ problem and is not the bar's - 30px of it predates this work, and this doc
 has listed the Manifest as fitting outright since 2026-07-29 when it has
 not for some time. Logged as part of backlog item 7.
 
+### Half a bar, leaning the way you go (2026-08-06)
+
+The full-width bar was more bar than the trip needed, so the run is now half
+the viewport and pushed flush against one edge - **right** on the way out to
+the map, **left** on the way back. Which half it occupies is the direction of
+travel, which is the one thing a two-stop shuttle can say for free, and the
+empty half is not wasted: it is the gap the reference leaves between a run
+and whatever is not next to it.
+
+Half the *viewport*, not half the panel. The run has to line up with the
+screen rather than with the gutter, so it is `w-[50vw]` inside a wrapper with
+a negative outer margin - 195-390 of a 390px phone, exactly.
+
+That margin is the deliberate part. The outer end is flat now **and touching
+the glass**, which is the shape rule above followed one step further: flat
+means the run continues, and what it continues into here is off-screen. It
+only reads that way if it genuinely reaches the edge - flat with a strip of
+black beyond it is exactly the amputated look this bar had on its first
+build.
+
+Every segment is therefore **rounded on its inner side and flat on the side
+facing the glass**: stub and button both, mirrored when the bar changes
+sides. Worth stating as a flip rather than as a squaring-off, because that is
+the correction that produced it - a cap that disappears is not a flip, it is
+a cut, and the run needs its rounded end somewhere to say where it starts.
+
+The panel bar at the top of every phone panel got the same treatment on the
+same day: Back's cap moved from its right side to its left, and its right
+edge runs off the screen, with the strip's `-mr-3 md:-mr-6` cancelling the
+shell's gutter on that side only. Back keeps its 72px and the *title* gains
+the 12px, which is the right way round - the title is the thing that
+truncates at 390px. These two bars are the only places in the app that break
+the 12px frame, and they break it on purpose.
+
+One measured consequence: at half width the button is 151px at 390 and 116px
+at 320, and the widest label ("Star Manifest") is 80px, so the default `px-6`
+is what breaks it rather than the type size. Compact padding plus
+`whitespace-nowrap` holds every label to one line at both widths. Two lines
+would have been worse than tight, because the bar is `shrink-0` and every
+pixel it grows comes off the panel above it.
+
 ### The map froze in Rule Out and Maybe
 
 Found by the same pass, and older than any of it. Arming a signature in an
