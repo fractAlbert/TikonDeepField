@@ -31,7 +31,8 @@ A few specifics from it that the summary below is too general to carry:
 ## Structure & Shape
 
 - **Elbow/bracket macro-shapes** — the defining LCARS move: a block starts as a sharp rectangle and sweeps into a fully rounded end where it meets the panel's outer edge. Interior joints between adjacent segments stay flat/square — rounding is reserved for exposed outer edges only.
-  - Said the other way round, because the intuition runs backwards: **rounded is where a run *terminates*, flat is where it *continues*.** The centre columns are the clearest case — each data row opens with a narrow stub rounded on its outer end and flat on its inner one, carries labels flat at both ends through the middle, and stops with a label rounded where the row ends.
+  - Said the other way round, because the intuition runs backwards: **rounded is where a run *terminates*, flat is where it *continues*.** The centre columns are the clearest case — each data row opens with a narrow stub, carries labels flat at both ends through the middle, and stops with a label rounded where the row ends.
+  - **Corrected 2026-08-06 by cropping the image**: this bullet used to say the opening stub was rounded on its *outer* end. It is the other way round — the stub is flat on the side facing the block's edge and rounded on the side facing the row, and so is every closing pill, mirrored. Flat toward the frame, rounded toward the content, which is independently where the phone bars ended up. `LcarsKitPrototype`'s "Data rows" section is the measured reproduction.
   - **A flat edge does not have to touch its neighbour.** Flat ends face each other across a black gap all through the image; the grout is separation, not a break in the run. What a flat edge does require is that the neighbour be *visible* — a cut against something you cannot see reads as an amputation rather than as a joint. That is the trap `MobileJumpBar` fell into on its first build (see `mobile-layout-plan.md`).
   - **The screen edge is a legitimate thing to continue into**, and the strongest one available: a run that ends flat *on the glass* reads as carrying on off-frame. It only works if it genuinely reaches the edge, so the two phone bars (`MobilePanelBar`, `MobileJumpBar`) cancel the shell's gutter on that one side with `-mr-3 md:-mr-6`. They are the only places in the app allowed to break the 12px frame.
   - **Moving a cap is a flip, not a cut.** When a segment turns to face the other way, its rounded end changes sides; it does not simply vanish, leaving both ends square. Both phone bars ended up with every segment rounded on its inner side and flat on the side facing the glass.
@@ -114,6 +115,20 @@ not a persistent rail. Nine labels will not fit across 390px at a readable
 size, and the rule above rules out scrolling to reach the rest. The trade is
 one extra tap for ~58px back on every screen — which is most of what the
 Star Map needed in order to fit. See `docs/mobile-layout-plan.md`.
+
+### The specimen sheet
+
+`components/prototypes/LcarsKitPrototype.tsx`, in the Prototypes panel. Every
+shape, colour, type step and composite block above, rendered in the app's own
+components and captioned with the rule it demonstrates — including the
+side-by-side wrong versions (a wrapped run without per-row caps, centred text
+in a data row, six colours where two would group).
+
+These notes are prose about a JPEG, which is enough to argue from and not
+enough to build from: three passes over the phone bars got the caps backwards,
+and each fix came from cropping the reference rather than from re-reading the
+rule. **Open the sheet before designing a control, and the image before
+trusting the sheet.**
 
 ## Status in Tikon: Deep Field
 

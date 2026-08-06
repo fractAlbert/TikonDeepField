@@ -14,6 +14,7 @@ import {
 } from "@/components/ringsurvey/RingScope";
 import { TargetedScanPrototype } from "@/components/ringsurvey/TargetedScanPrototype";
 import { StarGlyphPrototype } from "@/components/prototypes/StarGlyphPrototype";
+import { LcarsKitPrototype } from "@/components/prototypes/LcarsKitPrototype";
 import { RING_COUNT } from "@/lib/grid";
 
 const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
@@ -64,6 +65,10 @@ export function PrototypesPanel({
 }) {
   return (
     <div className="flex flex-col gap-4">
+      {/* First, because it is the only one here that is about the interface
+          rather than about the game - the thing you open before designing a
+          control, not while settling a mechanic. */}
+      <LcarsKitPrototype />
       <StarGlyphPrototype />
       <RingSurveyPrototype region={region} />
       <TargetedScanPrototype region={region} />
