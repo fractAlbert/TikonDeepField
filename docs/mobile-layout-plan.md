@@ -253,9 +253,10 @@ So the button sits at the right, taking the rounded outer cap and turning
 its flat edge inward, and the dark filler was replaced by the reference's
 own row-opener: a narrow stub, solid colour, no text. It carries the colour
 of the panel you are **on** while the button carries the colour of the panel
-you are going **to**, which is what keeps it from reading as a decorative
+you are going **to**, which is meant to keep it from reading as a decorative
 state lamp beside a button - a small shape sitting against a button will
-read as state if you let it, and this one is carrying the trip.
+read as state if you let it, and this one is carrying the trip. (It did not
+survive contact: see "Half a bar" below, where the stub comes back out.)
 
 **Why the bottom and not the panel bar.** The obvious home was
 `MobilePanelBar`, which is already the fixed spot on every phone panel and
@@ -313,11 +314,21 @@ only reads that way if it genuinely reaches the edge - flat with a strip of
 black beyond it is exactly the amputated look this bar had on its first
 build.
 
-Every segment is therefore **rounded on its inner side and flat on the side
-facing the glass**: stub and button both, mirrored when the bar changes
-sides. Worth stating as a flip rather than as a squaring-off, because that is
-the correction that produced it - a cap that disappears is not a flip, it is
-a cut, and the run needs its rounded end somewhere to say where it starts.
+Everything is therefore **rounded on its inner side and flat on the side
+facing the glass**, mirrored when the bar changes sides. Worth stating as a
+flip rather than as a squaring-off, because that is the correction that
+produced it - a cap that disappears is not a flip, it is a cut, and a run
+needs its rounded end somewhere to say where it starts.
+
+**And the stub is gone.** The bar was a two-part run for a day: a narrow
+colour-coded stub carrying the colour of the panel you were *on*, against a
+button carrying the colour of the panel you were going *to*, meant to read as
+a trip. At full width the stub read as the reference's row-opener. At half
+width, pushed against the screen edge with a button beside it, it read as
+exactly the thing it was warned about when it was designed - a small shape
+parked next to a button, which the eye takes for a state lamp. So the bar is
+one button now. Where you are is the panel bar's job, at the top of the
+screen; where one tap takes you is the button's.
 
 The panel bar at the top of every phone panel got the same treatment on the
 same day: Back's cap moved from its right side to its left, and its right
@@ -327,12 +338,13 @@ the 12px, which is the right way round - the title is the thing that
 truncates at 390px. These two bars are the only places in the app that break
 the 12px frame, and they break it on purpose.
 
-One measured consequence: at half width the button is 151px at 390 and 116px
-at 320, and the widest label ("Star Manifest") is 80px, so the default `px-6`
-is what breaks it rather than the type size. Compact padding plus
-`whitespace-nowrap` holds every label to one line at both widths. Two lines
-would have been worse than tight, because the bar is `shrink-0` and every
-pixel it grows comes off the panel above it.
+One thing measured on the way: with the stub in place the button was 151px at
+390 and 116px at 320, and the widest label ("Star Manifest") is 80px, which
+put it one line short of wrapping at 320 on the default padding. Dropping the
+stub gives the whole 195/160 back, so the padding went back to default and
+`whitespace-nowrap` stayed as insurance. Two lines would be worse than tight
+here, because the bar is `shrink-0` and every pixel it grows comes off the
+panel above it.
 
 ### The map froze in Rule Out and Maybe
 

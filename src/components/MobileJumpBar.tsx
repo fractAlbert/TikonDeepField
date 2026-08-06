@@ -1,6 +1,6 @@
 "use client";
 
-import { ButtonColor, SOLID_BG } from "@/lib/lcars-colors";
+import { ButtonColor } from "@/lib/lcars-colors";
 import { LcarsButton } from "@/components/LcarsButton";
 
 /**
@@ -69,81 +69,53 @@ import { LcarsButton } from "@/components/LcarsButton";
  * can say for free. The empty half is not wasted space; it is the gap the
  * reference leaves between a run and whatever is not next to it.
  *
- * Every segment is now **rounded on its inner side and flat on the side
- * facing the glass**, and the run touches the glass - the one place in the
- * app, along with the panel bar, that breaks the shell's 12px gutter, and
- * deliberately. It is the same rule as above followed one step further:
+ * It is **rounded on its inner side and flat on the side facing the glass**,
+ * and it touches the glass - the one place in the app, along with the panel
+ * bar, that breaks the shell's 12px gutter, and deliberately. It is the same
+ * rule as above followed one step further:
  * flat means the run continues, and here what it continues into is
  * off-screen. That only reads if it actually reaches the screen edge - flat
  * with a strip of black beyond it is the amputated look this bar had on its
  * first build. So the caps did not disappear, they changed ends, and the
  * whole thing reads as a strip running in from off-frame.
  *
- * Half the viewport rather than half the panel because the run has to line
- * up with the screen, not with the gutter: `w-[50vw]` plus a negative outer
- * margin lands it on 195-390 of a 390px phone exactly.
+ * Half the viewport rather than half the panel because the button has to
+ * line up with the screen, not with the gutter: `w-[50vw]` plus a negative
+ * outer margin lands it on 195-390 of a 390px phone exactly.
  *
- * ## Why two colours
+ * ## The stub is gone (2026-08-06)
  *
- * The stub carries the colour of the panel you are **on**; the button
- * carries the colour of the panel you are going **to**, and its label names
- * it. So the bar reads as a trip - violet to amber leaving the Sweep Scope,
- * amber to violet coming back - rather than as a lone button with a
- * decorative lamp beside it. Worth being deliberate about, because a small
- * shape sitting against a button reads as *state* if you let it, and this
- * one is carrying information rather than pretending to.
+ * It was a two-part run for a day: a narrow colour-coded stub - the
+ * reference's row-opener - carrying the colour of the panel you were on,
+ * against a button carrying the colour of the panel you were going to. The
+ * two colours were meant to read as a trip.
+ *
+ * They did not. At full width the stub read as a row opener; at half width,
+ * pushed against the screen edge with a button beside it, it read as exactly
+ * what it was warned about from the start - a small shape parked next to a
+ * button, which the eye takes for a state lamp. A lamp that indicates
+ * nothing is worse than no lamp, and the button already names its
+ * destination and wears that destination's colour, so the stub was carrying
+ * nothing the label was not.
+ *
+ * So the bar is one button now. Where you are is on the panel bar at the top
+ * of the screen; where one tap takes you is here.
  */
 export function MobileJumpBar({
   label,
   color,
-  fromColor,
   side,
   onSelect,
   id,
 }: {
   label: string;
   color: ButtonColor;
-  fromColor: ButtonColor;
-  /** Which outer edge the run is flush against - see "Half a width". */
+  /** Which outer edge the button is flush against - see "Half a width". */
   side: "left" | "right";
   onSelect: () => void;
   id?: string;
 }) {
   const onRight = side === "right";
-
-  // The reference's index tab: narrow, colour-coded, carries no text, and
-  // takes the run's one rounded cap - which is at the *inner* end now, the
-  // end that actually stops - so it swaps sides along with everything else.
-  const stub = (
-    <div
-      key="stub"
-      className={`w-10 shrink-0 ${onRight ? "rounded-l-full" : "rounded-r-full"} ${SOLID_BG[fromColor]}`}
-    />
-  );
-
-  const button = (
-    <LcarsButton
-      key="button"
-      color={color}
-      /* Flipped rather than squared off. The cap did not disappear, it
-         changed ends: rounded on the inner side, flat on the side facing
-         the glass, same as the stub beside it. */
-      shape={onRight ? "cap-start" : "cap-end"}
-      orientation="horizontal"
-      onClick={onSelect}
-      /* Half a bar leaves 151px at 390 and 116px at 320, and the widest
-         label ("Star Manifest") measures 80px - so the default padding is
-         what breaks it, not the type. Compact padding plus `nowrap` keeps
-         it to one line at 320 too, and looks identical at 390 because the
-         label is centred with room to spare either way. Two lines here
-         would be worse than tight: the bar is `shrink-0`, so every pixel
-         it grows comes off the panel above it. */
-      size="compact"
-      className="flex-1 min-w-0 min-h-11 text-sm whitespace-nowrap"
-    >
-      {label}
-    </LcarsButton>
-  );
 
   return (
     // The negative margin cancels the shell's gutter on this one side only,
@@ -156,9 +128,25 @@ export function MobileJumpBar({
         onRight ? "justify-end -mr-3 md:-mr-6" : "justify-start -ml-3 md:-ml-6"
       }`}
     >
-      <div className="flex items-stretch gap-1 w-[50vw] min-w-0">
-        {onRight ? [stub, button] : [button, stub]}
-      </div>
+      <LcarsButton
+        color={color}
+        /* Flipped rather than squared off. The cap did not disappear, it
+           changed ends: rounded on the inner side, flat on the side facing
+           the glass, which is the side the button carries on past. */
+        shape={onRight ? "cap-start" : "cap-end"}
+        orientation="horizontal"
+        onClick={onSelect}
+        /* Half the viewport, so the run lines up with the screen rather than
+           with the gutter. A deliberately oversized target: the whole point
+           is that this is hit repeatedly, mid-puzzle, one-handed. `nowrap`
+           is insurance - the widest label ("Star Manifest") is 80px against
+           160px of button at 320, but two lines would be worse than tight
+           here, since the bar is `shrink-0` and every pixel it grows comes
+           off the panel above it. */
+        className="w-[50vw] min-w-0 min-h-11 text-sm whitespace-nowrap"
+      >
+        {label}
+      </LcarsButton>
     </div>
   );
 }

@@ -606,10 +606,11 @@ export function AppShell() {
     panel === "log" && logPreviewRegion ? logPreviewRegion : activeRegion;
 
   /**
-   * The phone's bottom bar, as the two nav entries it is drawn from: where
-   * you are and where one tap takes you. The bar names and colours the
-   * button after `to`, and colours its opening stub after `from`, so the
-   * whole thing reads as a trip rather than as a lone button.
+   * The phone's bottom bar, as the nav entry it is drawn from: where one tap
+   * takes you. The bar takes that entry's label and colour, so it reads as
+   * "one tap puts you here" rather than as a back button that happens to be
+   * labelled. Where you *are* is the panel bar's job, at the top of the
+   * screen.
    *
    * Only with a live survey. Without one the four survey panels are all
    * showing the same "no active assignment" placeholder and the map has
@@ -621,9 +622,7 @@ export function AppShell() {
     const toId =
       panel === "starmap" ? mapOrigin : SOLVING_PANELS.includes(panel) ? "starmap" : null;
     if (!toId) return null;
-    const to = MOBILE_NAV.find((item) => item.id === toId);
-    const from = MOBILE_NAV.find((item) => item.id === panel);
-    return to && from ? { to, from } : null;
+    return MOBILE_NAV.find((item) => item.id === toId) ?? null;
   }, [isMobile, activeRegion, panel, mapOrigin]);
 
   // Maximising is a *restyle* of the sidebar, never a move: the map stays
@@ -915,13 +914,12 @@ export function AppShell() {
         {jump && (
           <MobileJumpBar
             id="mobile-jump-bar"
-            label={jump.to.label}
-            color={jump.to.color}
-            fromColor={jump.from.color}
+            label={jump.label}
+            color={jump.color}
             /* Leaning the way you're going: out to the map on the right,
                back from it on the left. */
             side={panel === "starmap" ? "left" : "right"}
-            onSelect={() => selectPanel(jump.to.id)}
+            onSelect={() => selectPanel(jump.id)}
           />
         )}
 

@@ -196,14 +196,14 @@ Implemented:
   comes out of the gaps rather than out of the touch floor - see the Sweep
   Scope's 4px in `mobile-layout-plan.md`.
 
-  The jump bar is also where the index-tab motif noted above finally gets
-  used: a narrow stub, solid colour, no text, taking the run's one rounded
-  cap. The stub is the panel you are on and the button is the panel you are
-  going to, which matters - a small shape parked against a button reads as
-  *state* unless it is plainly carrying something else. As of 2026-08-06 the
-  run is half the viewport, flush to one edge, and which edge is the
-  direction of travel: right on the way out to the map, left on the way
-  back.
+  As of 2026-08-06 the jump bar is a single button, half the viewport wide
+  and flush to one edge, and which edge is the direction of travel: right on
+  the way out to the map, left on the way back. It briefly carried the
+  index-tab motif beside it - a narrow colour-coded stub for the panel you
+  were on - and that is the cautionary tale: **a small shape parked next to
+  a button reads as a state lamp**, whatever you intended it to mean, and a
+  lamp that indicates nothing is worse than no lamp. The tab motif belongs
+  at the head of a *row of things*, which is what the reference uses it for.
 
 - **Touch is not a small mouse.** A drag-paint needs `touch-action: none`,
   and `touch-action: none` on anything taller than the screen means the
