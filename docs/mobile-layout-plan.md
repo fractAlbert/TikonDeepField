@@ -233,6 +233,30 @@ Reaching the map any other way - from the hub, or because the walk-through
 navigated there - leaves the bar off, since the panel bar's Back already
 goes exactly where you came from.
 
+**Which end is round.** The bar's first build put the button on the left
+with its flat edge facing right, into a `bg-lcars-panel` filler, and it
+looked wrong. Reading the reference image's data rows closely settles why,
+and inverts the obvious intuition: each row opens with a narrow colour-coded
+stub rounded on its *outer* end and flat on its inner one, carries labels
+flat at both ends through the middle, and stops with a label rounded where
+the row ends. **Rounded is where a run terminates; flat is where it
+continues** - and the black gaps do not break that, since flat ends face
+each other across grout all through the image.
+
+By that rule the original shape was correct and the composition still
+failed, because the block its flat edge was flat *against* was a near-black
+tint on a black page. The cut had nothing visible to be cut against, so the
+button read as a pill with its end amputated. A flat edge is a promise that
+something continues, and you have to be able to see the something.
+
+So the button sits at the right, taking the rounded outer cap and turning
+its flat edge inward, and the dark filler was replaced by the reference's
+own row-opener: a narrow stub, solid colour, no text. It carries the colour
+of the panel you are **on** while the button carries the colour of the panel
+you are going **to**, which is what keeps it from reading as a decorative
+state lamp beside a button - a small shape sitting against a button will
+read as state if you let it, and this one is carrying the trip.
+
 **Why the bottom and not the panel bar.** The obvious home was
 `MobilePanelBar`, which is already the fixed spot on every phone panel and
 would have cost no height at all. It doesn't fit: that bar carries the
@@ -248,14 +272,26 @@ destination and the fill is always that destination's own colour, so the bar
 reads as "one tap puts you here" rather than as a back button that happens
 to be labelled.
 
-**What it cost, measured at 390x844.** 44px of touch floor plus a gap. That
-pushed the Sweep Scope from fitting outright to overflowing by 4px, so the
-phone column's gaps went from 12px to 8px - two of them, which hands back 8
-and leaves the Scope fitting with room. Briefing, Ring Scan, Sweep Scope and
-the hub all fit outright; the Star Manifest overflows by 78px, of which 30px
-is not the bar's doing. That last number also corrects this doc: the
-Manifest is listed above as fitting outright as of 2026-07-29, and it has
-not for some time.
+**What it cost, measured at 390x844.** 44px of touch floor plus a gap, so
+52px. That pushed the Sweep Scope from fitting outright to overflowing by
+4px, so the phone column's gaps went from 12px to 8px - two of them, which
+hands back 8 and leaves the Scope fitting with room.
+
+The number that matters is per *region size*, though, which is the thing
+this doc previously had no reason to think about and item 1 has since made
+vary. At six signatures Briefing, Ring Scan, Sweep Scope and the hub all fit
+outright and the Star Manifest overflows by 78px. At eight - the Survey
+Technician's profile, so a real and in fact the *most common* case at the
+bottom of the ladder - the Scope has only 16px of slack before the bar and
+overflows by 36px after it, and the Manifest by 264px.
+
+So: the bar costs the Sweep Scope its outright fit on large regions, and
+that was accepted. 36px is a nudge rather than a scroll, the rules allow
+content to scroll inside its own panel, and the alternative was giving up
+the one-tap hop that motivated the whole thing. The Manifest is a different
+problem and is not the bar's - 30px of it predates this work, and this doc
+has listed the Manifest as fitting outright since 2026-07-29 when it has
+not for some time. Logged as part of backlog item 7.
 
 ### The map froze in Rule Out and Maybe
 

@@ -606,20 +606,24 @@ export function AppShell() {
     panel === "log" && logPreviewRegion ? logPreviewRegion : activeRegion;
 
   /**
-   * Where the phone's bottom bar goes from here, as the nav entry for the
-   * destination - the bar takes its label and its colour from it, so the
-   * button is always the thing you are about to open.
+   * The phone's bottom bar, as the two nav entries it is drawn from: where
+   * you are and where one tap takes you. The bar names and colours the
+   * button after `to`, and colours its opening stub after `from`, so the
+   * whole thing reads as a trip rather than as a lone button.
    *
    * Only with a live survey. Without one the four survey panels are all
    * showing the same "no active assignment" placeholder and the map has
    * nothing selectable on it, so a permanent hop between them would be
    * offering to carry you between two empty rooms.
    */
-  const jumpTarget = useMemo(() => {
+  const jump = useMemo(() => {
     if (!isMobile || !activeRegion) return null;
-    const targetId =
+    const toId =
       panel === "starmap" ? mapOrigin : SOLVING_PANELS.includes(panel) ? "starmap" : null;
-    return targetId ? MOBILE_NAV.find((item) => item.id === targetId) ?? null : null;
+    if (!toId) return null;
+    const to = MOBILE_NAV.find((item) => item.id === toId);
+    const from = MOBILE_NAV.find((item) => item.id === panel);
+    return to && from ? { to, from } : null;
   }, [isMobile, activeRegion, panel, mapOrigin]);
 
   // Maximising is a *restyle* of the sidebar, never a move: the map stays
@@ -908,12 +912,13 @@ export function AppShell() {
             the panel bar is above. `main` keeps being the only scroller, so
             this can't scroll out from under the thumb that is reaching for
             it. */}
-        {jumpTarget && (
+        {jump && (
           <MobileJumpBar
             id="mobile-jump-bar"
-            label={jumpTarget.label}
-            color={jumpTarget.color}
-            onSelect={() => selectPanel(jumpTarget.id)}
+            label={jump.to.label}
+            color={jump.to.color}
+            fromColor={jump.from.color}
+            onSelect={() => selectPanel(jump.to.id)}
           />
         )}
 

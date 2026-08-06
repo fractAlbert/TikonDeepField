@@ -1,6 +1,6 @@
 "use client";
 
-import { ButtonColor } from "@/lib/lcars-colors";
+import { ButtonColor, SOLID_BG } from "@/lib/lcars-colors";
 import { LcarsButton } from "@/components/LcarsButton";
 
 /**
@@ -34,42 +34,72 @@ import { LcarsButton } from "@/components/LcarsButton";
  * scroller, so this never scrolls away - the standing rule is that chrome is
  * never something you scroll to reveal.
  *
- * ## Why the colour changes
+ * ## Which end is round (rewritten 2026-08-05)
  *
- * The label is always the destination and the fill is always that
- * destination's own colour, so the bar reads as "one tap puts you here"
- * rather than as a back button that happens to be labelled. Amber leaving an
- * instrument (the Star Map's colour, matching its hub entry and its panel
- * header), the instrument's own colour leaving the map.
+ * The first build put the button on the left with its flat edge facing
+ * right, into a `bg-lcars-panel` filler. It looked wrong, and the reason is
+ * worth writing down because the shape rule alone does not catch it.
+ *
+ * Read the reference image's data rows closely (`docs/reference/LCARS-2.jpg`,
+ * the centre columns). Each row opens with a narrow colour-coded stub that
+ * is **rounded on its outer end and flat on its inner one**, then a label
+ * flat at both ends, then a number, then a label flat on the inside and
+ * rounded where the row stops. So rounded is where a run *terminates*, flat
+ * is where it *continues* - and the black gaps do not break that, since flat
+ * ends face each other across grout all through the image.
+ *
+ * By that rule the original shape was correct and the composition still
+ * failed, because the block its flat edge was flat *against* was a near-black
+ * tint on a black page. The cut had nothing visible to be cut against, so
+ * the button read as a pill with its end amputated. A flat edge is a promise
+ * that something continues; you have to be able to see the something.
+ *
+ * Hence: the button moved to the right, where it takes the run's rounded
+ * outer cap and turns its flat edge inward, and the dark filler was replaced
+ * by the reference's own row-opener - a narrow stub, solid colour, no text.
+ * Small matters. A wide slab of colour across the foot of every panel is
+ * loud, and the stub is what the image actually does.
+ *
+ * ## Why two colours
+ *
+ * The stub carries the colour of the panel you are **on**; the button
+ * carries the colour of the panel you are going **to**, and its label names
+ * it. So the bar reads as a trip - violet to amber leaving the Sweep Scope,
+ * amber to violet coming back - rather than as a lone button with a
+ * decorative lamp beside it. Worth being deliberate about, because a small
+ * shape sitting against a button reads as *state* if you let it, and this
+ * one is carrying information rather than pretending to.
  */
 export function MobileJumpBar({
   label,
   color,
+  fromColor,
   onSelect,
   id,
 }: {
   label: string;
   color: ButtonColor;
+  fromColor: ButtonColor;
   onSelect: () => void;
   id?: string;
 }) {
   return (
     <div id={id} className="flex items-stretch gap-1 shrink-0">
+      {/* The reference's index tab: narrow, colour-coded, carries no text,
+          and takes the rounded cap at the run's outer edge. */}
+      <div className={`w-10 shrink-0 rounded-l-full ${SOLID_BG[fromColor]}`} />
       <LcarsButton
         color={color}
-        shape="cap-start"
+        shape="cap-end"
         orientation="horizontal"
         onClick={onSelect}
-        /* Half the bar, which is a deliberately oversized target: the whole
-           point is that this is hit repeatedly, mid-puzzle, one-handed. */
+        /* Everything the stub leaves, which is a deliberately oversized
+           target: the whole point is that this is hit repeatedly,
+           mid-puzzle, one-handed. */
         className="flex-1 min-w-0 min-h-11 text-sm"
       >
         {label}
       </LcarsButton>
-      {/* Unlabeled filler closing the run against the panel's outer edge -
-          the rails' idiom, and the mirror of the title block the panel bar
-          opens with, so the two bars frame the content between them. */}
-      <div className="flex-1 bg-lcars-panel rounded-r-full" />
     </div>
   );
 }
