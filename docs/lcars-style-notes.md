@@ -1,19 +1,44 @@
 # LCARS Style Notes
 
-Analysis of the reference image, cataloging the style conventions that
+Analysis of the reference images, cataloging the style conventions that
 define the LCARS (Star Trek) look.
 
-## The reference image
+> **There is a skill for this.** `.claude/skills/lcars-design/SKILL.md` is
+> the procedure - what to read, in what order, how to crop the images, how to
+> verify geometry, and the checklist of rules most often got wrong. It is
+> deliberately thin and points back here. **This document is the source of
+> truth; the skill is the trigger.** When a rule changes, change it here, and
+> only touch the skill if the *procedure* changed.
+
+## The reference images
+
+**Look at them before designing or changing any UI in this project** - they
+are the thing every rule below was read off, and the rules are a summary,
+not a replacement. All three live in `docs/reference/`, so the analysis and
+its sources travel together.
+
+| file | what it is best for |
+| --- | --- |
+| `LCARS-2.jpg` (1920x1271) | data rows, gauges, the dense-directory feel |
+| `Lcars menu.webp` (1024x1024) | titles, sweeps that turn into button runs, lists with lamps |
+| `lcars-ultra-220809.png` (3786x2022) | a whole page: rails, brackets, grids, framed content |
+
+The two newer ones were added 2026-08-06 and are read in **More options,
+from the second and third references** below. That section is additive - it
+does not overturn anything here, but it does answer questions this one was
+too small a sample to answer, and it is where to look first for a *layout*
+rather than a control.
+
+`.webp` reads directly, no conversion needed. For crops, `ffmpeg -i in -vf
+"crop=w:h:x:y,scale=iw*3:ih*3:flags=neighbor" out.png` - nearest-neighbour,
+so the corner radii stay crisp enough to measure.
+
+### The first reference
 
 ![LCARS reference panel](reference/LCARS-2.jpg)
 
-`docs/reference/LCARS-2.jpg` (1920x1271). **Look at it before designing or
-changing any UI in this project** - it is the thing every rule below was
-read off, and the rules are a summary, not a replacement.
-
 It lived outside the repo until 2026-08-02, which is why these notes cited
-a filename that resolved to nothing. Now committed, so the analysis and its
-source travel together.
+a filename that resolved to nothing. Now committed.
 
 A few specifics from it that the summary below is too general to carry:
 
@@ -43,7 +68,7 @@ A few specifics from it that the summary below is too general to carry:
 ## Color
 
 - Muted, desaturated palette — terracotta/salmon, tan-orange, powder blue, dusty mauve, ice blue, blue-gray, occasional pink — nothing fully saturated or glossy. Retro-futuristic rather than "sci-fi neon."
-- **Red is scarce and deliberate** — reserved for alert/critical status rather than decoration; appears only once in the reference image.
+- **Red is scarce and deliberate** — reserved for alert/critical status rather than decoration; appears only once in the first reference image. Refined by the third: a *desaturated* brick red is structural there and used heavily, while the saturated red stays scarce. See **The palettes, sampled** below.
 - Color appears to encode category/grouping (system type) rather than being random per-button.
 
 ## Typography
@@ -63,10 +88,232 @@ A few specifics from it that the summary below is too general to carry:
 - Thin outline ship/technical schematics rendered in a single accent color as line art, used as functional-looking decoration within an otherwise abstract panel.
 - Stacked short color pills along edges acting as index/legend strips, distinct from the interactive-looking buttons.
 
+## More options, from the second and third references
+
+Added 2026-08-06. `Lcars menu.webp` is a single dense panel ("FOOD SERVICE");
+`lcars-ultra-220809.png` is a full page template. Everything below was read
+off nearest-neighbour crops rather than remembered, and where a claim is
+about colour it was sampled rather than eyeballed.
+
+Three things they carry that `LCARS-2.jpg` does not: a **title treatment**,
+a **sweep that turns into a row of buttons**, and enough vertical runs to
+say what one actually looks like.
+
+### The title is a block, a name, and a shelf
+
+`FOOD SERVICE` at the top left, and it is three separate objects on one
+line, not a heading in a bar:
+
+1. A **solid rectangle, square on all four corners**, about as tall as the
+   title's cap height and rather wider. It carries no text. It is a full
+   stop in reverse - it starts the line.
+2. The **title itself, set on black**, in the light lilac, at maybe four
+   times the body size. Nothing behind it. This is the only place in either
+   image where large text sits on bare black rather than on a colour.
+3. Immediately to its right, with no gap, the **head of the top-right sweep**
+   - a big orange mass whose left edge is flat and butts against the end of
+   the title's last letter. The title looks like it is resting against the
+   frame, or holding it back.
+
+Inside that mass, bottom-aligned and small, sits a **subordinate label in
+dark text on the colour**: `REPLICATOR`. So the pair inverts twice over -
+the title is large, light, on black; its qualifier is small, dark, on
+colour. Two levels of heading and only one line of vertical space spent.
+
+`lcars-ultra` does titles differently and both are worth having: big
+condensed caps, right-aligned against the frame, on black, using **` • ` as
+the separator** rather than punctuation - `LCARS • ONLINE`, `WELCOME TO
+LCARS ULTRA • CLASSIC THEME`. The bullet is doing the work a colon or a dash
+would do in ordinary type, and it is the one non-alphanumeric mark either
+image uses.
+
+### The sweeping border that becomes a row of buttons
+
+This is the move worth stealing, and it appears in both images.
+
+A thick vertical trunk sweeps around a large-radius corner into a
+**horizontal arm that is much thinner than the trunk** - a taper, not a
+constant-width elbow. The arm runs out flat, and then, after a hairline of
+black, **it keeps going as a row of segments in different colours**: same
+height as the arm, flat at both ends, irregular widths, hairline gaps.
+
+```
+   ####\
+   #####\____________________  __ _______ ____________ ___
+   ######                     |  |       |            |   |
+   ######    <- trunk           ^ arm continues as a run of cells
+```
+
+In `lcars-ultra` two of these stack, blue above red, and their segment
+breaks do **not** line up between the rows - each row keeps its own rhythm.
+In `Lcars menu` the same thing happens vertically: the sweep comes down and
+the descending trunk is subdivided into stacked coloured cells, one of which
+carries a label (`203 UT5`) and is therefore a button.
+
+What this buys is the thing our layout keeps paying for separately: the
+frame and the controls are the same object. There is no "nav area" with a
+border round it - the border *is* the nav, and where it has nothing to do it
+is just filler cells. It also means a run can change thickness mid-course
+without breaking, which the flat-continues rule already permits but nothing
+in the app currently uses.
+
+### Vertical runs, and why theirs look better than ours
+
+Both images use vertical runs heavily, and they are built quite differently
+from `NavRail`. The differences, in rough order of how much they matter:
+
+- **A vertical run never terminates in a rounded cap.** Checked at every
+  column end in both images: a vertical column either stops **flat** (it runs
+  off the frame, or hands over to the next block) or it **turns a corner**
+  into a horizontal arm. The half-circle cap is a *horizontal* mark. This is
+  the sharpest new rule here, and `LcarsKitPrototype`'s "Vertical run"
+  specimen - caps top and bottom, made by rotating the horizontal grammar 90
+  degrees - is a shape neither reference contains.
+- **Cell heights vary enormously within one run.** `lcars-ultra`'s left-hand
+  column runs one huge cell, then three shallow ones, then another huge one.
+  Ours are all one height, which is what makes them read as a list of
+  buttons rather than as a panel that has buttons in it.
+- **The label sits in the bottom-right corner of its cell**, small, dark, with
+  the rest of the cell left as empty colour - `AA-1524`, `ONE`, `TWO`,
+  `03-111968`. Ours are `justify-center`. Centring is the single most
+  un-LCARS thing about our buttons, and the old "text hugs one edge" bullet
+  under **Typography** already said so without ever being applied to a
+  control.
+- **Colour varies cell to cell** down the run - red, peach, salmon, lilac,
+  blue - rather than one colour per destination-with-meaning. Grouping is
+  still colour's job elsewhere, but a *rail* is treated as decoration that
+  happens to be clickable, so it is free to be a stripe of colours.
+- **Edge-anchored, hairline gaps.** The run is flush to the frame with no
+  outer margin, and the black between cells is a hairline rather than the
+  4px we use.
+
+Where ours does match: a **column of horizontal pills, each capped on the
+same outer side and flat toward the content**, is exactly the Food Service
+left column (`39451`, `6 7860`, `203 H74`, ...) and the `lcars-ultra`
+left-hand grid. The cap side is uniform for the whole column - it is not
+computed per position. `NavRail` is right about that, and the kit specimen
+is describing a different shape than the one `NavRail` builds.
+
+### Grids of flat cells
+
+`lcars-ultra`'s left blocks are two columns by three rows; `Lcars menu`'s
+foot is seven by three. Both are directories, not runs, and the grammar is:
+
+- **Every interior corner is square.** No cell is capped against its
+  neighbour in either axis.
+- **The outward edge gets the cap.** In the two-column grid, only the
+  left-hand column is rounded on its left; the right column is square all
+  round because the block continues into the frame. In the seven-column
+  grid nothing is capped at all - it is bounded on both sides.
+- **An empty cell is allowed and says something.** One slot in the
+  `lcars-ultra` grid is simply missing - black where a cell should be - and
+  it reads as unassigned rather than as a mistake.
+- **Text right-aligns** in the numeric cells; the few word cells (`ORD 3R`,
+  `COM B6`, `SUB ST`) sit centred. Numbers and codes are not the same thing.
+
+### Lists with lamps
+
+The Food Service body is a directory list, and it is not built from pills at
+all:
+
+```
+(O)  IDENT67T   PLOMEEK SOUP   NUTRI588        [ 39451 ]
+     VULCAN VEGAN COMFORT FOOD
+```
+
+- A **large filled circle** at the head of each entry, two lines tall,
+  coloured per entry. This is the index-tab job done as a lamp, and it is
+  legitimate here precisely because it heads *a row of things* - which is the
+  distinction the jump bar learned the hard way (see below).
+- **Two lines of text, same size, same colour**, the first a run of codes and
+  a name separated by wide spaces rather than punctuation, the second a plain
+  descriptive subtitle. The wide inter-field spacing is doing the work a
+  table's columns would.
+- A **pill on the far right**, rounded on the outer side, flat toward the
+  list, number right-aligned.
+- **State is carried by swapping the lamp and the text colour together.** One
+  row of five has a *hollow ring* instead of a filled circle, and that row's
+  text is amber where every other row is lilac. Nothing is dimmed, nothing is
+  outlined, nothing moves - two colour changes and the row is selected.
+
+`lcars-ultra`'s status list is the same idea at small size: a squashed
+ellipse as the bullet, `LABEL: VALUE` in caps beside it, and the one line
+whose state differs (`OPTICAL DATA NETWORK: REROUTING`) changes both bullet
+colour and text colour while the other three stay orange.
+
+### Framing content rather than sitting beside it
+
+`lcars-ultra` insets its prose into the frame instead of putting it in a
+panel: a black region with **large rounded corners cut into the surrounding
+colour**, with a rail running along the top, down the right side, and back
+along the bottom. From the colour's point of view the content's corners are
+concave. The right-hand leg of that C is itself a stack of cells, one of
+which is labelled (`2247`), so the frame is again also the controls.
+
+Two smaller devices in the same crop:
+
+- **The double rule.** Where the top rail ends, a second, shorter, thinner
+  bar sits just below it. The run's open end is stepped rather than capped -
+  a ragged terminus that says "continues" without needing something to
+  continue into.
+- **Corner brackets.** Four L-shapes around a waveform display, each an elbow
+  with concentric inner and outer radii, and each bracket's straight leg
+  subdivided into two or three colours. Sides left open. A viewport frame
+  distinct from a panel, and cheap - four corners imply a box that is never
+  drawn.
+
+### Number fields
+
+`lcars-ultra`'s top-centre block is eleven columns by six rows of bare
+figures on black - no cells, no rules. What makes it read as instrument
+output rather than as noise:
+
+- The **first column is a plain sequence** (`101 102 103 104 105 106`).
+  One ordered column is enough to make the other ten look like data.
+- **Right-aligned columns**, fixed width, **leading zeros kept** (`044`,
+  `0222`, `001`, `05`).
+- **One row in white** among five coloured ones. The highlight is a whole
+  row, not a cell, and it is the only white text in the image.
+
+### The palettes, sampled
+
+Most-frequent non-black colours, sampled on a 3px grid.
+
+`lcars-ultra-220809.png` - 61% pure black, then:
+
+| swatch | share | reads as |
+| --- | --- | --- |
+| `#CC504A` | 8.8% | brick red |
+| `#7A87F7` | 7.6% | periwinkle |
+| `#F5BEAD` | 3.8% | pale peach |
+| `#F3AE95` | 3.7% | salmon |
+| `#C28BF8` | 3.6% | lilac |
+| `#EE7F31` | 3.5% | orange |
+| `#8E49F6` | 1.6% | violet |
+| `#EA3E25` | 0.6% | signal red |
+| `#F5F6FA` | 0.06% | white, the one highlighted row |
+
+`Lcars menu.webp` is warmer and much narrower - orange `#F58C3A`, burnt
+orange `#C75501`, amber `#F6AB0E`, hot orange `#FD7D07`, and lilac `#AE9CD0`
+as effectively the only cool colour in the panel.
+
+**Note what red is doing in `lcars-ultra`.** Brick `#CC504A` is the single
+most-used colour after black - it is a *structural* colour there, used for
+whole rails. The scarce, deliberate red is the brighter `#EA3E25`, at 0.6%,
+which is the waveform. So "red is scarce" survives, but only if the two reds
+are held apart: a desaturated brick can carry structure, a saturated one
+cannot carry anything but alarm. Our palette has `salmon` for exactly this
+reason, and this is the evidence for it.
+
+Both images support the existing muted-palette rule, but note that
+`lcars-ultra` is noticeably more saturated than `LCARS-2.jpg` - full-strength
+periwinkle and violet. The muting is a property of the era being imitated
+rather than of LCARS as such.
+
 ## Project rules
 
 Conventions this project holds itself to, as distinct from observations
-about the reference image above.
+about the reference images above.
 
 ### Nothing scrolls to reveal chrome
 
@@ -129,6 +376,17 @@ enough to build from: three passes over the phone bars got the caps backwards,
 and each fix came from cropping the reference rather than from re-reading the
 rule. **Open the sheet before designing a control, and the image before
 trusting the sheet.**
+
+**Two things in it are now known to be wrong**, found 2026-08-06 when the
+second and third references arrived, and left in place pending a
+conversation about the sheet as a whole:
+
+- Its "Vertical run" specimen caps the column top and bottom. No vertical
+  run in any of the three references does that - they end flat or turn a
+  corner. See **Vertical runs** above.
+- That specimen also calls itself "the desktop nav rail", and it is not.
+  `NavRail` stacks *horizontal* buttons each capped on the same outer side,
+  which is the shape the references actually use.
 
 ## Status in Tikon: Deep Field
 

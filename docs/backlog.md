@@ -39,6 +39,7 @@ follow-up that was deliberately not applied.
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
 | 10 | The header overflows horizontally at 320px | Design |
 | 11 | Re-organise the phone hub's buttons | Design |
+| 12 | Our vertical runs do not match the references | Design |
 
 ## Design
 
@@ -104,6 +105,35 @@ What is already settled and should not be re-derived:
   rail, then the utility entries. Grouping by *what you do with them*
   (solving / records / station) is the obvious alternative, and would want
   colour to carry the grouping rather than eleven separate colours.
+
+### 12 - Our vertical runs do not match the references
+
+Raised 2026-08-06 by the user on sight of the two new reference images, and
+confirmed by cropping them: their vertical runs look better than ours. The
+full read-off is in `lcars-style-notes.md` under **Vertical runs, and why
+theirs look better than ours**. In short, five differences, of which the
+first is a rule and the rest are proportion:
+
+1. **A vertical run never ends in a rounded cap** in any of the three
+   references - it ends flat, or it turns a corner into a horizontal arm.
+   The half-circle is a horizontal mark.
+2. Cell heights vary a lot within one run; ours are uniform.
+3. Labels sit **bottom-right inside the cell** with the rest left as empty
+   colour; `LcarsButton` is `justify-center`.
+4. Colour varies cell to cell down a rail rather than one colour per item.
+5. Edge-anchored, hairline gaps rather than `gap-1` with an outer margin.
+
+**Not decided, and not a small change.** (3) is the cheapest and probably
+the highest-yield - centring is the most un-LCARS thing about our controls -
+but `justify-center` is baked into `LcarsButton`'s `base`, so it touches
+every button in the app at once and wants to be a prop with a default rather
+than a global flip. (1) invalidates a specimen in `LcarsKitPrototype`, which
+is itself an open conversation, so **do these together with that discussion,
+not before it**.
+
+`NavRail` is *not* wrong about cap placement: a column of horizontal pills
+all capped on the same outer side is precisely what both new references do.
+The divergence is proportion and alignment, not grammar.
 
 ### 10 - The header overflows horizontally at 320px
 
