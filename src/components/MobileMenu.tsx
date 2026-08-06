@@ -1,12 +1,11 @@
 "use client";
 
-import { runShape } from "@/lib/lcars-colors";
 import { LcarsButton } from "@/components/LcarsButton";
 import { NavItem } from "@/components/NavRail";
 
 /**
- * The phone landing view: every destination, as a titled block of paired
- * runs.
+ * The phone landing view: every destination, as a titled block of separate
+ * pills.
  *
  * Phones get a hub rather than a persistent nav because eleven labels will
  * not fit across 390px at a readable size, and the style notes forbid
@@ -31,18 +30,19 @@ import { NavItem } from "@/components/NavRail";
  * the touch floor is about 300px of a 568px screen, so a twelfth
  * destination now costs one row rather than the whole layout.
  *
- * ## The rows are runs, not a grid of pills
+ * ## Every button is its own pill (changed 2026-08-05)
  *
- * Each row of two touches and takes its own caps - `runShape` per row, per
- * the style notes' wrapped-run rule - so a row reads as one bracket rather
- * than as two loose pills. The odd item out at the end gets `runShape(0, 1)`
- * and comes back as a full pill on its own, which is what that rule already
- * says should happen.
+ * The rows used to be touching runs with per-row caps, on the reasoning that
+ * a run reads as one bracket rather than as two loose pills. That is the
+ * right rule for a *run* - a set of siblings you read as a group - and these
+ * are not siblings. Briefing and Star Map are unrelated destinations that
+ * happen to be adjacent, and joining them said they belonged together.
+ *
+ * Separate pills in a gapped grid is not a departure from the reference
+ * image either: its lower-left blocks are exactly that, grids of individually
+ * capped pills with black grout between them. Runs are for things that
+ * continue into each other; this is a directory.
  */
-/** Must stay in step with the literal `grid-cols-2` below - Tailwind's
- *  scanner only sees class names it can read in the source. */
-const COLUMNS = 2;
-
 export function MobileMenu({
   items,
   onSelect,
@@ -70,28 +70,24 @@ export function MobileMenu({
           and the empty space below the buttons reads as a void rather than
           as room the layout is deliberately leaving. */}
       <div className="flex-1 min-h-0 bg-lcars-panel rounded-b-xl p-2">
-        <div className="grid grid-cols-2 gap-x-0 gap-y-1.5 content-start">
-          {items.map((item, i) => {
-            const rowStart = Math.floor(i / COLUMNS) * COLUMNS;
-            const rowLength = Math.min(COLUMNS, items.length - rowStart);
-            return (
-              <LcarsButton
-                key={item.id}
-                color={item.color}
-                shape={runShape(i - rowStart, rowLength)}
-                orientation="horizontal"
-                size="compact"
-                onClick={() => onSelect(item.id)}
-                /* `min-h-11` is the touch floor and is not negotiable; the
-                   labels wrap above it rather than the button shrinking to
-                   fit them. `text-center` because a wrapped two-line label
-                   left-aligned in a pill reads as broken. */
-                className="min-h-11 text-xs sm:text-sm text-center leading-tight"
-              >
-                {item.label}
-              </LcarsButton>
-            );
-          })}
+        <div className="grid grid-cols-2 gap-1.5 content-start">
+          {items.map((item) => (
+            <LcarsButton
+              key={item.id}
+              color={item.color}
+              shape="pill"
+              orientation="horizontal"
+              size="compact"
+              onClick={() => onSelect(item.id)}
+              /* `min-h-11` is the touch floor and is not negotiable; the
+                 labels wrap above it rather than the button shrinking to
+                 fit them. `text-center` because a wrapped two-line label
+                 left-aligned in a pill reads as broken. */
+              className="min-h-11 text-xs sm:text-sm text-center leading-tight"
+            >
+              {item.label}
+            </LcarsButton>
+          ))}
         </div>
       </div>
     </div>

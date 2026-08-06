@@ -25,6 +25,49 @@ import { ButtonColor } from "./lcars-colors";
  */
 export type SurveyOutcome = "confirmed" | "retracted" | "withdrawn";
 
+/**
+ * How hard a region is drawn. See docs/region-difficulty.md, which measures
+ * every one of these and is where the numbers come from.
+ *
+ * Three levers, and they are not interchangeable - each moves a different
+ * axis, which is why a profile has to turn all three:
+ *
+ *  - `signatures` moves solvability, **backwards**. More signatures is
+ *    easier, not harder: every extra one is another unknown but also
+ *    another row of the pairwise distance matrix, and the readings win.
+ *  - `anchorSeparation` moves solvability smoothly, and is non-monotonic
+ *    past 5 - beyond that the two anchors fall out of each other's Sweep
+ *    Scope range and the baseline degrades.
+ *  - `quadrantClues` barely touches solvability and **dominates search
+ *    effort**. A quadrant collapses a signature from 40 candidate cells to
+ *    10 before any reasoning happens, which is invisible to a uniqueness
+ *    check and enormous from the console.
+ */
+export interface RegionDifficulty {
+  /** Signature counts allowed, picked uniformly. */
+  signatures: number[];
+  /** Inclusive orthogonal-distance band for the two exact-position anchors. */
+  anchorSeparation: [number, number];
+  /** Quadrant-only clues in the briefing, on signatures that aren't anchors. */
+  quadrantClues: number;
+}
+
+/**
+ * What the generator did before rank touched it, and what it still does for
+ * any caller without a rank - the analysis scripts, mainly, which want the
+ * unconditioned distribution.
+ *
+ * Identical to rank 2's profile on purpose: the starting rung is today's
+ * generator unchanged, so an existing save notices nothing until it moves
+ * and every number measured before this still describes the middle of the
+ * ladder.
+ */
+export const DEFAULT_DIFFICULTY: RegionDifficulty = {
+  signatures: [6, 7, 8],
+  anchorSeparation: [2, 5],
+  quadrantClues: 2,
+};
+
 export interface Rank {
   /** Position on the ladder, 0 = lowest. Matches the array index. */
   index: number;
@@ -55,6 +98,12 @@ export interface Rank {
    * on for everyone except the top of the ladder, where you file blind.
    */
   filingMarks: boolean;
+  /**
+   * The fields this rank draws. The other half of "rank changes the work" -
+   * the filing budget was the cheap half, and this is what the `duty` line
+   * has been promising all along.
+   */
+  difficulty: RegionDifficulty;
 }
 
 export const RANKS: Rank[] = [
@@ -67,9 +116,10 @@ export const RANKS: Rank[] = [
     hex: "#cce6ff",
     blurb:
       "Instrument operator. You run the passes and hand the readings to someone else to sign off on.",
-    duty: "Draws the station's smallest, most heavily briefed regions - the ones nobody is worried about getting wrong.",
+    duty: "The station's most heavily briefed fields - eight signatures, four quadrants named, and the two known positions set wide apart. Nobody is worried about these.",
     filings: 4,
     filingMarks: true,
+    difficulty: { signatures: [8], anchorSeparation: [4, 5], quadrantClues: 4 },
   },
   {
     index: 1,
@@ -80,9 +130,10 @@ export const RANKS: Rank[] = [
     hex: "#cc99cc",
     blurb:
       "Trusted to classify, not yet trusted to be the only one who did. Your filings are reviewed on the way out.",
-    duty: "Regions still run small, with the full briefing allocation.",
+    duty: "Well-briefed and easy to triangulate: plenty of signatures to read against each other, three quadrants named.",
     filings: 4,
     filingMarks: true,
+    difficulty: { signatures: [7, 8], anchorSeparation: [3, 5], quadrantClues: 3 },
   },
   {
     index: 2,
@@ -96,6 +147,7 @@ export const RANKS: Rank[] = [
     duty: "Standard survey load. The rank you were commissioned at.",
     filings: 3,
     filingMarks: true,
+    difficulty: DEFAULT_DIFFICULTY,
   },
   {
     index: 3,
@@ -106,9 +158,10 @@ export const RANKS: Rank[] = [
     hex: "#ff9900",
     blurb:
       "You get the regions that came back ambiguous the first time. Nobody double-checks you any more.",
-    duty: "Draws larger, thinner-briefed regions - more signatures to place, less handed to you.",
+    duty: "Sparser fields and a thinner briefing - fewer signatures to read against each other, one quadrant named, and the two known positions closer together.",
     filings: 2,
     filingMarks: true,
+    difficulty: { signatures: [6, 7], anchorSeparation: [2, 4], quadrantClues: 1 },
   },
   {
     index: 4,
@@ -119,9 +172,10 @@ export const RANKS: Rank[] = [
     hex: "#66ccbb",
     blurb:
       "You set what the station works on. The catalog's accuracy is your name on it, region by region.",
-    duty: "Draws the fields nobody else has resolved. Full instrument allocation, minimum briefing.",
+    duty: "The fields nobody else has resolved. Six signatures, two positions almost on top of each other, and not one quadrant named.",
     filings: 2,
     filingMarks: false,
+    difficulty: { signatures: [6], anchorSeparation: [2, 3], quadrantClues: 0 },
   },
 ];
 
@@ -208,6 +262,19 @@ export function filingsForRank(rank: number): number {
  */
 export function showsFilingMarks(rank: number): boolean {
   return rankAt(rank)?.filingMarks ?? true;
+}
+
+/**
+ * The fields this rank draws - the other half of item 1, and the half the
+ * `duty` line has been promising since the ladder shipped.
+ *
+ * Falls back to the default profile rather than throwing, for the same
+ * reason `filingsForRank` does: this is reachable from a hand-edited save,
+ * and an out-of-range rank should draw an ordinary region rather than
+ * break generation.
+ */
+export function difficultyForRank(rank: number): RegionDifficulty {
+  return rankAt(rank)?.difficulty ?? DEFAULT_DIFFICULTY;
 }
 
 export function rankAt(index: number): Rank | null {

@@ -72,6 +72,31 @@ of the fallbacks in `filingsForRank` and `showsFilingMarks`. A relieved
 officer never files again, so the question no longer arises. The fallbacks
 stay as defensive defaults; they are not a spec.
 
+**Region difficulty** is the third per-rank lever, added 2026-08-05:
+
+| # | Rank | Signatures | Anchors apart | Quadrant clues |
+| --- | --- | --- | --- | --- |
+| 0 | Survey Technician | 8 | 4–5 | 4 |
+| 1 | Assistant Science Officer | 7–8 | 3–5 | 3 |
+| 2 | Science Officer | 6–8 | 2–5 | 2 |
+| 3 | Senior Science Officer | 6–7 | 2–4 | 1 |
+| 4 | Chief of Survey | 6 | 2–3 | 0 |
+
+Rank 2 is the generator the game shipped with, unchanged. Three constraints
+on editing these, all of them measured — the full argument and the numbers
+are in `region-difficulty.md`:
+
+- **More signatures is *easier*, not harder.** Six stall twice as often as
+  eight: every extra signature is another unknown but also another row of
+  the distance matrix, and the readings win. Read that column backwards.
+- **Anchors are never adjacent, and never fewer than two.** One is not a
+  triangulation baseline; two neighbouring points barely constrain
+  anything. Every band starts at 2 or more.
+- **Quadrant clues barely touch solvability and dominate *effort*.** A
+  quadrant collapses a signature from 40 candidate cells to 10 before any
+  reasoning happens. This is the lever that decides how much thinking a
+  region costs, and it is the low-rank kindness.
+
 **Filing marks** — whether a filing circles the signatures it got right, or
 only reports how many were wrong. Bounded three ways already: filings are
 budgeted, the marks come from a frozen snapshot so they cannot be walked

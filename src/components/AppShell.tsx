@@ -20,6 +20,7 @@ import { loadActiveRegionId, saveActiveRegionId } from "@/lib/active-region";
 import { unlockAudio } from "@/lib/sound";
 import { BELOW_LG, useMediaQuery } from "@/lib/use-media-query";
 import { NavRail, NavItem } from "@/components/NavRail";
+import { MobileJumpBar } from "@/components/MobileJumpBar";
 import { MobileMenu } from "@/components/MobileMenu";
 import { MobilePanelBar } from "@/components/MobilePanelBar";
 import { SoundToggle } from "@/components/SoundToggle";
@@ -43,6 +44,7 @@ import { TutorialCoach } from "@/components/TutorialCoach";
 import { TUTORIAL_STEPS, TutorialProgress } from "@/lib/tutorial";
 import { TUTORIAL_REGION_ID, tutorialRegion } from "@/data/regions/tutorial";
 import { beginNewCareer } from "@/lib/player";
+import { difficultyForRank } from "@/lib/ranks";
 import {
   claimRegionName,
   endTutorial,
@@ -80,6 +82,12 @@ type PanelId =
   | "report";
 
 const MOBILE_ONLY_PANELS: PanelId[] = ["starmap", "menu"];
+
+// The panels you actually solve a region from, as opposed to read about one
+// or administer the career. These are the four that get a one-tap hop to the
+// Star Map on a phone, and the only four the map offers to return you to -
+// see MobileJumpBar.
+const SOLVING_PANELS: PanelId[] = ["briefing", "manifest", "sweep", "ringscan"];
 
 const PRIMARY_NAV: NavItem[] = [
   { id: "briefing", label: "Briefing", color: "orange" },
@@ -196,6 +204,12 @@ export function AppShell() {
   // whole constraint - StarMap owns the board and writes it to
   // localStorage, so two live instances would fight over one key.
   const [mapMaximized, setMapMaximized] = useState(false);
+
+  // Which instrument the phone's Star Map was opened from, so it can offer
+  // the way back. Null when the map was reached any other way - from the hub
+  // or by the walk-through - where the panel bar's Back already goes exactly
+  // where you came from and a second return button would be noise.
+  const [mapOrigin, setMapOrigin] = useState<PanelId | null>(null);
 
   // Archived-state (and therefore noActiveAssignment) isn't known until the
   // survey log has synced from localStorage post-hydration - defaulting to
@@ -460,6 +474,11 @@ export function AppShell() {
 
   function selectPanel(id: string) {
     setRequestedPanel(id as PanelId);
+    // Recorded on the way in, from the panel being left. Computed on every
+    // navigation rather than only on the way to the map, so it can't go
+    // stale: a later hub -> Star Map trip must not still be offering the
+    // instrument you were on two visits ago.
+    setMapOrigin(id === "starmap" && SOLVING_PANELS.includes(panel) ? panel : null);
     // Going anywhere restores the map. Maximised, the map *is* the content
     // area, so a nav click that left it expanded would look like the
     // destination failed to open - which is exactly the "mode you can get
@@ -496,7 +515,18 @@ export function AppShell() {
       // No two regions in a save share a name. Claimed immediately rather
       // than after the reveal delay, or opening two fields quickly could
       // name them both the same thing.
-      const raw = generateRegion({ nameTaken: isRegionNameUsed });
+      //
+      // The rank read here is the other half of "rank changes the work"
+      // (backlog item 1): a Chief of Survey draws six signatures with the
+      // anchors almost on top of each other and no quadrant named, a
+      // technician draws eight with the anchors wide and four named. This
+      // is the *only* call that conditions on rank - the tutorial adds its
+      // baked region directly and never comes through here, which is what
+      // keeps `Ember Verge` exactly as the walk-through describes it.
+      const raw = generateRegion({
+        nameTaken: isRegionNameUsed,
+        difficulty: difficultyForRank(player.rank),
+      });
       claimRegionName(raw.name);
       const generated: Region = { ...raw, solvability: assessSolvability(raw) };
       setGenerating(true);
@@ -574,6 +604,27 @@ export function AppShell() {
   // selectable when there's no active survey to plot (null region).
   const starMapRegion: Region | null =
     panel === "log" && logPreviewRegion ? logPreviewRegion : activeRegion;
+
+  /**
+   * The phone's bottom bar, as the two nav entries it is drawn from: where
+   * you are and where one tap takes you. The bar names and colours the
+   * button after `to`, and colours its opening stub after `from`, so the
+   * whole thing reads as a trip rather than as a lone button.
+   *
+   * Only with a live survey. Without one the four survey panels are all
+   * showing the same "no active assignment" placeholder and the map has
+   * nothing selectable on it, so a permanent hop between them would be
+   * offering to carry you between two empty rooms.
+   */
+  const jump = useMemo(() => {
+    if (!isMobile || !activeRegion) return null;
+    const toId =
+      panel === "starmap" ? mapOrigin : SOLVING_PANELS.includes(panel) ? "starmap" : null;
+    if (!toId) return null;
+    const to = MOBILE_NAV.find((item) => item.id === toId);
+    const from = MOBILE_NAV.find((item) => item.id === panel);
+    return to && from ? { to, from } : null;
+  }, [isMobile, activeRegion, panel, mapOrigin]);
 
   // Maximising is a *restyle* of the sidebar, never a move: the map stays
   // at the same place in the tree and only the widths change, because
@@ -689,7 +740,14 @@ export function AppShell() {
           Sweep Scope's background clock in particular survives a resize. */}
       <div
         className={`${
-          isMobile ? "flex flex-col flex-1 min-h-0 gap-3" : "flex flex-1 min-h-0"
+          /* 8px rather than 12 between the phone's three stacked bands.
+             The jump bar below `main` costs 44px of touch floor plus a gap,
+             and the Sweep Scope missed fitting outright by exactly 4px with
+             `gap-3` here - two gaps at 8px hand that back and then some. The
+             rule is to prefer making it fit, and this is the cheapest 8px in
+             the layout: chrome sitting closer to its own content reads
+             tighter on a phone, not more cramped. */
+          isMobile ? "flex flex-col flex-1 min-h-0 gap-2" : "flex flex-1 min-h-0"
         } ${careerOver ? "hidden" : ""}`}
       >
         {isMobile && panel !== "menu" && (
@@ -849,6 +907,20 @@ export function AppShell() {
           {panel === "prototypes" && <PrototypesPanel region={activeRegion} />}
           {isMobile && panel === "starmap" && starMapView}
         </main>
+
+        {/* Below `main`, not inside it - a sibling on `shrink-0`, exactly as
+            the panel bar is above. `main` keeps being the only scroller, so
+            this can't scroll out from under the thumb that is reaching for
+            it. */}
+        {jump && (
+          <MobileJumpBar
+            id="mobile-jump-bar"
+            label={jump.to.label}
+            color={jump.to.color}
+            fromColor={jump.from.color}
+            onSelect={() => selectPanel(jump.to.id)}
+          />
+        )}
 
         {/* Dropped while the report is up. The report draws the same field
             itself, much larger, so leaving the sidebar there would show it

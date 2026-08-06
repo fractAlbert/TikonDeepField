@@ -203,7 +203,118 @@ Verified at 320x568 and 390x844 in the iframe harness described above: hub
 present, eleven buttons, every one at 44px, nothing scrolling in either
 direction.
 
-**One thing this pass found and did not fix.** At 320x568 the *header*
+## The jump bar, and pills instead of pairs (2026-08-05)
+
+Two changes from playing the thing on a phone, plus the bug that playing it
+turned up.
+
+### The hub's buttons no longer touch
+
+The rows were touching runs taking their caps per row. Correct rule, wrong
+subject: a run is for siblings you read as one group, and Briefing and Star
+Map are unrelated destinations that happen to be adjacent. Joining them said
+they belonged together. They are separate pills in a gapped grid now, which
+is also straight off the reference image - its lower-left blocks are exactly
+that. Nothing else changed; all eleven still land at exactly 44px at
+320x568, with the run still fitting outright.
+
+### Getting to the map and back is one tap
+
+Solving a region is a loop - read a bearing, go place a marker, come back -
+and on a desktop that loop is free, because the map is a permanent sidebar
+beside whatever you are reading. Through the hub it was three taps each way.
+So the four survey panels (Briefing, Star Manifest, Sweep Scope, Ring Scan)
+carry a Star Map button, and the Star Map carries one back to whichever of
+them you arrived from. `MobileJumpBar.tsx`; the origin is recorded in
+`AppShell`'s `mapOrigin`, computed on every navigation so a later trip in
+from the hub can't still be offering the instrument you left two visits ago.
+
+Reaching the map any other way - from the hub, or because the walk-through
+navigated there - leaves the bar off, since the panel bar's Back already
+goes exactly where you came from.
+
+**Which end is round.** The bar's first build put the button on the left
+with its flat edge facing right, into a `bg-lcars-panel` filler, and it
+looked wrong. Reading the reference image's data rows closely settles why,
+and inverts the obvious intuition: each row opens with a narrow colour-coded
+stub rounded on its *outer* end and flat on its inner one, carries labels
+flat at both ends through the middle, and stops with a label rounded where
+the row ends. **Rounded is where a run terminates; flat is where it
+continues** - and the black gaps do not break that, since flat ends face
+each other across grout all through the image.
+
+By that rule the original shape was correct and the composition still
+failed, because the block its flat edge was flat *against* was a near-black
+tint on a black page. The cut had nothing visible to be cut against, so the
+button read as a pill with its end amputated. A flat edge is a promise that
+something continues, and you have to be able to see the something.
+
+So the button sits at the right, taking the rounded outer cap and turning
+its flat edge inward, and the dark filler was replaced by the reference's
+own row-opener: a narrow stub, solid colour, no text. It carries the colour
+of the panel you are **on** while the button carries the colour of the panel
+you are going **to**, which is what keeps it from reading as a decorative
+state lamp beside a button - a small shape sitting against a button will
+read as state if you let it, and this one is carrying the trip.
+
+**Why the bottom and not the panel bar.** The obvious home was
+`MobilePanelBar`, which is already the fixed spot on every phone panel and
+would have cost no height at all. It doesn't fit: that bar carries the
+panel's title, which with no nav on screen is the only thing saying where
+you are, and a third element squeezes it to a truncated stub at 390px.
+Reach agrees with the measurement - this is pressed dozens of times a
+survey, and the top-right corner is the worst place on a phone for that.
+
+Structurally it is the panel bar mirrored: a `shrink-0` sibling of `main`,
+never inside it, so `main` stays the only scroller and the bar cannot scroll
+out from under the thumb reaching for it. The label is always the
+destination and the fill is always that destination's own colour, so the bar
+reads as "one tap puts you here" rather than as a back button that happens
+to be labelled.
+
+**What it cost, measured at 390x844.** 44px of touch floor plus a gap, so
+52px. That pushed the Sweep Scope from fitting outright to overflowing by
+4px, so the phone column's gaps went from 12px to 8px - two of them, which
+hands back 8 and leaves the Scope fitting with room.
+
+The number that matters is per *region size*, though, which is the thing
+this doc previously had no reason to think about and item 1 has since made
+vary. At six signatures Briefing, Ring Scan, Sweep Scope and the hub all fit
+outright and the Star Manifest overflows by 78px. At eight - the Survey
+Technician's profile, so a real and in fact the *most common* case at the
+bottom of the ladder - the Scope has only 16px of slack before the bar and
+overflows by 36px after it, and the Manifest by 264px.
+
+So: the bar costs the Sweep Scope its outright fit on large regions, and
+that was accepted. 36px is a nudge rather than a scroll, the rules allow
+content to scroll inside its own panel, and the alternative was giving up
+the one-tap hop that motivated the whole thing. The Manifest is a different
+problem and is not the bar's - 30px of it predates this work, and this doc
+has listed the Manifest as fitting outright since 2026-07-29 when it has
+not for some time. Logged as part of backlog item 7.
+
+### The map froze in Rule Out and Maybe
+
+Found by the same pass, and older than any of it. Arming a signature in an
+annotation mode set `touch-action: none` on the dial, which is what a
+drag-paint needs to stop the browser claiming the gesture as a scroll - and
+on a phone the map is a full-width panel taller than the screen, so the
+panel stopped scrolling for as long as a signature was armed. The comment
+on the line said it was only on "while a rule-out sweep is actually
+possible", which is exactly the state you are in while using the feature.
+
+A finger marks one cell per tap now, and only a mouse or a stylus sweeps.
+The tap is handled on `pointerup` rather than `click`, which is what tells a
+tap from a scroll for free: the moment the browser decides a touch is a
+scroll it sends `pointercancel` and never sends `pointerup` at all, so a
+drag down the panel leaves no marks behind it without anything here needing
+to know about distances or thresholds. Verified by dispatching synthetic
+pointer events at every branch - touch-down alone marks nothing, touch-up
+marks, touch-down-then-cancel marks nothing, mouse-down still marks
+immediately so a sweep starts on the press, and the click that follows a
+mouse stroke does not toggle it back off.
+
+**One thing an earlier pass found and did not fix.** At 320x568 the *header*
 overflows horizontally - `scrollWidth` 362 against a 320 viewport, from the
 officer badge and sound toggle, which are `shrink-0` next to a title that
 will not give up enough room. Confirmed pre-existing by stashing the hub

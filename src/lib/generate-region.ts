@@ -3,6 +3,7 @@ import { buildSectors, orthogonalDistanceSigned, quadrantOf } from "./grid";
 import { generateQuasarNames } from "./name-generator";
 import { generateBriefing } from "./flavor-text";
 import { FieldCharacter, generateRegionName } from "./region-name";
+import { DEFAULT_DIFFICULTY, RegionDifficulty } from "./ranks";
 
 const TYPE_CATALOG = [
   "Pulsar-Class",
@@ -13,26 +14,30 @@ const TYPE_CATALOG = [
   "Dormant Core",
 ];
 
-const MIN_QUASARS = 6;
-const MAX_QUASARS = 8;
 const MIN_TYPES = 3;
 
-// Every region ships with exactly 2 exact-coordinate clues, chosen to be
-// within this orthogonal distance of each other - matching Sweep Scope's
-// default visibility range, so they're always usable as a real
-// triangulation pair - plus exactly 2 quadrant-only clues on two other
-// signatures. Nothing else. The remaining signatures have no briefing clue
-// at all; they're meant to be found via Sweep Scope/Quadrant Survey
-// triangulation from the two known anchors, not read off the page.
-const ANCHOR_MAX_DISTANCE = 5;
-// Anchors that land adjacent waste the pair. The two exact-coordinate clues
-// exist to be a triangulation baseline, and two neighbouring points barely
-// constrain the rest of the field - every other signature ends up roughly
-// the same distance from both, so the second anchor tells you almost
-// nothing the first didn't. A floor of 2 (at least one sector between them)
-// keeps the pair useful while staying inside Sweep Scope's visibility range.
-const ANCHOR_MIN_DISTANCE = 2;
-const QUADRANT_CLUE_COUNT = 2;
+// Every region ships with exactly 2 exact-coordinate clues - the anchors -
+// chosen to sit inside a band of orthogonal distance from each other, plus
+// some number of quadrant-only clues on other signatures. Nothing else. The
+// remaining signatures have no briefing clue at all; they're meant to be
+// found by triangulating from the two known anchors, not read off the page.
+//
+// **The band and the counts are per-rank now** (`RegionDifficulty`), which
+// is backlog item 1. Two constraints that used to be constants here and are
+// now floors the profiles must respect:
+//
+//  - **Never fewer than 2 anchors.** One is not a triangulation baseline at
+//    all - every distance is measured from a single point, so it is a
+//    different puzzle rather than a harder one.
+//  - **Anchors never adjacent.** Two neighbouring points barely constrain
+//    the rest of the field: every other signature ends up roughly the same
+//    distance from both, so the second anchor says almost nothing the first
+//    didn't. Every shipped profile starts its band at 2 or more.
+//
+// The far end matters too, and not in the direction it looks: past 5 the
+// anchors fall outside each other's Sweep Scope range, so a wider baseline
+// starts *degrading*. Difficulty bottoms out at exactly 5.
+// See docs/region-difficulty.md.
 
 function randomInt(min: number, max: number): number {
   return min + Math.floor(Math.random() * (max - min + 1));
@@ -61,11 +66,19 @@ export function generateRegion(options?: {
    * distribution.
    */
   nameTaken?: (name: string) => boolean;
+  /**
+   * How hard to draw it. Defaults to the profile the game shipped with,
+   * which is also rank 2's - so an unconditioned call is exactly what this
+   * function always did.
+   */
+  difficulty?: RegionDifficulty;
 }): Region {
   const sectors = buildSectors();
   const sectorLookup = new Map(sectors.map((s) => [s.id, s]));
+  const difficulty = options?.difficulty ?? DEFAULT_DIFFICULTY;
 
-  const quasarCount = randomInt(MIN_QUASARS, MAX_QUASARS);
+  const quasarCount =
+    difficulty.signatures[randomInt(0, difficulty.signatures.length - 1)];
   const distinctTypeCount = randomInt(MIN_TYPES, Math.min(TYPE_CATALOG.length, quasarCount));
   const chosenTypes = shuffle(TYPE_CATALOG).slice(0, distinctTypeCount);
 
@@ -105,7 +118,7 @@ export function generateRegion(options?: {
     clues: [],
   };
 
-  region.clues = buildMandatoryClues(region, sectorLookup);
+  region.clues = buildMandatoryClues(region, sectorLookup, difficulty);
   return region;
 }
 
@@ -136,7 +149,12 @@ function sectorOf(region: Region, sectorLookup: Map<string, Sector>, name: strin
  * just falls back to the closest pair available instead of forcing a full
  * regeneration.
  */
-function buildMandatoryClues(region: Region, sectorLookup: Map<string, Sector>): Clue[] {
+function buildMandatoryClues(
+  region: Region,
+  sectorLookup: Map<string, Sector>,
+  difficulty: RegionDifficulty
+): Clue[] {
+  const [minSep, maxSep] = difficulty.anchorSeparation;
   const names = Object.keys(region.solution);
   const allPairs: { a: string; b: string; dist: number }[] = [];
 
@@ -148,16 +166,14 @@ function buildMandatoryClues(region: Region, sectorLookup: Map<string, Sector>):
     }
   }
 
-  const inRange = shuffle(
-    allPairs.filter((p) => p.dist >= ANCHOR_MIN_DISTANCE && p.dist <= ANCHOR_MAX_DISTANCE)
-  );
+  const inRange = shuffle(allPairs.filter((p) => p.dist >= minSep && p.dist <= maxSep));
   // Fallback when no pair qualifies: prefer the closest pair that at least
   // clears the minimum, and only fall back to the outright closest (which
   // may be adjacent) if nothing does.
   const chosenPair =
     inRange[0] ??
     allPairs
-      .filter((p) => p.dist >= ANCHOR_MIN_DISTANCE)
+      .filter((p) => p.dist >= minSep)
       .reduce<{ a: string; b: string; dist: number } | null>(
         (closest, p) => (!closest || p.dist < closest.dist ? p : closest),
         null
@@ -170,7 +186,7 @@ function buildMandatoryClues(region: Region, sectorLookup: Map<string, Sector>):
   ];
 
   const remaining = shuffle(names.filter((n) => n !== chosenPair.a && n !== chosenPair.b));
-  for (const name of remaining.slice(0, QUADRANT_CLUE_COUNT)) {
+  for (const name of remaining.slice(0, difficulty.quadrantClues)) {
     const sector = sectorOf(region, sectorLookup, name);
     clues.push({ kind: "quasar-quadrant", quasar: name, quadrant: quadrantOf(sector) });
   }

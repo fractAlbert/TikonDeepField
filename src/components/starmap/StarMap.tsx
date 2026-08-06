@@ -446,8 +446,29 @@ export function StarMap({
       playPlace();
     }
     // The annotation modes are not handled here. They run off pointerdown
-    // instead, so a press can turn into a sweep across several cells - and
-    // going through click as well would toggle every cell a second time.
+    // (a sweep) or pointerup (a tap) instead, so a press can turn into a
+    // stroke across several cells - and going through click as well would
+    // toggle every cell a second time.
+  }
+
+  /**
+   * A finger's annotation, which is a tap rather than a sweep.
+   *
+   * `pointerup` rather than `click` because it is the event that tells the
+   * two apart for free: the moment the browser decides a touch is a scroll
+   * it sends `pointercancel` and never sends `pointerup` at all. So a drag
+   * down the panel leaves no marks behind it, without this needing to know
+   * anything about thresholds or distance.
+   */
+  function handleCellPointerUp(
+    e: React.PointerEvent<SVGPathElement>,
+    sectorIdReleased: string,
+    occupied: boolean
+  ) {
+    if (e.pointerType !== "touch") return;
+    if (closed || !armed || !isAnnotation(markMode) || occupied) return;
+    const { own } = marksFor(markMode);
+    applyMark(sectorIdReleased, markMode, !(own[armed]?.has(sectorIdReleased) ?? false));
   }
 
   function handleCellPointerDown(
@@ -456,9 +477,17 @@ export function StarMap({
     occupied: boolean
   ) {
     if (closed || !armed || !isAnnotation(markMode) || occupied) return;
-    // Touch gives the element the gesture started in an implicit pointer
-    // capture, which would stop pointerenter firing on the cells swept
-    // into afterwards. Releasing it is what makes this work on a phone.
+    // A finger does not sweep. Painting from pointerdown requires
+    // `touch-action: none` on the dial to stop the browser claiming the
+    // gesture as a scroll, and on a phone the map is a full-width panel
+    // taller than the screen - so arming a signature in Rule Out or Maybe
+    // froze the panel until you disarmed it. Touch marks one cell per tap
+    // instead (see `handleCellPointerUp`); a mouse or a stylus still sweeps.
+    if (e.pointerType === "touch") return;
+    // A stylus gets the same implicit pointer capture a finger does - the
+    // element the gesture started in keeps every later event, so
+    // pointerenter never fires on the cells swept into afterwards.
+    // Releasing it is what makes a pen sweep at all.
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
@@ -525,7 +554,7 @@ export function StarMap({
         <p className="text-xs text-lcars-ice/60 leading-relaxed -mb-1">
           {closed
             ? "This survey is closed. The board is kept as filed."
-            : "Arm a signature, then click a cell to place it. Rule Out marks cells it definitely isn't at; Maybe marks the ones it still could be. Both paint across a sweep."}
+            : "Arm a signature, then click a cell to place it. Rule Out marks cells it definitely isn't at; Maybe marks the ones it still could be — drag across several with a mouse, or tap them one at a time."}
         </p>
       )}
       {/* Maximised, the dial and the controls sit side by side; docked, this
@@ -558,10 +587,12 @@ export function StarMap({
               ? "w-full max-w-[560px] max-h-full h-auto"
               : "w-full max-w-[260px] max-lg:max-w-[420px] h-auto"
           }
-          /* Only while a rule-out sweep is actually possible. Left on
-             permanently it would swallow the page scroll on a phone, where
-             the map is tall enough that you need to scroll past it. */
-          style={{ touchAction: armed && isAnnotation(markMode) ? "none" : undefined }}
+          /* No `touch-action` override. It used to be set to `none` while a
+             sweep was possible, which is what a drag-paint needs and which
+             also stopped the panel scrolling for as long as a signature was
+             armed in Rule Out or Maybe - on a phone, where the map is taller
+             than the screen, that is the panel seizing up. See
+             `handleCellPointerDown`: touch marks a cell per tap instead. */
         >
           <QuasarGlowDefs />
           {/* Under the cells, so the dashed ghost-target outline - which is
@@ -605,6 +636,7 @@ export function StarMap({
                   strokeWidth={1}
                   className={closed ? "cursor-default" : "cursor-pointer transition-colors"}
                   onPointerDown={(e) => handleCellPointerDown(e, id, !!occupantId)}
+                  onPointerUp={(e) => handleCellPointerUp(e, id, !!occupantId)}
                   onPointerEnter={() => handleCellPointerEnter(id, !!occupantId)}
                   onMouseEnter={(e) => {
                     setHovered(id);

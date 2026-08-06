@@ -24,6 +24,7 @@ import { Clue, Region } from "../src/lib/puzzle-types";
 import { buildSectors, orthogonalDistanceSigned, quadrantOf } from "../src/lib/grid";
 import { generateRegion } from "../src/lib/generate-region";
 import { assessSolvability } from "../src/lib/solvability";
+import { solveByPropagation } from "./propagation";
 
 const SAMPLES = Number(process.argv[2] ?? 1500);
 const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
@@ -120,6 +121,62 @@ for (const count of [0, 1, 2, 3, 4]) {
 }
 
 // ---------------------------------------------------------------------
+// Solvability is only one axis, and on its own it is the wrong one.
+// Knowing a signature's quadrant collapses its candidates from 40 cells to
+// 10 *before any reasoning happens* - you look at a quarter of the dial
+// instead of the whole thing. That is a large change in how much work the
+// region is, and `assessSolvability` cannot see it at all, because it
+// answers "is the answer unique" rather than "how much searching".
+//
+// Measured by propagation instead: how much falls out immediately, how
+// many rounds of chaining are needed, and how many candidate eliminations
+// the player has to grind through.
+console.log("\n\n2b. QUADRANT CLUES AS SEARCH EFFORT - the axis solvability misses\n");
+console.log(
+  `  ${"".padEnd(26)}  start   round-1   rounds   elims   stuck`
+);
+for (const count of [0, 1, 2, 3, 4, 5]) {
+  let startCandidates = 0;
+  let unknowns = 0;
+  let round1 = 0;
+  let rounds = 0;
+  let solved = 0;
+  let elims = 0;
+  let stuck = 0;
+  for (const r of pool) {
+    const shaped = withQuadrantClues(r, count);
+    const clued = shaped.clues.filter((c) => c.kind === "quasar-quadrant").length;
+    const o = solveByPropagation(shaped, { label: "", ringBudget: 0 });
+    // 10 cells inside a named quadrant, 40 without one.
+    startCandidates += clued * 10 + (o.unknowns - clued) * 40;
+    unknowns += o.unknowns;
+    round1 += o.perRound[0] ?? 0;
+    elims += o.eliminations;
+    stuck += o.stuck;
+    if (o.stuck === 0) {
+      solved++;
+      rounds += o.rounds;
+    }
+  }
+  const n = pool.length;
+  console.log(
+    `  ${`${count} quadrant clue${count === 1 ? "" : "s"}`.padEnd(26)}` +
+      `${(startCandidates / unknowns).toFixed(1).padStart(6)}` +
+      `${((round1 / unknowns) * 100).toFixed(0).padStart(8)}%` +
+      `${(rounds / Math.max(1, solved)).toFixed(2).padStart(9)}` +
+      `${(elims / n).toFixed(0).padStart(8)}` +
+      `${(stuck / n).toFixed(2).padStart(8)}`
+  );
+}
+console.log(
+  "\n  start   = mean candidate cells per unknown signature, before any work\n" +
+    "  round-1 = share of unknowns that fall out immediately, no chaining\n" +
+    "  rounds  = chaining depth when propagation does finish\n" +
+    "  elims   = candidate eliminations the player grinds through\n" +
+    "  stuck   = signatures propagation cannot reach at all"
+);
+
+// ---------------------------------------------------------------------
 console.log("\n\n3. EXACT ANCHORS - the briefing's hard half (2 today)\n");
 console.log(HEAD);
 for (const count of [1, 2, 3]) {
@@ -180,11 +237,22 @@ interface Profile {
 }
 
 const PROFILES: Profile[] = [
-  { label: "0 Technician", signatures: [8], separation: [4, 5], quadrantClues: 2 },
-  { label: "1 Assistant", signatures: [7, 8], separation: [3, 5], quadrantClues: 2 },
+  { label: "0 Technician", signatures: [8], separation: [4, 5], quadrantClues: 4 },
+  { label: "1 Assistant", signatures: [7, 8], separation: [3, 5], quadrantClues: 3 },
   { label: "2 Officer (today)", signatures: [6, 7, 8], separation: [2, 5], quadrantClues: 2 },
   { label: "3 Senior", signatures: [6, 7], separation: [2, 4], quadrantClues: 1 },
   { label: "4 Chief", signatures: [6], separation: [2, 3], quadrantClues: 0 },
+];
+
+/**
+ * A shallower bottom half, measured because the career simulation says the
+ * shipped one is *too* kind: a careless player recovers off the bottom rung
+ * and is never relieved at all, which deletes the loss state. These two
+ * rows are the candidate fix - the top three rungs are untouched.
+ */
+const SOFTER_BOTTOM: Profile[] = [
+  { label: "0 Technician (alt)", signatures: [8], separation: [4, 5], quadrantClues: 3 },
+  { label: "1 Assistant (alt)", signatures: [7, 8], separation: [3, 5], quadrantClues: 2 },
 ];
 
 function reshape(r: Region, p: Profile): Region | null {
@@ -213,14 +281,75 @@ function reshape(r: Region, p: Profile): Region | null {
   return { ...r, clues };
 }
 
+console.log("  (a) solvability\n");
+console.log(HEAD);
+const shapedByProfile = new Map<string, Region[]>();
 for (const p of PROFILES) {
   const t = empty();
+  const shapedAll: Region[] = [];
   for (const r of pool) {
     if (!p.signatures.includes(r.quasars.length)) continue;
     const shaped = reshape(r, p);
-    if (shaped) record(t, shaped);
+    if (shaped) {
+      shapedAll.push(shaped);
+      record(t, shaped);
+    }
+  }
+  shapedByProfile.set(p.label, shapedAll);
+  console.log(row(p.label, t));
+}
+
+console.log("\n  (b) search effort - the axis that decides how much thinking\n");
+console.log(`  ${"".padEnd(26)}  start   round-1   rounds   elims   stuck`);
+for (const p of PROFILES) {
+  const shaped = shapedByProfile.get(p.label)!;
+  let startCandidates = 0;
+  let unknowns = 0;
+  let round1 = 0;
+  let rounds = 0;
+  let solved = 0;
+  let elims = 0;
+  let stuck = 0;
+  for (const r of shaped) {
+    const clued = r.clues.filter((c) => c.kind === "quasar-quadrant").length;
+    const o = solveByPropagation(r, { label: "", ringBudget: 0 });
+    startCandidates += clued * 10 + (o.unknowns - clued) * 40;
+    unknowns += o.unknowns;
+    round1 += o.perRound[0] ?? 0;
+    elims += o.eliminations;
+    stuck += o.stuck;
+    if (o.stuck === 0) {
+      solved++;
+      rounds += o.rounds;
+    }
+  }
+  console.log(
+    `  ${p.label.padEnd(26)}` +
+      `${(startCandidates / unknowns).toFixed(1).padStart(6)}` +
+      `${((round1 / unknowns) * 100).toFixed(0).padStart(8)}%` +
+      `${(rounds / Math.max(1, solved)).toFixed(2).padStart(9)}` +
+      `${(elims / shaped.length).toFixed(0).padStart(8)}` +
+      `${(stuck / shaped.length).toFixed(2).padStart(8)}`
+  );
+}
+
+console.log("\n  (c) candidate fix for the bottom rungs - see the note on SOFTER_BOTTOM\n");
+console.log(HEAD);
+for (const p of SOFTER_BOTTOM) {
+  const t = empty();
+  const shaped: Region[] = [];
+  for (const r of pool) {
+    if (!p.signatures.includes(r.quasars.length)) continue;
+    const out = reshape(r, p);
+    if (out) {
+      shaped.push(out);
+      record(t, out);
+    }
   }
   console.log(row(p.label, t));
+  let stuck = 0;
+  for (const r of shaped) stuck += solveByPropagation(r, { label: "", ringBudget: 0 }).stuck;
+  console.log(`  ${"".padEnd(26)} stuck ${(stuck / shaped.length).toFixed(2)}`);
 }
 
 console.log(`\nSampled ${SAMPLES} generated regions.\n`);

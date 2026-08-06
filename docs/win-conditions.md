@@ -386,8 +386,11 @@ Until then the top of the ladder is a terminus rather than a position.
 **Planned 2026-08-04 in `region-difficulty.md`**, with every generation
 lever measured. Two of them behave the opposite of how this document's
 `duty` copy assumes — more signatures make a region *easier*, and stripping
-the briefing's quadrant clues moves difficulty by three points. The
-proposal reaches a 3.3× swing in the band that costs a ring scan. Note the
+the briefing's quadrant clues moves *solvability* by three points while
+being the largest lever there is on how much searching a player does. That
+second axis is not visible to `assessSolvability` at all. The proposal
+reaches 3.1× on the band that costs a ring scan and 6× on the signatures
+plain elimination cannot reach. Note the
 currency mismatch: the gradient simulated above is an abstract accuracy
 penalty, so `tune-rank-thresholds.ts` has to be taught to consume a
 per-rank scan rate before it can say whether that swing is steep enough.

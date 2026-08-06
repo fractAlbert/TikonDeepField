@@ -26,9 +26,13 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Shipped 2026-08-05 and removed: **rank-conditioned region difficulty (1)**,
+written up in `region-difficulty.md`. That doc is now the record of what was
+built, why each lever behaves the way it does, and the one measured
+follow-up that was deliberately not applied.
+
 | # | item | where |
 | --- | --- | --- |
-| 1 | `generateRegion()` reads rank, so regions get harder as you rise | Gameplay |
 | 2 | No `quasar-type` clues are ever emitted | Gameplay |
 | 4 | Star Map 50% wider | Design |
 | 7 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
@@ -68,6 +72,15 @@ content may scroll inside its own panel — and it was accepted knowingly. The
 three are all long prose, so the fix, if wanted, is editorial (shorter copy,
 or pagination the way the Survey Log does it) rather than layout.
 
+**The Star Manifest joined them**, found while measuring the jump bar on
+2026-08-05. It overflows by 78px at 390x844 on a six-signature region, of
+which 30px predates the bar — it is listed as fitting outright in
+`mobile-layout-plan.md` and has not for some time. Different fix from the
+other three, because this one is a list rather than prose and it grows with
+the region: eight signatures is the technician's profile, so the worst case
+is worse than what was measured. Pagination, or a denser row, rather than
+shorter copy.
+
 ### 10 - The header overflows horizontally at 320px
 
 Found 2026-08-04 while measuring the menu hub, and confirmed pre-existing by
@@ -92,44 +105,26 @@ an `LcarsButton`, so it does not inherit the `size` prop added on
 
 ## Gameplay
 
-### 1, 2 - Rank and the clue vocabulary
+### 2 - No `quasar-type` clues are ever emitted
 
-Lives in **`win-conditions.md`** — the whole design, its build order, and
-the two generation constraints (anchor separation, solvability) it depends
-on. Not duplicated here.
+Lives in **`win-conditions.md`** - the clue vocabulary design. Generation
+emits only `quasar-sector` and `quasar-quadrant`, so a player never learns
+any signature's classification until the region closes and the report
+reveals it. That is why the Quadrant Survey's per-type breakdown was never
+usable, and why `analyze-solvability.ts` deliberately leaves it out.
 
-Status as of 2026-08-02: outcomes, the filing budget (now scaled by rank),
-withdrawal, the rank ladder, the officer record, per-rank filing marks and
-generation-time solvability all ship. Metering the Sweep Scope was
-considered and **closed as a non-problem** — free, unlimited readings are
-not what made the game hard; the bookkeeping was, and the Manifest fixed
-that. What is still open is —
-having
-`generateRegion()` read the officer's rank so the *regions* get harder as
-you rise.
+**Note it would make regions *easier*.** A type clue is another constraint,
+and the difficulty work (item 1, shipped 2026-08-05) measured what that
+does: more information means fewer regions that stall. If this ships, the
+per-rank profiles in `region-difficulty.md` need re-measuring rather than
+assuming they still hold.
 
-**Partly answered 2026-08-02.** The filing budget now scales with rank
-(4 4 3 2 2), which was the cheaper half of "rank changes the work" and the
-one that fixed the ladder: it separates an average player from a careful
-one, which no threshold setting could. What is still missing is region
-difficulty - a Chief of Survey draws exactly the same fields as a
-technician. That is the other half of item 1.
-
-**Note for whoever builds it (added 2026-08-03).** The tutorial region is
-now the one region in the game that is *deliberately* pitched, and it is
-fixed rather than generated - so it is unaffected by this and must stay
-that way. `Ember Verge` is baked, and its whole value is that the
-walk-through's copy is written against its exact solution. Whatever reads
-rank inside `generateRegion()` must not be able to reach it.
-
-**Item 1 now has a plan: `region-difficulty.md`.** Every lever generation
-has is measured there, and two of them do not behave the way the ladder's
-own `duty` copy assumes - more signatures make a region *easier*, not
-harder, and dropping the briefing's quadrant clues entirely moves
-difficulty by three points. The gradient it proposes is built from
-signature count, anchor separation and quadrant clue count, and lands at a
-3.3x swing in the band that costs a ring scan. Read it before touching
-`generateRegion()`.
+**What item 1 settled, for the record.** The filing budget scales with rank
+(4 4 3 2 2) and the *regions* now do too - signature count, anchor
+separation and quadrant clue count, per rung. A careful player used to reach
+Chief of Survey 100% of the time under every threshold tested; they now
+reach it 91%, and the average player dropped from 54% to 5%. The full
+argument is in `region-difficulty.md`.
 
 ## Interaction
 

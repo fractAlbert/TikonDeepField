@@ -31,6 +31,8 @@ A few specifics from it that the summary below is too general to carry:
 ## Structure & Shape
 
 - **Elbow/bracket macro-shapes** — the defining LCARS move: a block starts as a sharp rectangle and sweeps into a fully rounded end where it meets the panel's outer edge. Interior joints between adjacent segments stay flat/square — rounding is reserved for exposed outer edges only.
+  - Said the other way round, because the intuition runs backwards: **rounded is where a run *terminates*, flat is where it *continues*.** The centre columns are the clearest case — each data row opens with a narrow stub rounded on its outer end and flat on its inner one, carries labels flat at both ends through the middle, and stops with a label rounded where the row ends.
+  - **A flat edge does not have to touch its neighbour.** Flat ends face each other across a black gap all through the image; the grout is separation, not a break in the run. What a flat edge does require is that the neighbour be *visible* — a cut against something you cannot see reads as an amputation rather than as a joint. That is the trap `MobileJumpBar` fell into on its first build (see `mobile-layout-plan.md`).
 - **Jigsaw/asymmetric grid** — blocks are not a uniform grid. Widths and heights vary block to block, tiled together with no visible seams other than thin black gaps. Nothing is centered or symmetric as a whole composition.
 - **Black as structural material** — pure black isn't just a background, it's the "grout" between every block. No borders/strokes are ever drawn; separation is done entirely by black gaps and touching color blocks.
 - **Nested sub-panels** — smaller bordered black rounded-rect containers sit inside the larger overall composition, implying hierarchy/grouping.
@@ -170,12 +172,43 @@ Implemented:
   against every label the dial already draws, because the corners are the
   only empty space in the box and the quadrant labels are in them.
 
-- The phone hub as a titled block of paired runs, not a stretched column -
-  see `mobile-layout-plan.md`. The two things worth carrying over here: a
-  wrapped run takes its caps per row, so each row is its own bracket and the
-  odd item at the end comes back as a full pill; and a nested sub-panel has
-  to be lighter than the page, because black over black is invisible and the
-  empty space stops reading as deliberate.
+- The phone hub as a titled block, not a stretched column - see
+  `mobile-layout-plan.md`. A nested sub-panel has to be lighter than the
+  page, because black over black is invisible and the empty space stops
+  reading as deliberate.
+
+  Its rows were touching runs until 2026-08-05 and are separate pills now,
+  which sharpens the wrapped-run rule below rather than breaking it: **a run
+  is for siblings, and adjacency is not siblinghood.** Briefing and Star Map
+  sat next to each other because eleven entries wrap at two columns, not
+  because they are related, and joining them said otherwise. The reference
+  image runs both languages - continuous runs where a set continues into
+  itself, grids of individually capped pills in its lower-left blocks where
+  it is a directory. Ask which one you have before reaching for `runShape`.
+
+- **A phone panel's chrome is a `shrink-0` sibling of `main`, never inside
+  it.** The panel bar above and the Star Map jump bar below are the same
+  move mirrored, and that is what keeps them honest against the no-scrolling
+  rule: `main` remains the only scroller, so neither bar can scroll out from
+  under the thumb reaching for it. Where a bar is worth its 44px, the height
+  comes out of the gaps rather than out of the touch floor - see the Sweep
+  Scope's 4px in `mobile-layout-plan.md`.
+
+  The jump bar is also where the index-tab motif noted above finally gets
+  used: a narrow stub, solid colour, no text, taking the run's rounded outer
+  cap so the button's flat edge has something visible to be flat against.
+  The stub is the panel you are on and the button is the panel you are going
+  to, which matters - a small shape parked against a button reads as *state*
+  unless it is plainly carrying something else.
+
+- **Touch is not a small mouse.** A drag-paint needs `touch-action: none`,
+  and `touch-action: none` on anything taller than the screen means the
+  panel has stopped scrolling. Where both are wanted, split by
+  `pointerType`: sweep on a pointing device, one tap per cell on a finger,
+  and take the tap on `pointerup` rather than `click` - a touch the browser
+  reinterprets as a scroll gets `pointercancel` and never gets `pointerup`,
+  so the distinction comes for free. `starmap/StarMap.tsx` is the worked
+  example.
 - **Dimming means "you have already put this one down."** The Star Map's
   signature chips drop to 60% once placed, and as of 2026-08-04 so do the
   Sweep Scope's reference buttons and legend and the Ring Scan's targets. It

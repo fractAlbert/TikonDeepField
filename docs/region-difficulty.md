@@ -5,8 +5,10 @@ Survey as for a technician. Every rung's `duty` line promises otherwise —
 *"draws larger, thinner-briefed regions"*, *"the fields nobody else has
 resolved"* — and nothing implements it.
 
-Status: **planned, not built.** Every number below is measured by
+Status: **shipped 2026-08-05.** Every number below is measured by
 `scripts/measure-difficulty-levers.ts`; re-run it after changing generation.
+`scripts/verify-puzzles.ts` asserts that each rank's profile actually comes
+out of the generator, and that `Ember Verge` is untouched by any of it.
 
 ```
 npx tsx scripts/measure-difficulty-levers.ts 2000
@@ -32,7 +34,9 @@ average player from a careful one; what it cannot do is make holding the
 top rung *work*. Until the regions themselves change, the top of the ladder
 is a terminus rather than a position.
 
-## What "harder" has to mean here
+## What "harder" has to mean here — two axes, not one
+
+### Axis 1: solvability
 
 Three bands, from `assessSolvability` — the app's own verdict, and the same
 one the Log reads back after a region closes:
@@ -50,6 +54,38 @@ the Ring Scan is metered so that judgement costs something. The unsolvable
 band is not difficulty at all; it is a tax, and it is the reason withdrawal
 has to stay rank-neutral. Any change that raises it is a change that
 punishes people for the generator's output.
+
+### Axis 2: search effort — and on its own, axis 1 is the wrong one
+
+This axis was missed on the first pass and put back after a playtest note,
+which is worth recording because no amount of solver output would have
+surfaced it:
+
+> *"Knowing the quadrant of a star means my brain immediately knows where to
+> focus and what direction. There's no thinking involved."*
+
+`assessSolvability` answers **"is the answer unique"**. It does not answer
+**"how much searching does the player do"**, and those come apart badly. A
+quadrant clue collapses a signature's candidates from 40 cells to 10
+*before any reasoning happens* — you look at a quarter of the dial instead
+of all of it. That is an enormous change in the work, and it is completely
+invisible to a uniqueness check, because the answer was findable either
+way.
+
+Measured by constraint propagation instead (`scripts/propagation.ts`, the
+same model `measure-deduction-depth.ts` uses):
+
+| | what it says |
+| --- | --- |
+| **start** | mean candidate cells per unknown signature, before any work |
+| **round-1** | share of unknowns that fall out immediately, no chaining |
+| **rounds** | chaining depth when propagation does finish |
+| **elims** | candidate eliminations the player grinds through |
+| **stuck** | signatures propagation cannot reach at all |
+
+A region can be perfectly solvable and still be a long slog, or unique only
+after a scan and yet feel brisk. **Both axes have to move together**, and
+the levers that drive them turn out to be different ones.
 
 ---
 
@@ -78,7 +114,10 @@ before touching generation. It also explains why the tutorial region is
 six: `Ember Verge` needed to hit a wall on purpose, and six is the size
 that stalls.
 
-### 2. Quadrant clues — **nearly worthless**
+### 2. Quadrant clues — **worthless on axis 1, the strongest lever on axis 2**
+
+On solvability, removing the briefing's entire soft half moves the
+needs-a-scan rate by **3.4 points**:
 
 | | clean | needs a scan | unsolvable |
 | --- | ---: | ---: | ---: |
@@ -86,14 +125,29 @@ that stalls.
 | 2 quadrant clues *(today)* | 79.9% | 20.0% | 0.1% |
 | 4 quadrant clues | 80.6% | 19.3% | 0.1% |
 
-Removing the briefing's entire soft half moves the needs-a-scan rate by
-**3.4 points**. "Fewer briefing clues" sounds like the obvious difficulty
-knob and is almost nothing — a quadrant names one of four 10-cell blocks,
-which the distance matrix mostly implies anyway.
+On the same regions, measured as search effort:
 
-Worth keeping in the mix for *feel* rather than difficulty: a briefing with
-two exact positions and nothing else reads austere in a way the numbers
-don't capture.
+| | start | round-1 | rounds | elims | stuck |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 0 quadrant clues | 40.0 | 11% | 3.09 | 190 | 3.40 |
+| 1 | 34.0 | 20% | 2.83 | 163 | 1.94 |
+| 2 *(today)* | 28.0 | 29% | 2.62 | 134 | 1.28 |
+| 3 | 22.1 | 39% | 2.42 | 105 | 0.85 |
+| 4 | 16.1 | 47% | 2.27 | 75 | 0.63 |
+| 5 | 11.9 | 54% | 2.17 | 54 | 0.53 |
+
+**The same lever, and it is the biggest one in the game.** Across 0 to 5
+clues the starting search space per signature falls 3.4×, the share of
+signatures that fall out with no chaining at all goes 11% → 54%, the
+eliminations to grind through drop 3.5×, and the signatures propagation
+simply cannot reach drop 6.4×.
+
+None of that shows up in the uniqueness verdict, because the answer was
+findable either way — it just took longer, over more of the board, with
+more held in your head. That is what difficulty feels like from the
+console, and it is why this is the *low-rank* aid rather than a rounding
+error: give a technician four quadrants and half their board falls out
+before they have reasoned about anything.
 
 ### 3. Exact anchors — **strong, but coarse**
 
@@ -142,16 +196,44 @@ Three levers per rung — signature count, anchor separation band, quadrant
 clue count — composed. Measured over 2,000 generated regions reshaped to
 each profile:
 
-| Rank | Signatures | Anchors apart | Quadrant clues | clean | **needs a scan** | unsolvable |
-| --- | --- | --- | --- | ---: | ---: | ---: |
-| 0 Survey Technician | 8 | 4–5 | 2 | 90.2% | **9.7%** | 0.1% |
-| 1 Assistant Science Officer | 7–8 | 3–5 | 2 | 85.6% | **14.4%** | 0.1% |
-| 2 Science Officer *(today)* | 6–8 | 2–5 | 2 | 82.0% | **17.8%** | 0.2% |
-| 3 Senior Science Officer | 6–7 | 2–4 | 1 | 77.0% | **22.7%** | 0.2% |
-| 4 Chief of Survey | 6 | 2–3 | 0 | 67.0% | **31.8%** | 1.1% |
+| Rank | Signatures | Anchors apart | Quadrant clues |
+| --- | --- | --- | --- |
+| 0 Survey Technician | 8 | 4–5 | 4 |
+| 1 Assistant Science Officer | 7–8 | 3–5 | 3 |
+| 2 Science Officer *(today)* | 6–8 | 2–5 | 2 |
+| 3 Senior Science Officer | 6–7 | 2–4 | 1 |
+| 4 Chief of Survey | 6 | 2–3 | 0 |
 
-**A 3.3× swing in the band that costs a scan**, monotonic across the
-ladder, with the unsolvable rate held at or below ~1% throughout.
+**Axis 1 — solvability:**
+
+| Rank | clean | **needs a scan** | unsolvable |
+| --- | ---: | ---: | ---: |
+| 0 Survey Technician | 90.4% | **9.6%** | 0.0% |
+| 1 Assistant | 86.4% | **13.6%** | 0.0% |
+| 2 Science Officer *(today)* | 82.0% | **18.1%** | 0.0% |
+| 3 Senior | 75.1% | **24.7%** | 0.2% |
+| 4 Chief of Survey | 69.2% | **29.5%** | 1.3% |
+
+**Axis 2 — search effort:**
+
+| Rank | start | round-1 | rounds | elims | **stuck** |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 0 Survey Technician | 20.0 | 44% | 2.37 | 113 | **0.53** |
+| 1 Assistant | 23.7 | 37% | 2.47 | 124 | **0.75** |
+| 2 Science Officer *(today)* | 28.1 | 28% | 2.62 | 135 | **1.30** |
+| 3 Senior | 33.4 | 20% | 2.77 | 143 | **2.03** |
+| 4 Chief of Survey | 40.0 | 9% | 3.05 | 150 | **3.18** |
+
+**3.1× on the band that costs a scan, and both effort measures move
+further than that.** The starting search space doubles, the free
+resolutions drop five-fold, and `stuck` — signatures ordinary elimination
+cannot reach at all — goes 0.53 to 3.18, a **6× swing**. A technician has
+half a signature they have to think hard about; a Chief of Survey has over
+three.
+
+`stuck` is probably the number to watch. It is the closest thing here to
+"how many times did this region make me stop and work", and it separates
+the rungs more cleanly than anything on axis 1.
 
 Three properties worth stating explicitly:
 
@@ -161,11 +243,25 @@ Three properties worth stating explicitly:
 - **It cuts both ways.** Ranks 0 and 1 draw *easier* fields than the game
   ships today, which is what makes demotion a recovery path rather than a
   spiral — the same reasoning that gave the two lowest rungs four filings.
-- **The Chief's 1.1% unsolvable** is the one number that moved the wrong
-  way, up from 0.2%. It is still at the documented ~1% floor for careful
+- **The Chief's 1.3% unsolvable** is the one number that moved the wrong
+  way, up from ~0%. It is still at the documented ~1% floor for careful
   play, but it is the first thing to watch: if tightening the anchors
   further pushes it past ~2%, back the separation band off rather than
   accepting it.
+
+### Which lever does what
+
+Worth keeping straight, because they are not interchangeable:
+
+| Lever | Axis 1 (solvability) | Axis 2 (effort) |
+| --- | --- | --- |
+| Signature count | strong, **inverted** | moderate |
+| Anchor separation | moderate, smooth | moderate |
+| **Quadrant clues** | negligible | **dominant** |
+
+So the quadrant count is the low-rank kindness and the anchor separation is
+the high-rank bite, and the signature count mostly has to be read
+backwards. A profile that moved only one of them would move only one axis.
 
 ### Combined with the filing ladder
 
@@ -238,10 +334,57 @@ The existing simulation found a gradient of 0.06 per rank "barely dented
 saturation", but its currency is an abstract accuracy penalty rather than a
 scan-rate, so the two are not comparable as they stand.
 
+## The acceptance test, run
+
+`tune-rank-thresholds.ts` now consumes the measured per-rank `needsScan` and
+`stuck` tables instead of an abstract accuracy penalty. Both rescalings are
+anchored at rank 2, because rank 2's profile *is* the old generator — so
+"no gradient" reproduces the previous tables exactly and the two are
+comparable. 4000 careers per cell, shipped thresholds, shipped filing
+ladder:
+
+| | careless | average | careful |
+| --- | --- | --- | --- |
+| flat difficulty *(before)* | −0.20, **60% relieved** | 3.39, **54% reach top** | 4.00, **100% reach top** |
+| measured profiles *(now)* | 1.51, 1% relieved | 2.60, **5% reach top** | 3.91, **91% reach top** |
+
+**The top of the ladder now holds.** The average player stops saturating —
+54% reached Chief of Survey before, 5% do now, and they settle around
+Senior Science Officer instead. Even the careful player is no longer
+guaranteed it. That was the whole point of the item: no threshold could do
+this, because attempts are unlimited and the window resets on promotion.
+
+### The one thing that went too far
+
+**The careless player is now almost never relieved: 60% → 1%.** The
+gradient cuts both ways, and the bottom rungs turn out to be a very
+effective recovery ramp — fall to Survey Technician and you draw eight
+signatures with four quadrants named, which is gentle enough to climb back
+out of.
+
+That is the stated design ("demotion is a recovery path rather than a
+spiral") working harder than intended, because the other half of the design
+says relief should be **reachable but rare**, and 1% is nearer unreachable.
+Relief is also terminal now, so it is the only real stake a career has.
+
+The candidate fix is measured and sitting in both scripts: give Survey
+Technician **3** quadrant clues instead of 4 and Assistant **2** instead of
+3, leaving the top three rungs alone.
+
+| | careless | average | careful |
+| --- | --- | --- | --- |
+| measured profiles *(shipped)* | 1.51, **1% relieved** | 2.60, 5% top | 3.91, 91% top |
+| softer bottom rungs *(candidate)* | 1.18, **3% relieved** | 2.59, 5% top | 3.92, 92% top |
+
+It triples the relief rate and costs nothing at the top. **Not applied** —
+how punishing the bottom of the ladder should be is a design call, not a
+measurement, and the shipped numbers are the ones that were specified.
+Changing it is two numbers in `RANKS`.
+
 ## Open questions
 
-1. **Is 3.3× enough?** Answerable only by step 4. If not, the next lever is
-   the ring scan budget, not a steeper version of this.
+1. **Should the bottom rungs be less generous?** See above. Measured, not
+   applied.
 2. **Should the player be told?** The `duty` line on each rung already says
    the work changes, but nothing says *how*. A Briefing that named its
    difficulty tier would make the gradient legible — at the cost of turning
