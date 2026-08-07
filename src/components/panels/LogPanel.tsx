@@ -269,10 +269,19 @@ function LogEntryCard({
         onPreviewRegion(region);
       }}
       className={`flex rounded-lg overflow-hidden cursor-pointer transition-opacity ${
-        isPreviewed ? "ring-2 ring-lcars-amber" : ""
-      } ${entry.archived ? "opacity-50" : ""}`}
+        entry.archived ? "opacity-50" : ""
+      }`}
     >
-      <div className="w-2 shrink-0" style={{ backgroundColor: accentColor }} />
+      {/* The previewed entry is marked by its own accent bar swelling
+          toward the content, which is the rail's selection indicator
+          turned on its side - the colour pushes out rather than a line
+          being drawn round the row. Every entry already has this bar, so
+          selection costs no new element and nothing shifts but its
+          width. */}
+      <div
+        className={`shrink-0 transition-all ${isPreviewed ? "w-5" : "w-2"}`}
+        style={{ backgroundColor: accentColor }}
+      />
       <div className="flex-1 min-w-0 bg-lcars-panel px-3.5 py-3">
         <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
           <span className="text-sm font-semibold text-lcars-ice mr-1">{region.name}</span>

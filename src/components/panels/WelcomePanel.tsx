@@ -15,7 +15,7 @@
 
 import { OUTPOST_NAME, PANEL_LABELS } from "@/lib/copy";
 import { RING_COUNT, SEGMENT_COUNT } from "@/lib/grid";
-import { LcarsPanel } from "@/components/LcarsShell";
+import { LcarsBreak, LcarsPanel } from "@/components/LcarsShell";
 import { LcarsButton } from "@/components/LcarsButton";
 import { StationEmblem } from "@/components/StationEmblem";
 import { tutorialRegion } from "@/data/regions/tutorial";
@@ -94,7 +94,8 @@ export function WelcomePanel({
           </div>
         </div>
 
-        <div className="shrink-0 pt-4 mt-4 border-t border-white/10">
+        <LcarsBreak className="shrink-0 mt-4" />
+        <div className="shrink-0 pt-4">
           <div className="flex flex-wrap items-center gap-3">
             <LcarsButton color="teal" onClick={onBeginTutorial}>
               {resuming ? "Resume training survey" : "Begin training survey"}

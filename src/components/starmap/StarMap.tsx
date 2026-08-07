@@ -899,10 +899,21 @@ export function StarMap({
               // letting both through would leave the winner up to whatever
               // order the stylesheet happened to emit them in.
               const isHinted = hintOpen && hint?.quasarId === q.id;
+              // The walk-through's mark stays an outline, matching
+              // `.tutorial-anchor` in `globals.css`: the coach speaks in
+              // teal and from outside the game's visual language on
+              // purpose, and an outline is drawn outside the box so
+              // pointing at something cannot shift the panel it is in.
+              //
+              // Hover is not information, it is feedback, so it stops being
+              // a stroke and becomes what the chip is made of - the fill
+              // lifts. That also fixes a smaller thing: hover was invisible
+              // on touch anyway (backlog item 8), and a brighter chip at
+              // least degrades to nothing rather than to a stray ring.
               const ringClass = isHinted
-                ? "ring-2 ring-lcars-teal"
+                ? "outline outline-2 outline-lcars-teal"
                 : isHovered
-                ? "ring-2 ring-lcars-ice"
+                ? "brightness-125"
                 : "";
               return (
                 <button

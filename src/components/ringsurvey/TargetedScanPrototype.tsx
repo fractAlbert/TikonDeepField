@@ -171,7 +171,7 @@ export function TargetedScanPrototype({ region }: { region: Region | null }) {
                 s.id === selectedId
                   ? "bg-lcars-violet text-black font-semibold"
                   : used
-                  ? "bg-lcars-panel text-lcars-ice/70 ring-1 ring-lcars-violet/50"
+                  ? "bg-lcars-panel text-lcars-violet/90"
                   : "bg-lcars-panel text-lcars-ice hover:bg-white/10"
               }`}
             >
