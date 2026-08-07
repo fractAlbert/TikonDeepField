@@ -1,17 +1,20 @@
 import { ReactNode } from "react";
 import {
+  ButtonAlign,
   ButtonColor,
   ButtonOrientation,
   ButtonShape,
   INTERACTIVE_FILL,
+  alignClasses,
+  defaultAlign,
   shapeClasses,
 } from "@/lib/lcars-colors";
 import { playButtonClick } from "@/lib/sound";
 
-export type { ButtonColor, ButtonShape, ButtonOrientation } from "@/lib/lcars-colors";
+export type { ButtonAlign, ButtonColor, ButtonShape, ButtonOrientation } from "@/lib/lcars-colors";
 
 const base =
-  "lcars-caps inline-flex items-center justify-center font-semibold tracking-wide transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer";
+  "lcars-caps inline-flex items-center font-semibold tracking-wide transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer";
 
 /**
  * Padding is a prop rather than something a caller overrides through
@@ -37,8 +40,9 @@ export function LcarsButton({
   disabled,
   type = "button",
   shape = "pill",
-  orientation = "vertical",
+  orientation = "horizontal",
   size = "default",
+  align,
   className = "",
 }: {
   children?: ReactNode;
@@ -49,8 +53,18 @@ export function LcarsButton({
   shape?: ButtonShape;
   orientation?: ButtonOrientation;
   size?: "default" | "compact";
+  /**
+   * Where the label sits. Omit it and the label hugs the segment's flat
+   * end, which is what the references do; pass one only where the shape
+   * cannot say what you mean - `center` in particular has to be asked for,
+   * since centring is the thing this default exists to stop happening by
+   * accident.
+   */
+  align?: ButtonAlign;
   className?: string;
 }) {
+  const resolvedAlign = align ?? defaultAlign(shape, orientation);
+
   return (
     <button
       type={type}
@@ -59,7 +73,7 @@ export function LcarsButton({
         onClick?.();
       }}
       disabled={disabled}
-      className={`${base} ${SIZE[size]} ${shapeClasses(shape, orientation)} ${INTERACTIVE_FILL[color]} ${className}`}
+      className={`${base} ${SIZE[size]} ${alignClasses(resolvedAlign)} ${shapeClasses(shape, orientation)} ${INTERACTIVE_FILL[color]} ${className}`}
     >
       {children}
     </button>

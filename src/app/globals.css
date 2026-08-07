@@ -4,7 +4,12 @@
   --lcars-black: #000000;
   --lcars-orange: #ff9900;
   --lcars-amber: #ffcc66;
+  /* Two reds, held apart on purpose - see `lcars-colors.ts`. `red` is the
+     desaturated brick that carries the "bad outcome" category; `alert` is
+     the saturated one, reserved for the genuinely urgent and used about as
+     often as the reference uses it, which is once. */
   --lcars-red: #cc6666;
+  --lcars-alert: #ee3b22;
   --lcars-salmon: #ff9c7a;
   --lcars-lilac: #cc99cc;
   --lcars-violet: #9999ff;
@@ -18,6 +23,7 @@
   --color-lcars-orange: var(--lcars-orange);
   --color-lcars-amber: var(--lcars-amber);
   --color-lcars-red: var(--lcars-red);
+  --color-lcars-alert: var(--lcars-alert);
   --color-lcars-salmon: var(--lcars-salmon);
   --color-lcars-lilac: var(--lcars-lilac);
   --color-lcars-violet: var(--lcars-violet);

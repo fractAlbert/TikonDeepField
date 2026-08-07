@@ -225,9 +225,14 @@ export function ProfilePanel() {
                 retireCareer();
               }}
               onBlur={() => setConfirmingRetire(false)}
+              /* The armed state is the app's one use of `alert`. Retiring is
+                 the only genuinely irreversible thing a player can do, and
+                 the reference spends its saturated red about this often -
+                 once. The resting state stays quiet, so the colour arrives
+                 with the consequence rather than sitting there waiting. */
               className={`lcars-caps text-xs px-4 py-1.5 rounded-full font-semibold cursor-pointer transition-colors ${
                 confirmingRetire
-                  ? "bg-lcars-red text-black hover:bg-lcars-salmon"
+                  ? "bg-lcars-alert text-black hover:bg-lcars-red"
                   : "bg-lcars-panel text-lcars-ice/80 hover:bg-white/15"
               }`}
             >

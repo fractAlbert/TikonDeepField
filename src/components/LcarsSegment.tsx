@@ -15,7 +15,9 @@ import {
 export function LcarsSegment({
   color,
   shape = "pill",
-  orientation = "vertical",
+  // Horizontal for the same reason as `LcarsButton` - a vertical run never
+  // ends in a rounded cap in any reference, so it must not be the default.
+  orientation = "horizontal",
   className = "",
 }: {
   color: ButtonColor;
