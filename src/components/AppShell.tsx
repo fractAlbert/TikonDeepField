@@ -711,7 +711,12 @@ export function AppShell() {
             Below `lg` there is no rail under it, so it keeps its bottom
             cap and stays a stub: a flat edge needs a visible neighbour to
             continue into, and there would not be one. */}
-        <div className="lcars-left-run shrink-0 bg-lcars-orange rounded-tl-[2rem] rounded-bl-[2rem] lg:rounded-bl-none" />
+        {/* No `shrink-0`. The block is decoration, and at 320 the header is
+            already over its budget (backlog item 10) - letting the flex
+            algorithm squeeze this before it squeezes the title is the
+            cheapest 40px available. Adding `shrink-0` here pushed the
+            shell's min-content from 362 to 402, measured. */}
+        <div className="lcars-left-run bg-lcars-orange rounded-tl-[2rem] rounded-bl-[2rem] lg:rounded-bl-none" />
         <div className="flex-1 flex items-center justify-between gap-3 bg-lcars-orange rounded-tr-[2rem] px-3 md:px-8 py-2 md:py-4">
           <div className="min-w-0">
             <h1 className="lcars-caps text-lg md:text-4xl font-bold text-black leading-none">
