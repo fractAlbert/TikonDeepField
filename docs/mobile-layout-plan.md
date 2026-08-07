@@ -438,3 +438,36 @@ ever reaches** - so every handset had been getting the base size while the
 larger one only ever appeared on tablets. Worth remembering generally: on
 this screen, breakpoints are the wrong tool, because the thing that varies
 is the height of the container rather than the width of the viewport.
+
+### Two runs of six, with a sweep (2026-08-07, final)
+
+Three columns was tried first and rejected on sight as crowded. It is worth
+recording why, because the numbers say the opposite of the eye: three columns
+gave cells of 89-126px against 60px of height, a ratio of 1.49 to 2.1, which
+is close enough to square that the pill stops being a pill. Two columns gives
+2.37 to 3.2. **A pill has to be visibly wider than it is tall or it reads as
+a fat tile**, and that ratio is the thing to check, not the column count.
+
+So: **two runs of six, with a sweep between them.** The split is what you do
+with the entry - the first six are working a survey (Briefing, Star Manifest,
+Star Map, Sweep Scope, Ring Scan, Log), the second six are the station and
+your record. The first group's order pairs the two catalogue panels on one
+row and the two instruments on the next.
+
+**The sweep** is a thick knee with a rounded outer corner turning into a thin
+arm that runs to the panel's edge - the move the second and third references
+use wherever a run of controls changes subject. It says "different set" with
+a piece of structure rather than a drawn rule, which is the one thing the
+notes forbid outright. The interior corner where knee meets arm stays square:
+rounded terminates, flat continues, and that joint continues.
+
+**The crest comes off on small screens.** Six rows want nearly all of a 568px
+phone, so `.lcars-hub-crest` is hidden below a 700px viewport height and
+shown above it. This is one of the few places a media query is the right tool
+here - what actually runs out is the viewport's height, which is exactly what
+the query measures. At 320x568 the hub is buttons alone; at 390x844 and above
+the emblem returns.
+
+Measured at 430x932, 390x844 and 320x568: eleven buttons, rows 58-60px, every
+one clear of the 44px touch floor, no vertical overflow, crest shown at the
+top two and hidden at the smallest.

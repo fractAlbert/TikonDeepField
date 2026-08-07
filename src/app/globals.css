@@ -65,14 +65,29 @@ body {
    ever reaches it and the label had been stuck at its base size on every
    handset. Sizing off the container's height is what actually varies. */
 :root {
-  --lcars-hub-row-min: 3.5rem; /* 56px, the floor and the old fixed value */
-  --lcars-hub-grid-max: 16.125rem; /* four rows at 60px, plus three 6px gaps */
+  --lcars-hub-row-min: 2.75rem; /* 44px, the touch floor */
+  --lcars-hub-row-max: 3.75rem; /* 60px, past which a pill reads as a tile */
   --lcars-hub-label: 0.8125rem; /* 13px */
 }
 
 .lcars-hub-grid {
   grid-auto-rows: minmax(var(--lcars-hub-row-min), 1fr);
-  max-height: var(--lcars-hub-grid-max);
+  /* Three rows per group, so the cap is per group rather than per hub. */
+  max-height: calc(var(--lcars-hub-row-max) * 3 + 0.75rem);
+}
+
+/* The crest appears only where there is room for it to read as a crest
+   rather than as a smudge. Two groups of six is six rows, and on a 568px
+   screen those rows want nearly all of it - so this is one of the few
+   places a media query is the right tool, because the thing that runs out
+   really is the viewport's height. */
+.lcars-hub-crest {
+  display: none;
+}
+@media (min-height: 700px) {
+  .lcars-hub-crest {
+    display: flex;
+  }
 }
 
 .lcars-hub-label {

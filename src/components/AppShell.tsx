@@ -149,6 +149,20 @@ const LEFT_RAIL_FILLERS: ButtonColor[] = ["orange"];
 const STARMAP_NAV: NavItem = { id: "starmap", label: "Star Map", color: "amber" };
 const MOBILE_NAV: NavItem[] = [PRIMARY_NAV[0], STARMAP_NAV, ...PRIMARY_NAV.slice(1), ...UTILITY_NAV];
 
+// The hub draws these as two runs of six with a sweep between them, which
+// is what the second and third references do wherever a set of controls
+// changes subject. The split is what you do with them: everything in the
+// first group is part of working a survey, everything in the second is the
+// station and your record.
+//
+// The first group's order is the user's rather than the nav's - Briefing,
+// Star Manifest, Star Map, Sweep Scope, Ring Scan, Log - which pairs the
+// two catalogue panels on one row and the two instruments on the next.
+const MOBILE_HUB_GROUPS: NavItem[][] = [
+  [PRIMARY_NAV[0], PRIMARY_NAV[1], STARMAP_NAV, PRIMARY_NAV[2], PRIMARY_NAV[3], PRIMARY_NAV[4]],
+  [...UTILITY_NAV],
+];
+
 // Panel titles for the phone panel bar. Everything reachable from the menu
 // is titled by the menu entry that opened it, so the two can't drift.
 //
@@ -827,7 +841,7 @@ export function AppShell() {
               the hub's eleven destinations are the least useful thing to
               hand someone who has never played and has no survey to open. */}
           {panel === "menu" && !showWelcome && (
-            <MobileMenu id="mobile-menu" items={MOBILE_NAV} onSelect={handleNavSelect} />
+            <MobileMenu id="mobile-menu" groups={MOBILE_HUB_GROUPS} onSelect={handleNavSelect} />
           )}
           {/* The welcome takes the Briefing slot rather than being a
               destination of its own: it is what a first run lands on, and
