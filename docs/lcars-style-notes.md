@@ -60,6 +60,16 @@ A few specifics from it that the summary below is too general to carry:
   - **Corrected 2026-08-06 by cropping the image**: this bullet used to say the opening stub was rounded on its *outer* end. It is the other way round — the stub is flat on the side facing the block's edge and rounded on the side facing the row, and so is every closing pill, mirrored. Flat toward the frame, rounded toward the content, which is independently where the phone bars ended up. `LcarsKitPrototype`'s "Data rows" section is the measured reproduction.
   - **A flat edge does not have to touch its neighbour.** Flat ends face each other across a black gap all through the image; the grout is separation, not a break in the run. What a flat edge does require is that the neighbour be *visible* — a cut against something you cannot see reads as an amputation rather than as a joint. That is the trap `MobileJumpBar` fell into on its first build (see `mobile-layout-plan.md`).
   - **The screen edge is a legitimate thing to continue into**, and the strongest one available: a run that ends flat *on the glass* reads as carrying on off-frame. It only works if it genuinely reaches the edge, so the two phone bars (`MobilePanelBar`, `MobileJumpBar`) cancel the shell's gutter on that one side with `-mr-3 md:-mr-6`. They are the only places in the app allowed to break the 12px frame.
+  - **A cap belongs to a short segment. A tall block is square.** Added
+    2026-08-07 after the nav rail's filler shipped as a 500px-tall
+    `rounded-l-full` and rendered as an enormous lozenge. `rounded-*-full`
+    is a half-circle of *half the box's height*, so the same class that
+    makes a 40px button an LCARS pill makes a 500px block a shape no
+    console has ever contained. The references separate the two cleanly:
+    in `lcars-ultra`'s rails the big unlabelled masses (497px, 687px) have
+    no rounding at all, while the 40-150px labelled cells beside them are
+    capped. If a segment is taller than it is wide, it is a vertical run,
+    and a vertical run never ends in a cap.
   - **Moving a cap is a flip, not a cut.** When a segment turns to face the other way, its rounded end changes sides; it does not simply vanish, leaving both ends square. Both phone bars ended up with every segment rounded on its inner side and flat on the side facing the glass.
 - **Jigsaw/asymmetric grid** — blocks are not a uniform grid. Widths and heights vary block to block, tiled together with no visible seams other than thin black gaps. Nothing is centered or symmetric as a whole composition.
 - **Black as structural material** — pure black isn't just a background, it's the "grout" between every block. No borders/strokes are ever drawn; separation is done entirely by black gaps and touching color blocks.

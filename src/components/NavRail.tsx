@@ -69,7 +69,18 @@ export function NavRail({
       ))}
       {fillerColors.map((color, i) => (
         <Row key={`filler-${i}`} color={color} selected={false} indicatorSide={indicatorSide} stretch>
-          <LcarsSegment color={color} shape={outerShape} orientation="horizontal" className="flex-1 h-full" />
+          {/* Square, not capped. A cap is a half-circle of half the box's
+              height, which on a 40px button is the LCARS mark and on a
+              500px filler is a giant lozenge - which is exactly what it
+              rendered as until 2026-08-07.
+
+              The references are unambiguous once the block is tall: the
+              big unlabelled masses in `lcars-ultra`'s rails (497px and
+              687px) have no rounding at all, while the 40-150px labelled
+              cells beside them are capped. The cap belongs to a horizontal
+              segment; a tall block is a vertical run, and a vertical run
+              never ends in one. */}
+          <LcarsSegment color={color} shape="block" orientation="horizontal" className="flex-1 h-full" />
         </Row>
       ))}
       {!hasFillers && <div className="flex-1" />}

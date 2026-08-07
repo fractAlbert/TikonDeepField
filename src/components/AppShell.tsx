@@ -797,7 +797,14 @@ export function AppShell() {
                header + full-width content until the menu appears. Once
                hydrated these three aren't rendered below `lg` at all, so
                the class never gets a chance to apply. */
-            className="lcars-left-run shrink-0 mr-[48px] max-lg:hidden"
+            /* `-mb-6` cancels the shell's bottom padding so the run reaches
+               the glass. Its foot is a square filler now, and a flat edge
+               needs something to continue into - stopping 24px above the
+               window is the cut-in-mid-air the jump bar was corrected for
+               twice. The rail only exists at `lg` and up, where the
+               shell's padding is `md:p-6`, so 24px is the only value it
+               can meet. */
+            className="lcars-left-run shrink-0 mr-[48px] -mb-6 max-lg:hidden"
           />
         )}
 
