@@ -43,6 +43,26 @@ body {
   letter-spacing: 0.04em;
 }
 
+/* The width of the frame's left-hand run - the header's cap block and the
+   nav rail directly below it, which are one column read top to bottom and
+   have to measure the same or they read as two unrelated objects.
+
+   One class rather than a width at each site, because this is a number we
+   expect to retune once it has been seen: the rail's width comes straight
+   out of `main`, which is only ~452px at 1280 before it gives any away.
+
+   Narrow on a phone because the rail is not rendered below `lg` - there the
+   block is a stub terminating the header, and a 160px slab of orange with
+   nothing under it would be the header eating a fifth of the screen. */
+.lcars-left-run {
+  width: 2.5rem;
+}
+@media (min-width: 1024px) {
+  .lcars-left-run {
+    width: 10rem;
+  }
+}
+
 /* Scrollable but chrome-free - content can still be flicked/wheeled, but no
    browser scrollbar track is ever drawn. Used as a safety net on panels
    that should normally fit the viewport outright. */

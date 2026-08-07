@@ -701,7 +701,17 @@ export function AppShell() {
           it to roughly half that, and the Star Map only needed ~19px more
           than it had. */}
       <header id="app-header" className="flex items-stretch gap-3 shrink-0">
-        <div className="w-10 md:w-24 bg-lcars-orange rounded-tl-[2rem] rounded-bl-[2rem]" />
+        {/* The head of the frame's left-hand run. It is the same width as
+            the nav rail beneath it and squares off at the bottom on
+            desktop, so the two read as one column continuing down the edge
+            of the screen rather than as a decorative stub above a menu -
+            rounded terminates, flat continues, and the 12px of black
+            between them is grout rather than a break.
+
+            Below `lg` there is no rail under it, so it keeps its bottom
+            cap and stays a stub: a flat edge needs a visible neighbour to
+            continue into, and there would not be one. */}
+        <div className="lcars-left-run shrink-0 bg-lcars-orange rounded-tl-[2rem] rounded-bl-[2rem] lg:rounded-bl-none" />
         <div className="flex-1 flex items-center justify-between gap-3 bg-lcars-orange rounded-tr-[2rem] px-3 md:px-8 py-2 md:py-4">
           <div className="min-w-0">
             <h1 className="lcars-caps text-lg md:text-4xl font-bold text-black leading-none">
@@ -772,7 +782,7 @@ export function AppShell() {
                header + full-width content until the menu appears. Once
                hydrated these three aren't rendered below `lg` at all, so
                the class never gets a chance to apply. */
-            className="w-32 md:w-40 shrink-0 mr-[48px] max-lg:hidden"
+            className="lcars-left-run shrink-0 mr-[48px] max-lg:hidden"
           />
         )}
 
