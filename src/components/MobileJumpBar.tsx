@@ -1,6 +1,6 @@
 "use client";
 
-import { ButtonColor, SOLID_BG } from "@/lib/lcars-colors";
+import { ButtonColor } from "@/lib/lcars-colors";
 import { LcarsButton } from "@/components/LcarsButton";
 
 /**
@@ -60,43 +60,90 @@ import { LcarsButton } from "@/components/LcarsButton";
  * Small matters. A wide slab of colour across the foot of every panel is
  * loud, and the stub is what the image actually does.
  *
- * ## Why two colours
+ * ## Half a width, which half, and off the edge (2026-08-06)
  *
- * The stub carries the colour of the panel you are **on**; the button
- * carries the colour of the panel you are going **to**, and its label names
- * it. So the bar reads as a trip - violet to amber leaving the Sweep Scope,
- * amber to violet coming back - rather than as a lone button with a
- * decorative lamp beside it. Worth being deliberate about, because a small
- * shape sitting against a button reads as *state* if you let it, and this
- * one is carrying information rather than pretending to.
+ * The run is half the *viewport* wide and pushed flush against one outer
+ * edge, and which edge is the direction of travel: leaving an instrument it
+ * sits on the right, on the Star Map it mirrors, so the way back sits on the
+ * left. Leaning the way you are going is the one thing a two-stop shuttle
+ * can say for free. The empty half is not wasted space; it is the gap the
+ * reference leaves between a run and whatever is not next to it.
+ *
+ * It is **rounded on its inner side and flat on the side facing the glass**,
+ * and it touches the glass - the one place in the app, along with the panel
+ * bar, that breaks the shell's 12px gutter, and deliberately. It is the same
+ * rule as above followed one step further:
+ * flat means the run continues, and here what it continues into is
+ * off-screen. That only reads if it actually reaches the screen edge - flat
+ * with a strip of black beyond it is the amputated look this bar had on its
+ * first build. So the caps did not disappear, they changed ends, and the
+ * whole thing reads as a strip running in from off-frame.
+ *
+ * Half the viewport rather than half the panel because the button has to
+ * line up with the screen, not with the gutter: `w-[50vw]` plus a negative
+ * outer margin lands it on 195-390 of a 390px phone exactly.
+ *
+ * ## The stub is gone (2026-08-06)
+ *
+ * It was a two-part run for a day: a narrow colour-coded stub - the
+ * reference's row-opener - carrying the colour of the panel you were on,
+ * against a button carrying the colour of the panel you were going to. The
+ * two colours were meant to read as a trip.
+ *
+ * They did not. At full width the stub read as a row opener; at half width,
+ * pushed against the screen edge with a button beside it, it read as exactly
+ * what it was warned about from the start - a small shape parked next to a
+ * button, which the eye takes for a state lamp. A lamp that indicates
+ * nothing is worse than no lamp, and the button already names its
+ * destination and wears that destination's colour, so the stub was carrying
+ * nothing the label was not.
+ *
+ * So the bar is one button now. Where you are is on the panel bar at the top
+ * of the screen; where one tap takes you is here.
  */
 export function MobileJumpBar({
   label,
   color,
-  fromColor,
+  side,
   onSelect,
   id,
 }: {
   label: string;
   color: ButtonColor;
-  fromColor: ButtonColor;
+  /** Which outer edge the button is flush against - see "Half a width". */
+  side: "left" | "right";
   onSelect: () => void;
   id?: string;
 }) {
+  const onRight = side === "right";
+
   return (
-    <div id={id} className="flex items-stretch gap-1 shrink-0">
-      {/* The reference's index tab: narrow, colour-coded, carries no text,
-          and takes the rounded cap at the run's outer edge. */}
-      <div className={`w-10 shrink-0 rounded-l-full ${SOLID_BG[fromColor]}`} />
+    // The negative margin cancels the shell's gutter on this one side only,
+    // so the flat end lands on the glass. It has to track the shell's own
+    // padding (`p-3 md:p-6`); the bar only exists below `lg`, so those are
+    // the only two values it can meet.
+    <div
+      id={id}
+      className={`flex shrink-0 ${
+        onRight ? "justify-end -mr-3 md:-mr-6" : "justify-start -ml-3 md:-ml-6"
+      }`}
+    >
       <LcarsButton
         color={color}
-        shape="cap-end"
+        /* Flipped rather than squared off. The cap did not disappear, it
+           changed ends: rounded on the inner side, flat on the side facing
+           the glass, which is the side the button carries on past. */
+        shape={onRight ? "cap-start" : "cap-end"}
         orientation="horizontal"
         onClick={onSelect}
-        /* Everything the stub leaves, which is a deliberately oversized
-           target: the whole point is that this is hit repeatedly,
-           mid-puzzle, one-handed. */
-        className="flex-1 min-w-0 min-h-11 text-sm"
+        /* Half the viewport, so the run lines up with the screen rather than
+           with the gutter. A deliberately oversized target: the whole point
+           is that this is hit repeatedly, mid-puzzle, one-handed. `nowrap`
+           is insurance - the widest label ("Star Manifest") is 80px against
+           160px of button at 320, but two lines would be worse than tight
+           here, since the bar is `shrink-0` and every pixel it grows comes
+           off the panel above it. */
+        className="w-[50vw] min-w-0 min-h-11 text-sm whitespace-nowrap"
       >
         {label}
       </LcarsButton>

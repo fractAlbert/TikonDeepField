@@ -64,8 +64,13 @@ export function RankLadderModal({
             return (
               <div
                 key={rank.index}
+                /* No ring. The current rung is already said twice - a
+                   lifted fill and a solid amber "You" chip - and the
+                   reference's way of marking a selection is exactly that,
+                   two things swapped at once rather than a stroke drawn
+                   round the outside. */
                 className={`flex gap-3 rounded-lg p-3 ${
-                  isCurrent ? "bg-white/10 ring-1 ring-lcars-amber" : "bg-black/25"
+                  isCurrent ? "bg-white/10" : "bg-black/25"
                 }`}
               >
                 <RankInsignia rank={rank.index} size={44} title="" />
@@ -90,7 +95,7 @@ export function RankLadderModal({
 
           <div
             className={`flex gap-3 rounded-lg p-3 ${
-              currentRank === RELIEVED ? "bg-lcars-red/25 ring-1 ring-lcars-red" : "bg-black/25"
+              currentRank === RELIEVED ? "bg-lcars-red/25" : "bg-black/25"
             }`}
           >
             <RankInsignia rank={RELIEVED} size={44} title="" />

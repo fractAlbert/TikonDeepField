@@ -5,7 +5,7 @@ import { regions as builtInRegions } from "@/data/regions";
 import { generateRegion } from "@/lib/generate-region";
 import { assessSolvability } from "@/lib/solvability";
 import { Region } from "@/lib/puzzle-types";
-import { BUTTON_COLORS, ButtonColor } from "@/lib/lcars-colors";
+import { ButtonColor } from "@/lib/lcars-colors";
 import {
   ACTIVE_SURVEY_LIMIT,
   EMPTY_LOG,
@@ -123,13 +123,24 @@ const UTILITY_NAV: NavItem[] = [
 // so nothing is actually blocked on it.
 const GENERATE_DELAY_MS = 2200;
 
-// Unlabeled, non-interactive filler segments padding out the left rail so
-// it reads as a full LCARS panel rather than a handful of buttons over
-// empty space.
-const LEFT_RAIL_FILLERS: ButtonColor[] = Array.from(
-  { length: 5 },
-  (_, i) => BUTTON_COLORS[(i + PRIMARY_NAV.length) % BUTTON_COLORS.length]
-);
+// One unlabeled segment, taking the whole of the rail below the buttons, so
+// the left edge reads as a solid run rather than as a handful of buttons
+// over empty space.
+//
+// It was five segments until 2026-08-06, which - once the buttons stopped
+// stretching - left five fat rounded blocks of five different colours doing
+// nothing but being large. A single bar is both quieter and closer to the
+// references: `lcars-ultra`'s rails run one 497px block and one 687px block
+// against labelled cells of 147px, so the unlabelled mass is *supposed* to
+// dwarf the buttons. It is the colour changing five times that made it read
+// as five things.
+//
+// Orange, matching the header block at the top of the same column. The two
+// are the ends of one run - the head of the frame's left edge and its foot -
+// so giving them one colour says that, where the lilac it was first built
+// with said the opposite. The buttons between them keep their own colours;
+// they are the contents of the run, not the run itself.
+const LEFT_RAIL_FILLERS: ButtonColor[] = ["orange"];
 
 // Below `lg` both rails are replaced by the menu hub, with the star map
 // joining as a real destination. Amber to match its own panel header - the
@@ -606,10 +617,11 @@ export function AppShell() {
     panel === "log" && logPreviewRegion ? logPreviewRegion : activeRegion;
 
   /**
-   * The phone's bottom bar, as the two nav entries it is drawn from: where
-   * you are and where one tap takes you. The bar names and colours the
-   * button after `to`, and colours its opening stub after `from`, so the
-   * whole thing reads as a trip rather than as a lone button.
+   * The phone's bottom bar, as the nav entry it is drawn from: where one tap
+   * takes you. The bar takes that entry's label and colour, so it reads as
+   * "one tap puts you here" rather than as a back button that happens to be
+   * labelled. Where you *are* is the panel bar's job, at the top of the
+   * screen.
    *
    * Only with a live survey. Without one the four survey panels are all
    * showing the same "no active assignment" placeholder and the map has
@@ -621,9 +633,7 @@ export function AppShell() {
     const toId =
       panel === "starmap" ? mapOrigin : SOLVING_PANELS.includes(panel) ? "starmap" : null;
     if (!toId) return null;
-    const to = MOBILE_NAV.find((item) => item.id === toId);
-    const from = MOBILE_NAV.find((item) => item.id === panel);
-    return to && from ? { to, from } : null;
+    return MOBILE_NAV.find((item) => item.id === toId) ?? null;
   }, [isMobile, activeRegion, panel, mapOrigin]);
 
   // Maximising is a *restyle* of the sidebar, never a move: the map stays
@@ -702,7 +712,22 @@ export function AppShell() {
           it to roughly half that, and the Star Map only needed ~19px more
           than it had. */}
       <header id="app-header" className="flex items-stretch gap-3 shrink-0">
-        <div className="w-10 md:w-24 bg-lcars-orange rounded-tl-[2rem] rounded-bl-[2rem]" />
+        {/* The head of the frame's left-hand run. It is the same width as
+            the nav rail beneath it and squares off at the bottom on
+            desktop, so the two read as one column continuing down the edge
+            of the screen rather than as a decorative stub above a menu -
+            rounded terminates, flat continues, and the 12px of black
+            between them is grout rather than a break.
+
+            Below `lg` there is no rail under it, so it keeps its bottom
+            cap and stays a stub: a flat edge needs a visible neighbour to
+            continue into, and there would not be one. */}
+        {/* No `shrink-0`. The block is decoration, and at 320 the header is
+            already over its budget (backlog item 10) - letting the flex
+            algorithm squeeze this before it squeezes the title is the
+            cheapest 40px available. Adding `shrink-0` here pushed the
+            shell's min-content from 362 to 402, measured. */}
+        <div className="lcars-left-run bg-lcars-orange rounded-tl-[2rem] rounded-bl-[2rem] lg:rounded-bl-none" />
         <div className="flex-1 flex items-center justify-between gap-3 bg-lcars-orange rounded-tr-[2rem] px-3 md:px-8 py-2 md:py-4">
           <div className="min-w-0">
             <h1 className="lcars-caps text-lg md:text-4xl font-bold text-black leading-none">
@@ -773,7 +798,14 @@ export function AppShell() {
                header + full-width content until the menu appears. Once
                hydrated these three aren't rendered below `lg` at all, so
                the class never gets a chance to apply. */
-            className="w-32 md:w-40 shrink-0 mr-[48px] max-lg:hidden"
+            /* `-mb-6` cancels the shell's bottom padding so the run reaches
+               the glass. Its foot is a square filler now, and a flat edge
+               needs something to continue into - stopping 24px above the
+               window is the cut-in-mid-air the jump bar was corrected for
+               twice. The rail only exists at `lg` and up, where the
+               shell's padding is `md:p-6`, so 24px is the only value it
+               can meet. */
+            className="lcars-left-run shrink-0 mr-[48px] -mb-6 max-lg:hidden"
           />
         )}
 
@@ -915,10 +947,12 @@ export function AppShell() {
         {jump && (
           <MobileJumpBar
             id="mobile-jump-bar"
-            label={jump.to.label}
-            color={jump.to.color}
-            fromColor={jump.from.color}
-            onSelect={() => selectPanel(jump.to.id)}
+            label={jump.label}
+            color={jump.color}
+            /* Leaning the way you're going: out to the map on the right,
+               back from it on the left. */
+            side={panel === "starmap" ? "left" : "right"}
+            onSelect={() => selectPanel(jump.id)}
           />
         )}
 

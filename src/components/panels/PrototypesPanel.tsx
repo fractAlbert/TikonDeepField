@@ -6,7 +6,7 @@ import { buildSectors } from "@/lib/grid";
 import { generateRegion } from "@/lib/generate-region";
 import { quasarColorHex } from "@/lib/quasar-colors";
 import { playButtonClick } from "@/lib/sound";
-import { LcarsPanel } from "@/components/LcarsShell";
+import { LcarsBreak, LcarsPanel } from "@/components/LcarsShell";
 import {
   RingCensusLadder,
   RingScope,
@@ -14,6 +14,7 @@ import {
 } from "@/components/ringsurvey/RingScope";
 import { TargetedScanPrototype } from "@/components/ringsurvey/TargetedScanPrototype";
 import { StarGlyphPrototype } from "@/components/prototypes/StarGlyphPrototype";
+import { LcarsKitPrototype } from "@/components/prototypes/LcarsKitPrototype";
 import { RING_COUNT } from "@/lib/grid";
 
 const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
@@ -64,6 +65,10 @@ export function PrototypesPanel({
 }) {
   return (
     <div className="flex flex-col gap-4">
+      {/* First, because it is the only one here that is about the interface
+          rather than about the game - the thing you open before designing a
+          control, not while settling a mechanic. */}
+      <LcarsKitPrototype />
       <StarGlyphPrototype />
       <RingSurveyPrototype region={region} />
       <TargetedScanPrototype region={region} />
@@ -213,7 +218,8 @@ function RingSurveyPrototype({ region }: { region: Region | null }) {
           squeezed the dial to ~215px and bunched the ring labels together. */}
       <RingScope counts={counts} color={color} mode={mode} visible />
 
-      <div className="mt-5 pt-4 border-t border-white/10">
+      <LcarsBreak className="mt-5" />
+      <div className="pt-4">
         <div className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50 mb-2">
           D &middot; No dial, for comparison
         </div>
@@ -225,7 +231,8 @@ function RingSurveyPrototype({ region }: { region: Region | null }) {
         </p>
       </div>
 
-      <div className="mt-5 pt-4 border-t border-white/10 text-xs text-lcars-ice/50 leading-relaxed">
+      <LcarsBreak className="mt-5" />
+      <div className="pt-4 text-xs text-lcars-ice/50 leading-relaxed">
         <p className="mb-2">
           <span className="text-lcars-ice/70 font-semibold">A &middot; Sweep</span>{" "}
           &mdash; returns flash as the gate crosses them and fade behind it, like

@@ -25,7 +25,7 @@ import { restartTutorial } from "@/lib/station";
 import { usePlayer } from "@/lib/use-player";
 import { useStation } from "@/lib/use-station";
 import { playButtonClick, playReset } from "@/lib/sound";
-import { LcarsPanel } from "@/components/LcarsShell";
+import { LcarsBreak, LcarsPanel } from "@/components/LcarsShell";
 import { LcarsButton } from "@/components/LcarsButton";
 import { RankInsignia } from "@/components/RankInsignia";
 import { RankLadderModal } from "@/components/RankLadderModal";
@@ -113,7 +113,14 @@ export function ProfilePanel() {
                   }}
                   maxLength={40}
                   aria-label="Officer name"
-                  className="min-w-0 flex-1 bg-black/40 rounded-lg px-3 py-1.5 text-lg font-semibold text-lcars-ice outline-none ring-1 ring-lcars-lilac/60 focus:ring-lcars-amber"
+                  /* A field has to show its own edge - it is the one place
+                     "type here" cannot be said with a block - so this keeps
+                     a visible boundary and changes the mechanism to
+                     `outline`, which `globals.css` already argues for: it
+                     is drawn outside the box and does not participate in
+                     layout, so focusing something cannot nudge a panel that
+                     exactly fits. */
+                  className="min-w-0 flex-1 bg-black/40 rounded-lg px-3 py-1.5 text-lg font-semibold text-lcars-ice outline outline-1 outline-lcars-lilac/60 focus:outline-lcars-amber"
                 />
                 <button
                   type="button"
@@ -211,7 +218,8 @@ export function ProfilePanel() {
             and this one is not. Available at any rank, including mid-survey:
             the confirmation carries the weight, and "you may not retire
             while you have work open" is a rule with nothing behind it. */}
-        <div className="mt-5 pt-4 border-t border-white/10">
+        <LcarsBreak className="mt-5" />
+        <div className="pt-4">
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
@@ -225,9 +233,14 @@ export function ProfilePanel() {
                 retireCareer();
               }}
               onBlur={() => setConfirmingRetire(false)}
+              /* The armed state is the app's one use of `alert`. Retiring is
+                 the only genuinely irreversible thing a player can do, and
+                 the reference spends its saturated red about this often -
+                 once. The resting state stays quiet, so the colour arrives
+                 with the consequence rather than sitting there waiting. */
               className={`lcars-caps text-xs px-4 py-1.5 rounded-full font-semibold cursor-pointer transition-colors ${
                 confirmingRetire
-                  ? "bg-lcars-red text-black hover:bg-lcars-salmon"
+                  ? "bg-lcars-alert text-black hover:bg-lcars-red"
                   : "bg-lcars-panel text-lcars-ice/80 hover:bg-white/15"
               }`}
             >
@@ -246,15 +259,21 @@ export function ProfilePanel() {
         <RankLadderStrip current={player.rank} />
 
         {relieved ? (
-          <div className="mt-4 rounded-lg bg-lcars-red/20 ring-1 ring-lcars-red/60 p-3">
-            <div className="lcars-caps text-xs font-semibold text-lcars-red">
-              Relieved of Survey Duty
+          /* The same shape the Log's cap-refusal notice uses: a solid bar
+             of the state's own colour on the leading edge, against a
+             tinted block. Touching blocks and black grout, no stroke. */
+          <div className="mt-4 flex rounded-lg overflow-hidden">
+            <div className="w-2 shrink-0 bg-lcars-red" />
+            <div className="flex-1 min-w-0 bg-lcars-red/15 p-3">
+              <div className="lcars-caps text-xs font-semibold text-lcars-red">
+                Relieved of Survey Duty
+              </div>
+              <p className="text-xs text-lcars-ice/70 leading-relaxed mt-1.5">
+                The career is over. There is no route back onto the ladder from
+                here &mdash; the record stands as it is, and a new officer
+                starts a new file.
+              </p>
             </div>
-            <p className="text-xs text-lcars-ice/70 leading-relaxed mt-1.5">
-              The career is over. There is no route back onto the ladder from
-              here &mdash; the record stands as it is, and a new officer starts
-              a new file.
-            </p>
           </div>
         ) : (
           <div className="mt-4">
@@ -287,7 +306,8 @@ export function ProfilePanel() {
           </div>
         )}
 
-        <div className="mt-4 pt-3 border-t border-white/10 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] text-lcars-ice/45">
+        <LcarsBreak className="mt-4" />
+        <div className="pt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] text-lcars-ice/45">
           <span>Career: {player.outcomes.length} regions closed</span>
           <span>{career.confirmed} confirmed</span>
           <span>{career.retracted} retracted</span>
@@ -347,19 +367,27 @@ function RankLadderStrip({ current }: { current: number }) {
         const held = current >= rank.index;
         const isCurrent = current === rank.index;
         return (
-          <div
-            key={rank.index}
-            title={rank.title}
-            className={`flex-1 min-w-0 rounded-md px-1.5 py-2 text-center ${
-              isCurrent ? "ring-1 ring-white/40" : ""
-            }`}
-            style={{
-              backgroundColor: held ? rank.hex : "rgba(255,255,255,0.06)",
-              color: held ? "#000" : "rgba(232,240,247,0.4)",
-            }}
-          >
-            <div className="lcars-caps text-[10px] font-bold leading-none">{rank.short}</div>
-            <div className="text-[9px] leading-tight mt-1 truncate">{rank.rung}</div>
+          /* The rung you are on used to be ringed. It gets a lamp instead -
+             a solid bar under the rung, in the rung's own colour - which is
+             how the references mark one item of a run without drawing on
+             it. The slot is always there so the row cannot shift; it is
+             simply empty on the rungs you are not standing on. */
+          <div key={rank.index} title={rank.title} className="flex-1 min-w-0 flex flex-col gap-1">
+            <div
+              className="rounded-md px-1.5 py-2 text-center"
+              style={{
+                backgroundColor: held ? rank.hex : "rgba(255,255,255,0.06)",
+                color: held ? "#000" : "rgba(232,240,247,0.4)",
+              }}
+            >
+              <div className="lcars-caps text-[10px] font-bold leading-none">{rank.short}</div>
+              <div className="text-[9px] leading-tight mt-1 truncate">{rank.rung}</div>
+            </div>
+            <div
+              aria-hidden
+              className="h-1 rounded-full"
+              style={{ backgroundColor: isCurrent ? rank.hex : "transparent" }}
+            />
           </div>
         );
       })}

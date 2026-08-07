@@ -26,6 +26,11 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Shipped 2026-08-07 and removed: **re-organising the phone hub's buttons
+(11)**, written up in `mobile-layout-plan.md`. Three columns with one
+deliberate blank and the station emblem in the space below, which turned out
+to be *shorter* than the two-column version it replaced.
+
 Shipped 2026-08-05 and removed: **rank-conditioned region difficulty (1)**,
 written up in `region-difficulty.md`. That doc is now the record of what was
 built, why each lever behaves the way it does, and the one measured
@@ -38,6 +43,7 @@ follow-up that was deliberately not applied.
 | 7 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
 | 10 | The header overflows horizontally at 320px | Design |
+| 12 | Our vertical runs do not match the references | Design |
 
 ## Design
 
@@ -72,6 +78,13 @@ content may scroll inside its own panel — and it was accepted knowingly. The
 three are all long prose, so the fix, if wanted, is editorial (shorter copy,
 or pagination the way the Survey Log does it) rather than layout.
 
+**The Profile panel joined them too**, found while measuring the title shelf
+on 2026-08-06: 264px over at 390x844 and 621px at 320x568, of which the
+shelf accounts for 39px (three panels at 13px each) and the rest predates
+it. Same fix as the prose panels - it is a long single column of service
+record, standing, and career history, and the honest answer is fewer things
+on one screen rather than a tighter layout.
+
 **The Star Manifest joined them**, found while measuring the jump bar on
 2026-08-05. It overflows by 78px at 390x844 on a six-signature region, of
 which 30px predates the bar — it is listed as fitting outright in
@@ -80,6 +93,35 @@ other three, because this one is a list rather than prose and it grows with
 the region: eight signatures is the technician's profile, so the worst case
 is worse than what was measured. Pagination, or a denser row, rather than
 shorter copy.
+
+### 12 - Our vertical runs do not match the references
+
+Raised 2026-08-06 by the user on sight of the two new reference images, and
+confirmed by cropping them: their vertical runs look better than ours. The
+full read-off is in `lcars-style-notes.md` under **Vertical runs, and why
+theirs look better than ours**. In short, five differences, of which the
+first is a rule and the rest are proportion:
+
+1. **A vertical run never ends in a rounded cap** in any of the three
+   references - it ends flat, or it turns a corner into a horizontal arm.
+   The half-circle is a horizontal mark.
+2. Cell heights vary a lot within one run; ours are uniform.
+3. Labels sit **bottom-right inside the cell** with the rest left as empty
+   colour; `LcarsButton` is `justify-center`.
+4. Colour varies cell to cell down a rail rather than one colour per item.
+5. Edge-anchored, hairline gaps rather than `gap-1` with an outer margin.
+
+**Not decided, and not a small change.** (3) is the cheapest and probably
+the highest-yield - centring is the most un-LCARS thing about our controls -
+but `justify-center` is baked into `LcarsButton`'s `base`, so it touches
+every button in the app at once and wants to be a prop with a default rather
+than a global flip. (1) invalidates a specimen in `LcarsKitPrototype`, which
+is itself an open conversation, so **do these together with that discussion,
+not before it**.
+
+`NavRail` is *not* wrong about cap placement: a column of horizontal pills
+all capped on the same outer side is precisely what both new references do.
+The divergence is proportion and alignment, not grammar.
 
 ### 10 - The header overflows horizontally at 320px
 

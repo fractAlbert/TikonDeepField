@@ -174,13 +174,21 @@ export function StarManifestPanel({ region }: { region: Region }) {
                         setRecolouring(recolouring === q.id ? null : q.id);
                       }}
                       title={`Change the colour of ${q.designation}`}
-                      className={`shrink-0 rounded-full cursor-pointer transition-transform hover:scale-110 ${
-                        recolouring === q.id
-                          ? "ring-2 ring-lcars-ice ring-offset-2 ring-offset-lcars-panel"
-                          : ""
-                      }`}
+                      /* Open state is a lamp under the star rather than a
+                         ring around it. A ring is a drawn stroke, and it
+                         needed a black offset to survive against a pale
+                         entry; a solid bar underneath works against any
+                         colour and is the same device the rank strip and
+                         the picker use. */
+                      className="shrink-0 flex flex-col items-center gap-1 cursor-pointer transition-transform hover:scale-110"
                     >
                       <QuasarStar color={color} glyph={quasarGlyph(i)} size={22} />
+                      <span
+                        aria-hidden
+                        className={`h-1 w-full ${
+                          recolouring === q.id ? "bg-lcars-ice" : "bg-transparent"
+                        }`}
+                      />
                     </button>
                     <span className="text-sm font-mono text-lcars-ice">{q.designation}</span>
                     {/* Only signatures the briefing says something about get a
@@ -245,19 +253,25 @@ export function StarManifestPanel({ region }: { region: Region }) {
                             /* Stars, not swatches. You are choosing how the
                                signature will look, so the picker should
                                show you that - a flat disc made you infer
-                               it. The selected ring keeps its black offset
-                               so it stays visible around the white entry,
-                               which ice-on-ice would not. */
-                            className={`rounded-full cursor-pointer transition-transform hover:scale-110 ${
-                              hex === color
-                                ? "ring-2 ring-lcars-ice ring-offset-2 ring-offset-lcars-panel"
-                                : ""
-                            } ${clash ? "opacity-40" : ""}`}
+                               it. The current colour is marked by a lamp
+                               beneath rather than a ring around: ice-on-ice
+                               was why the ring needed a black offset in the
+                               first place, and a bar underneath never has
+                               to contrast with the thing it marks. */
+                            className={`flex flex-col items-center gap-1 cursor-pointer transition-transform hover:scale-110 ${
+                              clash ? "opacity-40" : ""
+                            }`}
                           >
                             {/* The signature's own glyph, not a generic
                                 dot: the picker is showing how *this*
                                 signature will look in that colour. */}
                             <QuasarStar color={hex} glyph={quasarGlyph(i)} size={22} />
+                            <span
+                              aria-hidden
+                              className={`h-1 w-full ${
+                                hex === color ? "bg-lcars-ice" : "bg-transparent"
+                              }`}
+                            />
                           </button>
                         );
                       })}
@@ -326,7 +340,7 @@ export function StarManifestPanel({ region }: { region: Region }) {
                           maxLength={400}
                           placeholder="e.g. ring 3 or 4, not quadrant II"
                           aria-label={`Note for ${q.designation}`}
-                          className="w-full bg-black/40 rounded px-2 py-1.5 text-xs text-lcars-ice outline-none ring-1 ring-lcars-lilac/50 focus:ring-lcars-amber resize-y"
+                          className="w-full bg-black/40 rounded px-2 py-1.5 text-xs text-lcars-ice outline outline-1 outline-lcars-lilac/50 focus:outline-lcars-amber resize-y"
                         />
                         <button
                           type="button"

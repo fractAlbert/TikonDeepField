@@ -253,9 +253,10 @@ So the button sits at the right, taking the rounded outer cap and turning
 its flat edge inward, and the dark filler was replaced by the reference's
 own row-opener: a narrow stub, solid colour, no text. It carries the colour
 of the panel you are **on** while the button carries the colour of the panel
-you are going **to**, which is what keeps it from reading as a decorative
+you are going **to**, which is meant to keep it from reading as a decorative
 state lamp beside a button - a small shape sitting against a button will
-read as state if you let it, and this one is carrying the trip.
+read as state if you let it, and this one is carrying the trip. (It did not
+survive contact: see "Half a bar" below, where the stub comes back out.)
 
 **Why the bottom and not the panel bar.** The obvious home was
 `MobilePanelBar`, which is already the fixed spot on every phone panel and
@@ -293,6 +294,58 @@ problem and is not the bar's - 30px of it predates this work, and this doc
 has listed the Manifest as fitting outright since 2026-07-29 when it has
 not for some time. Logged as part of backlog item 7.
 
+### Half a bar, leaning the way you go (2026-08-06)
+
+The full-width bar was more bar than the trip needed, so the run is now half
+the viewport and pushed flush against one edge - **right** on the way out to
+the map, **left** on the way back. Which half it occupies is the direction of
+travel, which is the one thing a two-stop shuttle can say for free, and the
+empty half is not wasted: it is the gap the reference leaves between a run
+and whatever is not next to it.
+
+Half the *viewport*, not half the panel. The run has to line up with the
+screen rather than with the gutter, so it is `w-[50vw]` inside a wrapper with
+a negative outer margin - 195-390 of a 390px phone, exactly.
+
+That margin is the deliberate part. The outer end is flat now **and touching
+the glass**, which is the shape rule above followed one step further: flat
+means the run continues, and what it continues into here is off-screen. It
+only reads that way if it genuinely reaches the edge - flat with a strip of
+black beyond it is exactly the amputated look this bar had on its first
+build.
+
+Everything is therefore **rounded on its inner side and flat on the side
+facing the glass**, mirrored when the bar changes sides. Worth stating as a
+flip rather than as a squaring-off, because that is the correction that
+produced it - a cap that disappears is not a flip, it is a cut, and a run
+needs its rounded end somewhere to say where it starts.
+
+**And the stub is gone.** The bar was a two-part run for a day: a narrow
+colour-coded stub carrying the colour of the panel you were *on*, against a
+button carrying the colour of the panel you were going *to*, meant to read as
+a trip. At full width the stub read as the reference's row-opener. At half
+width, pushed against the screen edge with a button beside it, it read as
+exactly the thing it was warned about when it was designed - a small shape
+parked next to a button, which the eye takes for a state lamp. So the bar is
+one button now. Where you are is the panel bar's job, at the top of the
+screen; where one tap takes you is the button's.
+
+The panel bar at the top of every phone panel got the same treatment on the
+same day: Back's cap moved from its right side to its left, and its right
+edge runs off the screen, with the strip's `-mr-3 md:-mr-6` cancelling the
+shell's gutter on that side only. Back keeps its 72px and the *title* gains
+the 12px, which is the right way round - the title is the thing that
+truncates at 390px. These two bars are the only places in the app that break
+the 12px frame, and they break it on purpose.
+
+One thing measured on the way: with the stub in place the button was 151px at
+390 and 116px at 320, and the widest label ("Star Manifest") is 80px, which
+put it one line short of wrapping at 320 on the default padding. Dropping the
+stub gives the whole 195/160 back, so the padding went back to default and
+`whitespace-nowrap` stayed as insurance. Two lines would be worse than tight
+here, because the bar is `shrink-0` and every pixel it grows comes off the
+panel above it.
+
 ### The map froze in Rule Out and Maybe
 
 Found by the same pass, and older than any of it. Arming a signature in an
@@ -321,3 +374,46 @@ will not give up enough room. Confirmed pre-existing by stashing the hub
 work and re-measuring: identical 362. It is clipped rather than scrollable
 (`#app-shell` is `overflow-hidden`), so nothing is lost, but "SOUND: ON" is
 cut in half. Logged as backlog item 10.
+
+### Three columns, a blank, and the emblem (2026-08-07)
+
+Backlog item 11, closed. The hub's buttons were re-organised on the user's
+prompt: *"they are very wide and have all the text right aligned... I propose
+having three columns with some blank buttons or space between."*
+
+**Why two columns looked wrong.** Each pill was ~170px against a label of six
+or seven characters, so a button was mostly empty pill with its word pinned
+to one end. The pinning arrived with the align default on 2026-08-06 (text
+hugs the segment's flat end), which is right for a rail whose cells are wider
+than their labels and wrong for a cell nearly four times its word. The
+proportion was the problem; the alignment only made it visible.
+
+**Three columns costs less height, not more.** The labels wrap, so the
+buttons go to `min-h-14` - but four rows of 56px is about 50px *shorter* than
+six rows of 44px. The denser grid is the smaller one, which is the opposite
+of what the two-column note assumed when it said the run was full at eleven.
+
+Measured at both sizes: cells are 113px at 390x844 and 89px at 320x568, every
+button clears the 44px touch floor at 56, and `main` has no vertical overflow
+at either. The horizontal 42px at 320 is backlog item 10 and unchanged.
+
+**The blank slot.** Eleven entries into twelve cells leaves one over. It goes
+second-to-last, which drops Survey New Region into the final cell on its own
+- the only entry that *does* something rather than going somewhere. That is
+`lcars-ultra`'s device: its left grid leaves one cell of six empty and the
+gap reads as unassigned rather than as a mistake.
+
+**Centred labels, asked for explicitly.** `align="center"` overrides the
+hug-the-flat-end default, because at three columns the cell is barely wider
+than its word and the label often wraps. The references support it in exactly
+this case: the word cells in `Lcars menu`'s foot grid (`ORD 3R`, `COM B6`,
+`SUB ST`) are centred where the numeric cells beside them are not. Alignment
+follows the cell's proportion, not a global preference.
+
+**The emblem.** The reclaimed space plus what was already going spare now
+carries `OutpostLogo` and the station's name - the same emblem the
+no-assignment placeholder uses, so the hub and an empty Briefing read as the
+same station rather than as two dark screens. It is decoration, not a
+control: Station is already a button three rows up, and a second silent route
+to it would be a worse affordance than none. It shrinks first when height is
+short, 180px at 390 and 135px at 320, and the grid above it never moves.

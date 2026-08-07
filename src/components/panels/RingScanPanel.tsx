@@ -144,7 +144,11 @@ export function RingScanPanel({
                   s.id === shown?.id
                     ? "bg-lcars-salmon text-black font-semibold"
                     : used
-                    ? "bg-lcars-panel text-lcars-ice/80 ring-1 ring-lcars-salmon/50"
+                    ? // Already scanned. The salmon ring said this a second
+                      // time; the salmon "R2" badge in the chip was already
+                      // saying it, so the state is carried by colouring the
+                      // label to match rather than by drawing round it.
+                      "bg-lcars-panel text-lcars-salmon/90"
                     : "bg-lcars-panel text-lcars-ice hover:bg-white/10"
                 }`}
               >
