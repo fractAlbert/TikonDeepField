@@ -2,6 +2,8 @@
 
 import { LcarsButton } from "@/components/LcarsButton";
 import { NavItem } from "@/components/NavRail";
+import { OutpostLogo } from "@/components/OutpostLogo";
+import { OUTPOST_NAME } from "@/lib/copy";
 
 /**
  * The phone landing view: every destination, as a titled block of separate
@@ -14,7 +16,20 @@ import { NavItem } from "@/components/NavRail";
  * buys back the ~58px a strip costs on every single screen, which is most
  * of what the Star Map needed to fit. Each panel carries a Back button home.
  *
- * ## Why this is two columns and no longer stretches
+ * ## Three columns, a blank, and the emblem (2026-08-07)
+ *
+ * Two columns made every button ~170px wide against a label of six or seven
+ * characters, so each one was mostly empty pill with the text pinned to one
+ * end - which is what the align default does to a cell far wider than its
+ * word. Three columns fixes the proportion at the cost of the labels
+ * wrapping, and the wrap is cheaper than it sounds: at `min-h-14` the grid
+ * is four rows of 56px where two columns were six rows of 44px, so the
+ * denser layout is *shorter* by about 50px.
+ *
+ * That reclaimed space plus the space already going spare is the emblem's,
+ * which is what the room at the bottom of this screen is now for.
+ *
+ * ## Why this is not two columns and no longer stretches
  *
  * It was one vertical run with every button on `flex-1`, which is the
  * desktop rail's idiom - its filler segments stretch so the rail reads as a
@@ -54,13 +69,26 @@ export function MobileMenu({
   className?: string;
   id?: string;
 }) {
+  // Eleven entries into a three-column grid is twelve slots with one over.
+  // The spare goes second-to-last, which drops the entry that *starts* a
+  // survey into the final cell on its own - the only one here that does
+  // something rather than going somewhere.
+  //
+  // The rest of the order is the nav's, and it groups itself: the first two
+  // rows are the survey panels, the third is you and the station, the
+  // fourth is the tools and the action.
+  const slots: (NavItem | null)[] = [
+    ...items.slice(0, -1),
+    null,
+    ...items.slice(-1),
+  ];
+
   return (
     <div id={id} className={`flex flex-col h-full ${className}`}>
-      {/* The reference image's move: a section title resting at the
-          bottom-left of its colour block, the block acting as a shelf. It
-          also gives the empty space below something to belong to - without
-          a header the grid reads as buttons dropped on a black page. */}
-      <div className="bg-lcars-orange rounded-t-xl px-4 pt-5 pb-1.5 shrink-0">
+      {/* The shelf, now the shared one rather than a hand-rolled copy of
+          it - same device as every panel title, so retuning
+          `--lcars-shelf-h` moves this with them. */}
+      <div className="bg-lcars-orange rounded-t-xl lcars-shelf px-4 shrink-0">
         <span className="lcars-caps text-black font-bold text-sm leading-none">Main Menu</span>
       </div>
 
@@ -69,25 +97,63 @@ export function MobileMenu({
           tint: black *is* the page, so a black panel over it is invisible
           and the empty space below the buttons reads as a void rather than
           as room the layout is deliberately leaving. */}
-      <div className="flex-1 min-h-0 bg-lcars-panel rounded-b-xl p-2">
-        <div className="grid grid-cols-2 gap-1.5 content-start">
-          {items.map((item) => (
-            <LcarsButton
-              key={item.id}
-              color={item.color}
-              shape="pill"
-              orientation="horizontal"
-              size="compact"
-              onClick={() => onSelect(item.id)}
-              /* `min-h-11` is the touch floor and is not negotiable; the
-                 labels wrap above it rather than the button shrinking to
-                 fit them. `text-center` because a wrapped two-line label
-                 left-aligned in a pill reads as broken. */
-              className="min-h-11 text-xs sm:text-sm text-center leading-tight"
-            >
-              {item.label}
-            </LcarsButton>
-          ))}
+      <div className="flex-1 min-h-0 bg-lcars-panel rounded-b-xl p-2 flex flex-col gap-2">
+        <div className="grid grid-cols-3 gap-1.5 content-start shrink-0">
+          {slots.map((slot, i) =>
+            slot ? (
+              <LcarsButton
+                key={slot.id}
+                color={slot.color}
+                shape="pill"
+                orientation="horizontal"
+                size="compact"
+                onClick={() => onSelect(slot.id)}
+                /* Centred, and asked for explicitly. The default hugs the
+                   flat end, which is right for a rail whose cells are
+                   wider than their labels; here the cell is barely wider
+                   than the word and the label often wraps to two lines,
+                   and the references centre in exactly that case - the
+                   word cells in `Lcars menu`'s foot grid (ORD 3R, COM B6,
+                   SUB ST) are centred where the numeric cells beside them
+                   are not.
+
+                   `min-h-14` rather than the 44px touch floor because the
+                   labels wrap at three columns; the extra height is what
+                   pays for the column, and it still costs less than the
+                   two-column layout did. */
+                align="center"
+                className="min-h-14 text-[11px] sm:text-xs text-center leading-tight"
+              >
+                {slot.label}
+              </LcarsButton>
+            ) : (
+              /* The deliberate gap. `lcars-ultra`'s left grid leaves one
+                 cell of six empty and it reads as unassigned rather than
+                 as a mistake; here it separates the tools from the one
+                 entry that starts work rather than navigating to it. */
+              <div key={`blank-${i}`} aria-hidden className="min-h-14 rounded-full bg-lcars-ice/10" />
+            )
+          )}
+        </div>
+
+        {/* The room left over, given something to be. The same emblem the
+            no-assignment placeholder uses, so the hub and the empty
+            Briefing read as the same station rather than as two screens
+            that happen to be dark. Decoration, not a control - Station is
+            already a button three rows up, and a second silent route to it
+            would be a worse affordance than none.
+
+            `min-h-0` and `max-h-full` so it gives the space back when
+            there is none: at 320x568 this is the first thing that should
+            shrink, and the grid above it must not move. */}
+        <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-1.5 pb-1">
+          <OutpostLogo
+            size={180}
+            className="opacity-80 min-h-0 max-h-full w-auto max-w-[min(55%,170px)]"
+          />
+          <span className="lcars-caps font-bold text-base text-lcars-amber/90 shrink-0">
+            {OUTPOST_NAME}
+          </span>
         </div>
       </div>
     </div>

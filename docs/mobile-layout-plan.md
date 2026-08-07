@@ -374,3 +374,46 @@ will not give up enough room. Confirmed pre-existing by stashing the hub
 work and re-measuring: identical 362. It is clipped rather than scrollable
 (`#app-shell` is `overflow-hidden`), so nothing is lost, but "SOUND: ON" is
 cut in half. Logged as backlog item 10.
+
+### Three columns, a blank, and the emblem (2026-08-07)
+
+Backlog item 11, closed. The hub's buttons were re-organised on the user's
+prompt: *"they are very wide and have all the text right aligned... I propose
+having three columns with some blank buttons or space between."*
+
+**Why two columns looked wrong.** Each pill was ~170px against a label of six
+or seven characters, so a button was mostly empty pill with its word pinned
+to one end. The pinning arrived with the align default on 2026-08-06 (text
+hugs the segment's flat end), which is right for a rail whose cells are wider
+than their labels and wrong for a cell nearly four times its word. The
+proportion was the problem; the alignment only made it visible.
+
+**Three columns costs less height, not more.** The labels wrap, so the
+buttons go to `min-h-14` - but four rows of 56px is about 50px *shorter* than
+six rows of 44px. The denser grid is the smaller one, which is the opposite
+of what the two-column note assumed when it said the run was full at eleven.
+
+Measured at both sizes: cells are 113px at 390x844 and 89px at 320x568, every
+button clears the 44px touch floor at 56, and `main` has no vertical overflow
+at either. The horizontal 42px at 320 is backlog item 10 and unchanged.
+
+**The blank slot.** Eleven entries into twelve cells leaves one over. It goes
+second-to-last, which drops Survey New Region into the final cell on its own
+- the only entry that *does* something rather than going somewhere. That is
+`lcars-ultra`'s device: its left grid leaves one cell of six empty and the
+gap reads as unassigned rather than as a mistake.
+
+**Centred labels, asked for explicitly.** `align="center"` overrides the
+hug-the-flat-end default, because at three columns the cell is barely wider
+than its word and the label often wraps. The references support it in exactly
+this case: the word cells in `Lcars menu`'s foot grid (`ORD 3R`, `COM B6`,
+`SUB ST`) are centred where the numeric cells beside them are not. Alignment
+follows the cell's proportion, not a global preference.
+
+**The emblem.** The reclaimed space plus what was already going spare now
+carries `OutpostLogo` and the station's name - the same emblem the
+no-assignment placeholder uses, so the hub and an empty Briefing read as the
+same station rather than as two dark screens. It is decoration, not a
+control: Station is already a button three rows up, and a second silent route
+to it would be a worse affordance than none. It shrinks first when height is
+short, 180px at 390 and 135px at 320, and the grid above it never moves.

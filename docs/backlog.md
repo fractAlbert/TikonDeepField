@@ -26,6 +26,11 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Shipped 2026-08-07 and removed: **re-organising the phone hub's buttons
+(11)**, written up in `mobile-layout-plan.md`. Three columns with one
+deliberate blank and the station emblem in the space below, which turned out
+to be *shorter* than the two-column version it replaced.
+
 Shipped 2026-08-05 and removed: **rank-conditioned region difficulty (1)**,
 written up in `region-difficulty.md`. That doc is now the record of what was
 built, why each lever behaves the way it does, and the one measured
@@ -38,7 +43,6 @@ follow-up that was deliberately not applied.
 | 7 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
 | 10 | The header overflows horizontally at 320px | Design |
-| 11 | Re-organise the phone hub's buttons | Design |
 | 12 | Our vertical runs do not match the references | Design |
 
 ## Design
@@ -89,29 +93,6 @@ other three, because this one is a list rather than prose and it grows with
 the region: eight signatures is the technician's profile, so the worst case
 is worse than what was measured. Pagination, or a denser row, rather than
 shorter copy.
-
-### 11 - Re-organise the phone hub's buttons
-
-Raised 2026-08-06 by the user, as a TODO rather than a specification: the
-buttons on the hub (the phone's landing page) want re-organising. What the
-new arrangement should be is **not decided** — ask before building.
-
-What is already settled and should not be re-derived:
-
-- Eleven entries, two columns, and the hub is full at that (the old item 6).
-  A twelfth destination needs something to come out.
-- They are **separate pills, not a run**, since 2026-08-05. A run is for
-  siblings and adjacency is not siblinghood — Briefing and Star Map sat
-  together because eleven entries wrap at two columns, not because they are
-  related. Any regrouping that joins buttons again has to mean it.
-- Four of the eleven are now reachable one tap sideways from each other
-  anyway (Briefing, Manifest, Sweep, Ring Scan ↔ Star Map, via the jump
-  bar), so the hub is no longer the only path between the survey panels.
-  That is the thing most likely to change what order they want to be in.
-- Order today is nav order: Briefing, Star Map, then the rest of the primary
-  rail, then the utility entries. Grouping by *what you do with them*
-  (solving / records / station) is the obvious alternative, and would want
-  colour to carry the grouping rather than eleven separate colours.
 
 ### 12 - Our vertical runs do not match the references
 
