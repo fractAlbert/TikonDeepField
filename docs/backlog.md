@@ -27,9 +27,9 @@ a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
 Shipped 2026-08-07 and removed: **re-organising the phone hub's buttons
-(11)**, written up in `mobile-layout-plan.md`. Three columns with one
-deliberate blank and the station emblem in the space below, which turned out
-to be *shorter* than the two-column version it replaced.
+(11)**, written up in `mobile-layout-plan.md`. It settled as two runs of six
+with a sweep between them - by way of a three-column version that was tried,
+looked crowded, and is recorded there as the step that found the constraint.
 
 Shipped 2026-08-05 and removed: **rank-conditioned region difficulty (1)**,
 written up in `region-difficulty.md`. That doc is now the record of what was
@@ -44,6 +44,10 @@ follow-up that was deliberately not applied.
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
 | 10 | The header overflows horizontally at 320px | Design |
 | 12 | Our vertical runs do not match the references | Design |
+| 13 | Sweep Scope: some signatures draw as plain dots | Design |
+| 14 | Sweep Scope: changing speed restarts the sweep | Interaction |
+| 15 | Close the shell frame at the bottom, or leave it a bracket | Design |
+| 16 | A hook to stop shell-mangled commit messages | Tooling |
 
 ## Design
 
@@ -144,6 +148,88 @@ Worth knowing before fixing it: the sound toggle is a plain `<button>`, not
 an `LcarsButton`, so it does not inherit the `size` prop added on
 2026-08-04. The cheap fixes are dropping the toggle's label to an icon below
 `sm`, or letting the badge collapse to its insignia earlier than `md`.
+
+### 13 - Sweep Scope: some signatures draw as plain dots
+
+Raised 2026-08-07 by the user: "some star icons not showing shaped stars".
+Not yet investigated - the symptom is that the Sweep Scope draws some
+signatures without their glyph, where every other surface (Star Map, Log
+chips, Star Manifest, Briefing bearings) gives each one its Pinpoint, Bloom,
+Four-spike or Ringed shape.
+
+Worth knowing before digging: shape is a second identity channel alongside
+colour and is assigned by list position in `lib/quasar-glyph.ts`, with
+`components/QuasarMarker.tsx` as the single drawing shared by every surface.
+So a signature losing its shape in one place and keeping it everywhere else
+points at that surface not routing through `QuasarMarker`, rather than at
+the glyph assignment. Check the scope's own blip rendering first.
+
+### 14 - Sweep Scope: changing speed restarts the sweep
+
+Raised 2026-08-07 by the user. Changing the sweep speed moves the line
+instead of leaving it where it is: "it should just speed up or slow down
+from where the line is at".
+
+The scope's clock has been running since its first mount and is deliberately
+never restarted - that constraint already shapes two other things, the panel
+staying mounted when you navigate away and staying mounted while the Star
+Map is maximised. So the fix has to change the *rate* the phase advances at
+without resetting the phase, which likely means holding the current position
+when the speed changes and continuing from it, rather than deriving position
+from elapsed time times speed.
+
+### 15 - Close the shell frame at the bottom, or leave it a bracket
+
+Raised 2026-08-07, deferred by the user for a weekend decision. Phase 3a of
+`lcars-consistency-plan.md` gave the shell a frame along its top and down its
+left edge - the header block and the nav rail are one column now, running to
+the glass at the bottom. What is not decided is whether to close it.
+
+Three options, with the cost of each:
+
+- **Close it everywhere.** Most faithful. Costs every screen ~20-28px
+  including its gap, and on a phone that stacks with the title shelf and the
+  jump bar - the scarcest budget in the layout.
+- **Desktop only** (recommended). The bar appears at `lg` and up, where
+  `main` has 832px of width and full height and the cost is nothing. Phones
+  keep their vertical budget.
+- **Leave it a bracket.** Top and left only. The references use open-sided
+  corner brackets, so two edges is a legitimate LCARS shape rather than an
+  unfinished one - this is a real option, not a cop-out.
+
+## Tooling
+
+### 16 - A hook to stop shell-mangled commit messages
+
+Raised 2026-08-07 after a commit message shipped with five identifiers
+missing. The cause is narrow and worth naming: **inside double quotes, bash
+performs command substitution**, so a message written with `git commit -m`
+containing backticks had those words executed and replaced with their
+(empty) output. Git never saw the text, which is why nothing downstream could
+have caught it - a `commit-msg` hook inspects what git receives, and what git
+received was already prose with holes in it.
+
+Two layers, and the first is free:
+
+- **Technique.** A quoted heredoc, `git commit -F - <<'MSG' ... MSG`,
+  disables all expansion. Adopted immediately and used for every commit
+  since. It is also better than the temp-file form it replaced: one call, no
+  scratchpad to manage.
+- **Enforcement.** A `PreToolUse` hook on Bash in `.claude/settings.json`
+  that blocks a `git commit` carrying both `-m` and a backtick, `$(` or `$`.
+  It fires on exactly the dangerous shape and leaves short `-m "fix typo"`
+  commits alone. This is the part that does not depend on anyone
+  remembering, which is the whole point - the note that said "always use
+  `-F`" existed and was not followed.
+
+Not built. It travels with the repo like the `lcars-design` skill does, so
+it applies to any session rather than to one machine's memory.
+
+Worth being honest about the limit: a hook stops *this* failure, not "commit
+messages come out wrong" in general. If a broader guard is wanted, the more
+valuable one is a `commit-msg` git hook checking things git can actually see
+- subject length, `Co-Authored-By` present, body not empty on a multi-file
+change.
 
 ## Gameplay
 

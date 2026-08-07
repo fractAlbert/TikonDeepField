@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { LcarsButton } from "@/components/LcarsButton";
 import { LcarsSegment } from "@/components/LcarsSegment";
 import { NavItem } from "@/components/NavRail";
@@ -60,28 +61,24 @@ import { OUTPOST_NAME } from "@/lib/copy";
  * continue into each other; this is a directory.
  */
 export function MobileMenu({
-  items,
+  groups,
   onSelect,
   className = "",
   id,
 }: {
-  items: NavItem[];
+  /** Two groups of six, drawn as two runs with a sweep between them. */
+  groups: NavItem[][];
   onSelect: (id: string) => void;
   className?: string;
   id?: string;
 }) {
-  // Eleven entries into a three-column grid is twelve slots with one over.
-  // The spare goes second-to-last, which drops the entry that *starts* a
-  // survey into the final cell on its own - the only one here that does
-  // something rather than going somewhere.
-  //
-  // The rest of the order is the nav's, and it groups itself: the first two
-  // rows are the survey panels, the third is you and the station, the
-  // fourth is the tools and the action.
-  const slots: (NavItem | null)[] = [
-    ...items.slice(0, -1),
-    null,
-    ...items.slice(-1),
+  // Each group is drawn as six slots, so a group of five carries one blank.
+  // It lands last, which leaves the entry that *starts* a survey - the only
+  // one here that does something rather than going somewhere - sitting
+  // beside a gap rather than beside another destination.
+  const pad = (group: NavItem[]): (NavItem | null)[] => [
+    ...group,
+    ...Array.from({ length: Math.max(0, 6 - group.length) }, () => null),
   ];
 
   return (
@@ -99,8 +96,32 @@ export function MobileMenu({
           and the empty space below the buttons reads as a void rather than
           as room the layout is deliberately leaving. */}
       <div className="flex-1 min-h-0 bg-lcars-panel rounded-b-xl p-2 flex flex-col gap-2">
-        <div className="grid grid-cols-3 gap-1.5 content-start shrink-0">
-          {slots.map((slot, i) =>
+        {groups.map((group, gi) => (
+          <Fragment key={gi}>
+            {/* The sweep, between the groups and nowhere else. A thick knee
+                with a rounded outer corner turning into a thin arm that
+                runs to the edge of the panel - the move the second and
+                third references use everywhere a run of controls changes
+                subject. It says "different set" the way LCARS says it,
+                with a piece of structure, where a rule across the panel
+                would be a drawn line and the one thing the notes forbid
+                outright.
+
+                The interior corner where knee meets arm stays square:
+                rounded terminates, flat continues, and this joint
+                continues. */}
+            {gi > 0 && (
+              <div aria-hidden className="flex items-end shrink-0 my-0.5">
+                <div className="w-14 h-7 bg-lcars-amber rounded-tl-[1.75rem]" />
+                <div className="flex-1 h-2.5 bg-lcars-amber rounded-r-full" />
+              </div>
+            )}
+
+            {/* `grow shrink-0`: a run takes its natural height where there
+                is no slack, and grows toward its cap where there is.
+                Shrinking would drive the rows under the touch floor. */}
+            <div className="lcars-hub-grid grid grid-cols-2 gap-1.5 grow shrink-0">
+              {pad(group).map((slot, i) =>
             slot ? (
               <LcarsButton
                 key={slot.id}
@@ -118,12 +139,12 @@ export function MobileMenu({
                    SUB ST) are centred where the numeric cells beside them
                    are not.
 
-                   `min-h-14` rather than the 44px touch floor because the
-                   labels wrap at three columns; the extra height is what
-                   pays for the column, and it still costs less than the
-                   two-column layout did. */
+                   Height comes from the grid's rows now rather than from
+                   the button, so `h-full` fills whatever the row was
+                   given - floored at 56px, which is the touch floor with
+                   room for a wrapped label. */
                 align="center"
-                className="min-h-14 text-[11px] sm:text-xs text-center leading-tight"
+                className="h-full lcars-hub-label text-center leading-tight"
               >
                 {slot.label}
               </LcarsButton>
@@ -144,15 +165,17 @@ export function MobileMenu({
                  nothing around it: teal sits to its left, orange to its
                  right and violet directly above. */
               <LcarsSegment
-                key={`blank-${i}`}
+                key={`blank-${gi}-${i}`}
                 color="ice"
                 shape="pill"
                 orientation="horizontal"
-                className="min-h-14"
+                className="h-full"
               />
-            )
-          )}
-        </div>
+                )
+              )}
+            </div>
+          </Fragment>
+        ))}
 
         {/* The room left over, given something to be. The same emblem the
             no-assignment placeholder uses, so the hub and the empty
@@ -164,12 +187,18 @@ export function MobileMenu({
             `min-h-0` and `max-h-full` so it gives the space back when
             there is none: at 320x568 this is the first thing that should
             shrink, and the grid above it must not move. */}
-        <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-1.5 pb-1">
+        <div className="lcars-hub-crest flex-1 min-h-0 flex-col items-center justify-center gap-2 pb-1">
+          {/* The emblem is what takes the space on a tall handset, not the
+              buttons. Growing the buttons to fill an 844px screen turns
+              pills into tiles and reads as fat; growing this reads as a
+              console with a crest on it. So the grid is capped and the
+              emblem gets everything left over, bounded only by the width
+              of the panel it sits in. */}
           <OutpostLogo
-            size={180}
-            className="opacity-80 min-h-0 max-h-full w-auto max-w-[min(55%,170px)]"
+            size={260}
+            className="opacity-80 min-h-0 max-h-full w-auto max-w-[min(68%,240px)]"
           />
-          <span className="lcars-caps font-bold text-base text-lcars-amber/90 shrink-0">
+          <span className="lcars-caps font-bold text-lg text-lcars-amber/90 shrink-0">
             {OUTPOST_NAME}
           </span>
         </div>

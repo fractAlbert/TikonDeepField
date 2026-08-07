@@ -417,3 +417,57 @@ same station rather than as two dark screens. It is decoration, not a
 control: Station is already a button three rows up, and a second silent route
 to it would be a worse affordance than none. It shrinks first when height is
 short, 180px at 390 and 135px at 320, and the grid above it never moves.
+
+**Sized off the container, not a breakpoint (same day).** The first pass
+fixed the rows at 56px, which is right at 320x568 and looks lost on an 844px
+handset. The obvious fix - let the rows share the height available - was
+tried and immediately rejected on sight: at ~92px the pills became
+near-square tiles and drew the same "too fat" objection the stretched
+two-column hub drew in August.
+
+So the split is: **the buttons stay pills and the emblem takes the space.**
+Rows are capped at 60px via `--lcars-hub-grid-max`, which keeps every cell
+wider than it is tall at every phone width (2.1 at 430, 1.88 at 390, 1.49 at
+320), and the emblem gets everything left over - 260px on a tall handset,
+shrinking to 113px at 320 where the grid needs the room. What makes the page
+feel bigger is the label and the crest, not the controls.
+
+The label is `--lcars-hub-label`, 13px, up from 11. It had been written
+`text-[11px] sm:text-xs`, and **`sm:` is a 640px breakpoint that no phone
+ever reaches** - so every handset had been getting the base size while the
+larger one only ever appeared on tablets. Worth remembering generally: on
+this screen, breakpoints are the wrong tool, because the thing that varies
+is the height of the container rather than the width of the viewport.
+
+### Two runs of six, with a sweep (2026-08-07, final)
+
+Three columns was tried first and rejected on sight as crowded. It is worth
+recording why, because the numbers say the opposite of the eye: three columns
+gave cells of 89-126px against 60px of height, a ratio of 1.49 to 2.1, which
+is close enough to square that the pill stops being a pill. Two columns gives
+2.37 to 3.2. **A pill has to be visibly wider than it is tall or it reads as
+a fat tile**, and that ratio is the thing to check, not the column count.
+
+So: **two runs of six, with a sweep between them.** The split is what you do
+with the entry - the first six are working a survey (Briefing, Star Manifest,
+Star Map, Sweep Scope, Ring Scan, Log), the second six are the station and
+your record. The first group's order pairs the two catalogue panels on one
+row and the two instruments on the next.
+
+**The sweep** is a thick knee with a rounded outer corner turning into a thin
+arm that runs to the panel's edge - the move the second and third references
+use wherever a run of controls changes subject. It says "different set" with
+a piece of structure rather than a drawn rule, which is the one thing the
+notes forbid outright. The interior corner where knee meets arm stays square:
+rounded terminates, flat continues, and that joint continues.
+
+**The crest comes off on small screens.** Six rows want nearly all of a 568px
+phone, so `.lcars-hub-crest` is hidden below a 700px viewport height and
+shown above it. This is one of the few places a media query is the right tool
+here - what actually runs out is the viewport's height, which is exactly what
+the query measures. At 320x568 the hub is buttons alone; at 390x844 and above
+the emblem returns.
+
+Measured at 430x932, 390x844 and 320x568: eleven buttons, rows 58-60px, every
+one clear of the 44px touch floor, no vertical overflow, crest shown at the
+top two and hidden at the smallest.
