@@ -76,6 +76,21 @@ body {
   --lcars-shelf-h: 4.5rem;
 }
 
+/* The joint between the rail's buttons and the unlabelled run beneath them.
+   It matches the gap between the header and the first button, so the left
+   column reads as one object with the same joint at both ends instead of a
+   4px hairline at one and a 12px gap at the other.
+
+   The token is the gap you want; the calc subtracts the `gap-1` the flex
+   column already applies between every row. */
+:root {
+  --lcars-rail-foot-gap: 0.75rem; /* 12px, matching the shell's gap-3 */
+}
+
+.lcars-rail-foot {
+  margin-top: calc(var(--lcars-rail-foot-gap) - 0.25rem);
+}
+
 /* The width of the frame's left-hand run - the header's cap block and the
    nav rail directly below it, which are one column read top to bottom and
    have to measure the same or they read as two unrelated objects.

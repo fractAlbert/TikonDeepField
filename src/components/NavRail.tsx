@@ -68,7 +68,16 @@ export function NavRail({
         </Row>
       ))}
       {fillerColors.map((color, i) => (
-        <Row key={`filler-${i}`} color={color} selected={false} indicatorSide={indicatorSide} stretch>
+        <Row
+          key={`filler-${i}`}
+          color={color}
+          selected={false}
+          indicatorSide={indicatorSide}
+          stretch
+          /* Only the first one steps away from the buttons; any further
+             fillers stay tight to each other, since they are one mass. */
+          className={i === 0 ? "lcars-rail-foot" : ""}
+        >
           {/* Square, not capped. A cap is a half-circle of half the box's
               height, which on a 40px button is the LCARS mark and on a
               500px filler is a giant lozenge - which is exactly what it
@@ -94,19 +103,21 @@ function Row({
   selected,
   indicatorSide,
   stretch,
+  className = "",
 }: {
   children: React.ReactNode;
   color: ButtonColor;
   selected: boolean;
   indicatorSide: "left" | "right";
   stretch: boolean;
+  className?: string;
 }) {
   const indicatorPositionClass =
     indicatorSide === "right" ? "left-[calc(100%+10px)]" : "right-[calc(100%+10px)]";
   const indicatorRoundingClass = indicatorSide === "right" ? "rounded-r-full" : "rounded-l-full";
 
   return (
-    <div className={`relative flex ${stretch ? "flex-1" : ""}`}>
+    <div className={`relative flex ${stretch ? "flex-1" : ""} ${className}`}>
       {children}
       <div
         aria-hidden

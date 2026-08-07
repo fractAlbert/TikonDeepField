@@ -135,11 +135,12 @@ const GENERATE_DELAY_MS = 2200;
 // dwarf the buttons. It is the colour changing five times that made it read
 // as five things.
 //
-// Lilac deliberately rather than by rotation: it is the one structural
-// colour in the palette that collides with nothing - teal is the
-// walk-through's voice, orange is the header directly above it, and the
-// reds now mean a bad outcome.
-const LEFT_RAIL_FILLERS: ButtonColor[] = ["lilac"];
+// Orange, matching the header block at the top of the same column. The two
+// are the ends of one run - the head of the frame's left edge and its foot -
+// so giving them one colour says that, where the lilac it was first built
+// with said the opposite. The buttons between them keep their own colours;
+// they are the contents of the run, not the run itself.
+const LEFT_RAIL_FILLERS: ButtonColor[] = ["orange"];
 
 // Below `lg` both rails are replaced by the menu hub, with the star map
 // joining as a real destination. Amber to match its own panel header - the
