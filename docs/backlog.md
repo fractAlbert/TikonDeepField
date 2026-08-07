@@ -48,6 +48,7 @@ follow-up that was deliberately not applied.
 | 14 | Sweep Scope: changing speed restarts the sweep | Interaction |
 | 15 | Close the shell frame at the bottom, or leave it a bracket | Design |
 | 16 | A hook to stop shell-mangled commit messages | Tooling |
+| 17 | Rework the header, against the user's mock-up | Design |
 
 ## Design
 
@@ -196,6 +197,30 @@ Three options, with the cost of each:
 - **Leave it a bracket.** Top and left only. The references use open-sided
   corner brackets, so two edges is a legitimate LCARS shape rather than an
   unfinished one - this is a real option, not a cop-out.
+
+### 17 - Rework the header, against the user's mock-up
+
+Raised 2026-08-07. The user has made a mock-up of the header and wants to
+talk it through before anything is built. **Do not design the header from
+these notes - ask for the mock-up first.** It is the specification;
+everything below is only what is already known about the area.
+
+What the mock-up will have to live with:
+
+- **Item 10 is in this same component.** The header's min-content is 362px
+  against 296px of available width at 320, so "SOUND: ON" is clipped. If the
+  mock-up changes the header at all, that is the moment to fix the overflow
+  rather than a separate job.
+- **The left block is the head of the frame's left run.** As of phase 3a it
+  matches the nav rail's width at `lg` and squares off at the bottom so the
+  two read as one column; below `lg` it keeps its bottom cap and shrinks to
+  a stub. Anything that changes its width or its corners has to keep that
+  relationship or the frame stops reading as one object.
+- **It has no `shrink-0`, deliberately.** Adding one cost 40px of
+  min-content width and broke 390, which had been fitting. Measured, and
+  reverted the same day.
+- **The sound toggle is a plain `<button>`**, not an `LcarsButton`, so it
+  does not inherit the `size` prop.
 
 ## Tooling
 
