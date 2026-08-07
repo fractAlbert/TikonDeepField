@@ -99,7 +99,10 @@ export function MobileMenu({
           and the empty space below the buttons reads as a void rather than
           as room the layout is deliberately leaving. */}
       <div className="flex-1 min-h-0 bg-lcars-panel rounded-b-xl p-2 flex flex-col gap-2">
-        <div className="grid grid-cols-3 gap-1.5 content-start shrink-0">
+        {/* `grow shrink-0`: the grid takes its natural height at 320, where
+            there is no slack to give, and grows toward its cap where there
+            is. Shrinking would drive the rows under the touch floor. */}
+        <div className="lcars-hub-grid grid grid-cols-3 gap-1.5 grow shrink-0">
           {slots.map((slot, i) =>
             slot ? (
               <LcarsButton
@@ -118,12 +121,12 @@ export function MobileMenu({
                    SUB ST) are centred where the numeric cells beside them
                    are not.
 
-                   `min-h-14` rather than the 44px touch floor because the
-                   labels wrap at three columns; the extra height is what
-                   pays for the column, and it still costs less than the
-                   two-column layout did. */
+                   Height comes from the grid's rows now rather than from
+                   the button, so `h-full` fills whatever the row was
+                   given - floored at 56px, which is the touch floor with
+                   room for a wrapped label. */
                 align="center"
-                className="min-h-14 text-[11px] sm:text-xs text-center leading-tight"
+                className="h-full lcars-hub-label text-center leading-tight"
               >
                 {slot.label}
               </LcarsButton>
@@ -148,7 +151,7 @@ export function MobileMenu({
                 color="ice"
                 shape="pill"
                 orientation="horizontal"
-                className="min-h-14"
+                className="h-full"
               />
             )
           )}
@@ -164,12 +167,18 @@ export function MobileMenu({
             `min-h-0` and `max-h-full` so it gives the space back when
             there is none: at 320x568 this is the first thing that should
             shrink, and the grid above it must not move. */}
-        <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-1.5 pb-1">
+        <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-2 pb-1">
+          {/* The emblem is what takes the space on a tall handset, not the
+              buttons. Growing the buttons to fill an 844px screen turns
+              pills into tiles and reads as fat; growing this reads as a
+              console with a crest on it. So the grid is capped and the
+              emblem gets everything left over, bounded only by the width
+              of the panel it sits in. */}
           <OutpostLogo
-            size={180}
-            className="opacity-80 min-h-0 max-h-full w-auto max-w-[min(55%,170px)]"
+            size={260}
+            className="opacity-80 min-h-0 max-h-full w-auto max-w-[min(68%,240px)]"
           />
-          <span className="lcars-caps font-bold text-base text-lcars-amber/90 shrink-0">
+          <span className="lcars-caps font-bold text-lg text-lcars-amber/90 shrink-0">
             {OUTPOST_NAME}
           </span>
         </div>

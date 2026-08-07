@@ -43,6 +43,42 @@ body {
   letter-spacing: 0.04em;
 }
 
+/* The phone hub's grid.
+
+   The rows used to be a flat 56px at every screen size, which is right at
+   320x568 and looks lost on a 390x844 handset - a small block of buttons at
+   the top with a third of the screen empty under it. So the rows share the
+   height available instead, floored at the old 56 and capped by the grid's
+   own max-height rather than growing without limit.
+
+   The cap is the part that matters, and the first attempt set it far too
+   high. Letting the rows reach ~92px on a 430px handset turned the pills
+   into near-square tiles and drew exactly the objection an earlier hub drew
+   when every button stretched to fill the screen: fat, rather than a
+   system. A pill is wider than it is tall, and at 113px across, anything
+   past about 64px stops reading as one.
+
+   So the growth is deliberately small - 56px to 64px across the whole phone
+   range. What makes the hub feel bigger is the label, not the button.
+
+   `sm:` is no use for any of this: it is a 640px breakpoint, so no phone
+   ever reaches it and the label had been stuck at its base size on every
+   handset. Sizing off the container's height is what actually varies. */
+:root {
+  --lcars-hub-row-min: 3.5rem; /* 56px, the floor and the old fixed value */
+  --lcars-hub-grid-max: 16.125rem; /* four rows at 60px, plus three 6px gaps */
+  --lcars-hub-label: 0.8125rem; /* 13px */
+}
+
+.lcars-hub-grid {
+  grid-auto-rows: minmax(var(--lcars-hub-row-min), 1fr);
+  max-height: var(--lcars-hub-grid-max);
+}
+
+.lcars-hub-label {
+  font-size: var(--lcars-hub-label);
+}
+
 /* A panel's title block: a shelf the label rests on, not a caption bar
    above the content. All three references agree on the shape - EMERGENCY
    OVERRIDE, MODE SELECT and IMPULSE SYSTEMS sit at the bottom-left of a

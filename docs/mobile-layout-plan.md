@@ -417,3 +417,24 @@ same station rather than as two dark screens. It is decoration, not a
 control: Station is already a button three rows up, and a second silent route
 to it would be a worse affordance than none. It shrinks first when height is
 short, 180px at 390 and 135px at 320, and the grid above it never moves.
+
+**Sized off the container, not a breakpoint (same day).** The first pass
+fixed the rows at 56px, which is right at 320x568 and looks lost on an 844px
+handset. The obvious fix - let the rows share the height available - was
+tried and immediately rejected on sight: at ~92px the pills became
+near-square tiles and drew the same "too fat" objection the stretched
+two-column hub drew in August.
+
+So the split is: **the buttons stay pills and the emblem takes the space.**
+Rows are capped at 60px via `--lcars-hub-grid-max`, which keeps every cell
+wider than it is tall at every phone width (2.1 at 430, 1.88 at 390, 1.49 at
+320), and the emblem gets everything left over - 260px on a tall handset,
+shrinking to 113px at 320 where the grid needs the room. What makes the page
+feel bigger is the label and the crest, not the controls.
+
+The label is `--lcars-hub-label`, 13px, up from 11. It had been written
+`text-[11px] sm:text-xs`, and **`sm:` is a 640px breakpoint that no phone
+ever reaches** - so every handset had been getting the base size while the
+larger one only ever appeared on tablets. Worth remembering generally: on
+this screen, breakpoints are the wrong tool, because the thing that varies
+is the height of the container rather than the width of the viewport.
