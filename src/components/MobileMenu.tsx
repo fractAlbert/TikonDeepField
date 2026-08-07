@@ -1,6 +1,7 @@
 "use client";
 
 import { LcarsButton } from "@/components/LcarsButton";
+import { LcarsSegment } from "@/components/LcarsSegment";
 import { NavItem } from "@/components/NavRail";
 import { OutpostLogo } from "@/components/OutpostLogo";
 import { OUTPOST_NAME } from "@/lib/copy";
@@ -130,8 +131,25 @@ export function MobileMenu({
               /* The deliberate gap. `lcars-ultra`'s left grid leaves one
                  cell of six empty and it reads as unassigned rather than
                  as a mistake; here it separates the tools from the one
-                 entry that starts work rather than navigating to it. */
-              <div key={`blank-${i}`} aria-hidden className="min-h-14 rounded-full bg-lcars-ice/10" />
+                 entry that starts work rather than navigating to it.
+
+                 Full strength, not a tint. A dimmed cell reads as a
+                 disabled button - something you were meant to be able to
+                 press - where a solid one is plainly a piece of the panel,
+                 which is what the references do with every unlabelled
+                 block. `LcarsSegment` rather than a styled div so it
+                 cannot pick up button semantics or a pointer cursor.
+
+                 Ice because it is the one palette colour that touches
+                 nothing around it: teal sits to its left, orange to its
+                 right and violet directly above. */
+              <LcarsSegment
+                key={`blank-${i}`}
+                color="ice"
+                shape="pill"
+                orientation="horizontal"
+                className="min-h-14"
+              />
             )
           )}
         </div>
