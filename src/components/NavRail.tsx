@@ -34,10 +34,19 @@ export function NavRail({
   className?: string;
   id?: string;
 }) {
-  // With fillers, every row stretches evenly to fill the rail's full height.
-  // Without them, buttons sit at their natural size and the rest of the
-  // rail is left empty below.
-  const stretch = fillerColors.length > 0;
+  // Buttons sit at their natural size; the *fillers* absorb whatever height
+  // is left over.
+  //
+  // Until 2026-08-06 a rail with fillers stretched every row evenly, which
+  // made the primary rail's nine buttons roughly twice the height of the
+  // utility rail's four, for no reason other than that one had fillers and
+  // the other did not. The user preferred the short ones, and the
+  // references agree: a vertical run there is a few big unlabelled blocks
+  // and a set of small labelled ones, not one uniform division of the
+  // available space. The fillers still do the job they were added for -
+  // the rail reads as a solid edge rather than as buttons floating over
+  // black - they just do it with their own height instead of everyone's.
+  const hasFillers = fillerColors.length > 0;
 
   // The indicator bulges toward the main content; the button's own rounded
   // cap goes on the opposite (outer) edge of the rail.
@@ -46,7 +55,7 @@ export function NavRail({
   return (
     <div id={id} className={`flex flex-col gap-1 ${className}`}>
       {items.map((item) => (
-        <Row key={item.id} color={item.color} selected={activeId === item.id} indicatorSide={indicatorSide} stretch={stretch}>
+        <Row key={item.id} color={item.color} selected={activeId === item.id} indicatorSide={indicatorSide} stretch={false}>
           <LcarsButton
             color={item.color}
             shape={outerShape}
@@ -59,11 +68,11 @@ export function NavRail({
         </Row>
       ))}
       {fillerColors.map((color, i) => (
-        <Row key={`filler-${i}`} color={color} selected={false} indicatorSide={indicatorSide} stretch={stretch}>
+        <Row key={`filler-${i}`} color={color} selected={false} indicatorSide={indicatorSide} stretch>
           <LcarsSegment color={color} shape={outerShape} orientation="horizontal" className="flex-1 h-full" />
         </Row>
       ))}
-      {!stretch && <div className="flex-1" />}
+      {!hasFillers && <div className="flex-1" />}
     </div>
   );
 }
