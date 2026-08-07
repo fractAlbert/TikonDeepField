@@ -209,6 +209,42 @@ header already has the beginnings of it: `rounded-tl-[2rem]` on a colour
 block beside the title bar is half an elbow, and the frame can grow out of
 that rather than being bolted on beside it.
 
+## Every tunable number is a token, not a literal at a call site
+
+Raised by the user 2026-08-06 on the shelf mockup, and it applies to the
+whole plan rather than to that one number: **heights and widths we expect to
+retune go in a custom property and a class, so one edit moves all of them.**
+
+The reason is specific to what is coming. Several of these numbers cannot be
+settled from a desktop mockup - shelf height, the shell frame's thickness,
+rail cell heights - and will want adjusting once they are seen on a real
+phone. If shelf height is written at 34 call sites, that adjustment is 34
+edits and a re-measure; if it is `--lcars-shelf-h` in `globals.css` behind a
+`.lcars-shelf` class, it is one.
+
+The pattern is already in the repo and should be followed rather than
+invented: `globals.css` holds the `--lcars-*` colour tokens and the
+`.lcars-caps` / `.no-scrollbar` / `.tutorial-anchor` classes, and
+`lcars-colors.ts` is the single source for fills and cap shapes. New
+dimensions join them.
+
+Concretely, for the phases below:
+
+- **Shelf height** - `--lcars-shelf-h` and a taller `--lcars-shelf-h-lg` for
+  panels that own a whole screen, applied through `LcarsPanel`'s `size`
+  prop. No panel passes a pixel value.
+- **Frame thickness** - one token for the shell frame, since it costs width
+  on both sides of `main` and will certainly be retuned once seen.
+- **Rail cell heights** - a token per size class rather than per rail.
+- **What stays a literal**: one-off geometry that is not part of a set. A
+  token that is used once is worse than a number, because it implies a system
+  that is not there.
+
+`LcarsButton`'s existing `SIZE` record is the model - padding is a prop with
+named values precisely so callers cannot pass their own and have Tailwind
+settle the conflict by emission order. Do the same for anything else that
+turns out to want tuning.
+
 ## Phasing
 
 Ordered so that no call site is edited twice, and so the cheap high-reach
