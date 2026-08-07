@@ -4,9 +4,42 @@ A review of the whole interface against `lcars-style-notes.md` and the three
 images in `docs/reference/`, done 2026-08-06 with the `lcars-design` skill,
 and a plan for closing the gaps without touching every panel three times.
 
-**Nothing here is built yet.** Two decisions gate most of it and they are
-design calls, not implementation details - see **What has to be decided
-first**.
+## What has been built (2026-08-06)
+
+Phases 1, 2, 3a and 3b all shipped the day this plan was written. What is
+left is phase 5 (new vocabulary, opt-in per panel), phase 4 (vertical rails,
+gated on the `LcarsKitPrototype` conversation), one open question, and the
+checker script.
+
+| commit | what |
+| --- | --- |
+| `e9b22b2` | Phase 1 - `align` derived from shape, horizontal default, the two reds |
+| `c160c82` | Phase 2 - all 16 stroke sites replaced with blocks, lamps and colour swaps |
+| `3afa92d` | Rails: fillers stretch, buttons stay at their natural height |
+| `38b95b9` | Phase 3a - header block and nav rail become one column |
+| `0169ed4` | Regression fix found by measuring: `shrink-0` had cost 40px of header min-width |
+| (this one) | One long filler bar, and phase 3b - the title shelf |
+
+**Measured, not assumed.** At 390 every panel that fitted before still fits,
+including the Sweep Scope, which `mobile-layout-plan.md` records as fitting
+by exactly 4px and which was the thing most likely to break. At 320 the
+Sweep Scope, Star Map and Ring Scan overflow into their flick-scroll, by 331,
+298 and 112px respectively - all far larger than the 13px the shelf adds, so
+they pre-date it. The Briefing fits at 320 with four shelves on it.
+
+**Still open:** whether to close the frame at the bottom, and whether that is
+everywhere or desktop-only. Deferred by the user for a weekend decision. See
+the end of **Phasing**.
+
+Two things this turned up that are not in the findings below:
+
+- **The Profile panel flick-scrolls** and is not recorded anywhere as doing
+  so - 264px over at 390, 621px at 320. Added to backlog item 7.
+- **`align` derived from shape pays off twice.** Because the two nav rails'
+  caps face opposite ways, the left rail right-aligns its labels and the
+  right rail left-aligns them, so both lean toward `main` with no per-site
+  configuration. That would have needed two explicit settings under a
+  constant default.
 
 ## How the survey was done
 

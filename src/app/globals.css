@@ -43,6 +43,39 @@ body {
   letter-spacing: 0.04em;
 }
 
+/* A panel's title block: a shelf the label rests on, not a caption bar
+   above the content. All three references agree on the shape - EMERGENCY
+   OVERRIDE, MODE SELECT and IMPULSE SYSTEMS sit at the bottom-left of a
+   solid block; `lcars-ultra`'s AA-1524 and 03-111968 do the same thing
+   bottom-right.
+
+   The height is a ratio question and the references disagree on it: the
+   block runs 13.6x the label's cap height in `LCARS-2.jpg` and 4.45x in
+   `lcars-ultra`, measured by pixel-column scan. 4.45x is the floor - the
+   shortest block in any reference that still reads as a shelf rather than
+   as a caption bar - and the floor is what a phone can afford. At our
+   `text-sm` label that is ~45px against the old bar's 32.
+
+   One token because this is certain to want retuning once seen on a real
+   phone, and it would otherwise be written at 34 call sites. `-lg` is for
+   panels that own a whole screen, where the reference's generosity is
+   affordable and looks considerably better. */
+:root {
+  --lcars-shelf-h: 2.8125rem; /* 45px */
+  --lcars-shelf-pad: 0.625rem;
+}
+
+.lcars-shelf {
+  height: var(--lcars-shelf-h);
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: var(--lcars-shelf-pad);
+}
+
+.lcars-shelf-lg {
+  --lcars-shelf-h: 4.5rem;
+}
+
 /* The width of the frame's left-hand run - the header's cap block and the
    nav rail directly below it, which are one column read top to bottom and
    have to measure the same or they read as two unrelated objects.

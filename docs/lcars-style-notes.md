@@ -355,6 +355,47 @@ the block above" without drawing a border.
 
 Station Info's Quasars section is the worked example.
 
+### A section title rests on a shelf, and text hugs the flat end
+
+Both adopted 2026-08-06 from the second and third references, and both are
+now in the primitives rather than at call sites.
+
+**The title.** `LcarsPanel` draws a solid block of the accent colour with
+the label sitting at its **bottom-left**, not a caption bar across the top.
+The height is `--lcars-shelf-h` in `globals.css`, set to the measured floor
+(4.45x the label's cap height, ~45px at `text-sm`), with `size="lg"` for
+panels that own a whole screen. The floor is what a phone can afford: four
+of these stack on the Briefing and the Profile, and the literal reference
+proportion of 13.6x does not fit past two.
+
+**The text.** `LcarsButton`'s `align` defaults to the segment's *flat* end -
+the end it continues into - rather than to centre. It derives from `shape`,
+so it needs no setting at a call site and it self-corrects when a run is
+mirrored: the two nav rails cap opposite ways, so their labels lean toward
+`main` from both sides without being told to. `center` still exists and has
+to be asked for.
+
+### Selection is a swap, an indicator or a lamp - never a stroke
+
+No border, ring or outline is drawn to mark state. The three devices, all
+read off the references and all now used in the app:
+
+- **Swap two things at once.** `Lcars menu`'s selected row changes its lamp
+  from filled to hollow *and* its text from lilac to amber. The rank ladder
+  and the Ring Scan's used targets work this way.
+- **Push an indicator out** toward the content - `NavRail`'s half-circle,
+  and the Log's previewed entry swelling its own accent bar from 8px to
+  20px.
+- **A lamp**, a solid bar beside or beneath the thing. Used where the thing
+  is too small or too round to mark otherwise: the manifest's colour
+  swatch, the colour picker, the rank strip's current rung. It never has to
+  contrast with what it marks, which a ring does.
+
+Two exemptions, both on layout grounds rather than taste: form fields keep a
+visible edge, and the walk-through's anchor keeps its teal outline. Both use
+`outline` rather than `ring` because outline is drawn outside the box and
+cannot shift a panel that exactly fits.
+
 ### Below `lg`, navigation is a hub
 
 Phones get a menu of every destination plus a Back button on each panel,

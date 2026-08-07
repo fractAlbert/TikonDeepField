@@ -5,7 +5,7 @@ import { regions as builtInRegions } from "@/data/regions";
 import { generateRegion } from "@/lib/generate-region";
 import { assessSolvability } from "@/lib/solvability";
 import { Region } from "@/lib/puzzle-types";
-import { BUTTON_COLORS, ButtonColor } from "@/lib/lcars-colors";
+import { ButtonColor } from "@/lib/lcars-colors";
 import {
   ACTIVE_SURVEY_LIMIT,
   EMPTY_LOG,
@@ -123,13 +123,23 @@ const UTILITY_NAV: NavItem[] = [
 // so nothing is actually blocked on it.
 const GENERATE_DELAY_MS = 2200;
 
-// Unlabeled, non-interactive filler segments padding out the left rail so
-// it reads as a full LCARS panel rather than a handful of buttons over
-// empty space.
-const LEFT_RAIL_FILLERS: ButtonColor[] = Array.from(
-  { length: 5 },
-  (_, i) => BUTTON_COLORS[(i + PRIMARY_NAV.length) % BUTTON_COLORS.length]
-);
+// One unlabeled segment, taking the whole of the rail below the buttons, so
+// the left edge reads as a solid run rather than as a handful of buttons
+// over empty space.
+//
+// It was five segments until 2026-08-06, which - once the buttons stopped
+// stretching - left five fat rounded blocks of five different colours doing
+// nothing but being large. A single bar is both quieter and closer to the
+// references: `lcars-ultra`'s rails run one 497px block and one 687px block
+// against labelled cells of 147px, so the unlabelled mass is *supposed* to
+// dwarf the buttons. It is the colour changing five times that made it read
+// as five things.
+//
+// Lilac deliberately rather than by rotation: it is the one structural
+// colour in the palette that collides with nothing - teal is the
+// walk-through's voice, orange is the header directly above it, and the
+// reds now mean a bad outcome.
+const LEFT_RAIL_FILLERS: ButtonColor[] = ["lilac"];
 
 // Below `lg` both rails are replaced by the menu hub, with the star map
 // joining as a real destination. Amber to match its own panel header - the

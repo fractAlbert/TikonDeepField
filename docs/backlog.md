@@ -74,6 +74,13 @@ content may scroll inside its own panel — and it was accepted knowingly. The
 three are all long prose, so the fix, if wanted, is editorial (shorter copy,
 or pagination the way the Survey Log does it) rather than layout.
 
+**The Profile panel joined them too**, found while measuring the title shelf
+on 2026-08-06: 264px over at 390x844 and 621px at 320x568, of which the
+shelf accounts for 39px (three panels at 13px each) and the rest predates
+it. Same fix as the prose panels - it is a long single column of service
+record, standing, and career history, and the honest answer is fewer things
+on one screen rather than a tighter layout.
+
 **The Star Manifest joined them**, found while measuring the jump bar on
 2026-08-05. It overflows by 78px at 390x844 on a six-signature region, of
 which 30px predates the bar — it is listed as fitting outright in
