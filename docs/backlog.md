@@ -26,6 +26,11 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Shipped 2026-08-07 and removed: **the commit-message hook (16)**, widened to
+cover the browser preflight as well. Both live in `.claude/hooks/` and are
+wired from `.claude/settings.json`, so they travel with the repo rather than
+depending on one machine's memory.
+
 Shipped 2026-08-07 and removed: **both Sweep Scope items (13, 14)** - the
 reference palette identified signatures by colour alone where every other
 surface gives them their glyph, and the sweep's position was derived from
@@ -52,7 +57,6 @@ follow-up that was deliberately not applied.
 | 10 | The header overflows horizontally at 320px | Design |
 | 12 | Our vertical runs do not match the references | Design |
 | 15 | Close the shell frame at the bottom, or leave it a bracket | Design |
-| 16 | A hook to stop shell-mangled commit messages | Tooling |
 | 17 | Rework the header, against the user's mock-up | Design |
 
 ## Design
@@ -197,40 +201,6 @@ What the mock-up will have to live with:
   reverted the same day.
 - **The sound toggle is a plain `<button>`**, not an `LcarsButton`, so it
   does not inherit the `size` prop.
-
-## Tooling
-
-### 16 - A hook to stop shell-mangled commit messages
-
-Raised 2026-08-07 after a commit message shipped with five identifiers
-missing. The cause is narrow and worth naming: **inside double quotes, bash
-performs command substitution**, so a message written with `git commit -m`
-containing backticks had those words executed and replaced with their
-(empty) output. Git never saw the text, which is why nothing downstream could
-have caught it - a `commit-msg` hook inspects what git receives, and what git
-received was already prose with holes in it.
-
-Two layers, and the first is free:
-
-- **Technique.** A quoted heredoc, `git commit -F - <<'MSG' ... MSG`,
-  disables all expansion. Adopted immediately and used for every commit
-  since. It is also better than the temp-file form it replaced: one call, no
-  scratchpad to manage.
-- **Enforcement.** A `PreToolUse` hook on Bash in `.claude/settings.json`
-  that blocks a `git commit` carrying both `-m` and a backtick, `$(` or `$`.
-  It fires on exactly the dangerous shape and leaves short `-m "fix typo"`
-  commits alone. This is the part that does not depend on anyone
-  remembering, which is the whole point - the note that said "always use
-  `-F`" existed and was not followed.
-
-Not built. It travels with the repo like the `lcars-design` skill does, so
-it applies to any session rather than to one machine's memory.
-
-Worth being honest about the limit: a hook stops *this* failure, not "commit
-messages come out wrong" in general. If a broader guard is wanted, the more
-valuable one is a `commit-msg` git hook checking things git can actually see
-- subject length, `Co-Authored-By` present, body not empty on a multi-file
-change.
 
 ## Gameplay
 

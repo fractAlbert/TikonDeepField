@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/block-expanded-commit-message.mjs",
+            "if": "Bash(git commit *)",
+            "timeout": 10,
+            "statusMessage": "Checking commit message for shell expansion"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__claude-in-chrome__navigate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/preflight-localhost-navigate.mjs",
+            "timeout": 10,
+            "statusMessage": "Checking the dev server is up"
+          }
+        ]
+      }
+    ]
+  }
+}
