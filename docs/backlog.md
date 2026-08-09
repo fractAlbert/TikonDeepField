@@ -180,10 +180,22 @@ Three options, with the cost of each:
 
 ### 17 - Rework the header, against the user's mock-up
 
-Raised 2026-08-07. The user has made a mock-up of the header and wants to
-talk it through before anything is built. **Do not design the header from
-these notes - ask for the mock-up first.** It is the specification;
-everything below is only what is already known about the area.
+Raised 2026-08-07, in the user's words: *"Also, we'll talk about the mock-up
+I made so you can fix the header"*, followed by *"That's another todo"*.
+Quoted rather than paraphrased because the paraphrase turned out not to be
+re-readable - asked the next day whether this was a mobile item, the entry
+could not answer and neither could the summary of it.
+
+**Which it is - mobile, desktop or both - is not recorded and was not
+stated.** That matters more than it looks: there is only one `#app-header`,
+rendered at every width with responsive classes, so a mock-up could target
+either side and the constraints differ. If it is mobile, item 10 folds into
+this job. If it is desktop, item 10 stays separate and the frame
+relationship below is the thing to protect.
+
+**Do not design the header from these notes - ask for the mock-up first.**
+It is the specification; everything below is only what is already known
+about the area.
 
 What the mock-up will have to live with:
 
