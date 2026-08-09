@@ -37,10 +37,12 @@
   opacity: 0.6;
 }
 
+/* Holds the signature's own glyph, not a plain disc. It was a 9px circle
+   until 2026-08-07, which made the reference palette the one place in the
+   app where a signature was identified by colour alone - and colour alone
+   is exactly what shape exists to back up. Same wrapper as `.legendDot`. */
 .refDot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+  display: flex;
 }
 
 .scope {

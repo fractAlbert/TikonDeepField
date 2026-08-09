@@ -26,6 +26,13 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Shipped 2026-08-07 and removed: **both Sweep Scope items (13, 14)** - the
+reference palette identified signatures by colour alone where every other
+surface gives them their glyph, and the sweep's position was derived from
+total elapsed time over the *current* period, so moving the speed slider
+rescaled the whole history and teleported the line. The record is the commit;
+the phase change is simulated numerically in it.
+
 Shipped 2026-08-07 and removed: **re-organising the phone hub's buttons
 (11)**, written up in `mobile-layout-plan.md`. It settled as two runs of six
 with a sweep between them - by way of a three-column version that was tried,
@@ -44,8 +51,6 @@ follow-up that was deliberately not applied.
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
 | 10 | The header overflows horizontally at 320px | Design |
 | 12 | Our vertical runs do not match the references | Design |
-| 13 | Sweep Scope: some signatures draw as plain dots | Design |
-| 14 | Sweep Scope: changing speed restarts the sweep | Interaction |
 | 15 | Close the shell frame at the bottom, or leave it a bracket | Design |
 | 16 | A hook to stop shell-mangled commit messages | Tooling |
 | 17 | Rework the header, against the user's mock-up | Design |
@@ -149,35 +154,6 @@ Worth knowing before fixing it: the sound toggle is a plain `<button>`, not
 an `LcarsButton`, so it does not inherit the `size` prop added on
 2026-08-04. The cheap fixes are dropping the toggle's label to an icon below
 `sm`, or letting the badge collapse to its insignia earlier than `md`.
-
-### 13 - Sweep Scope: some signatures draw as plain dots
-
-Raised 2026-08-07 by the user: "some star icons not showing shaped stars".
-Not yet investigated - the symptom is that the Sweep Scope draws some
-signatures without their glyph, where every other surface (Star Map, Log
-chips, Star Manifest, Briefing bearings) gives each one its Pinpoint, Bloom,
-Four-spike or Ringed shape.
-
-Worth knowing before digging: shape is a second identity channel alongside
-colour and is assigned by list position in `lib/quasar-glyph.ts`, with
-`components/QuasarMarker.tsx` as the single drawing shared by every surface.
-So a signature losing its shape in one place and keeping it everywhere else
-points at that surface not routing through `QuasarMarker`, rather than at
-the glyph assignment. Check the scope's own blip rendering first.
-
-### 14 - Sweep Scope: changing speed restarts the sweep
-
-Raised 2026-08-07 by the user. Changing the sweep speed moves the line
-instead of leaving it where it is: "it should just speed up or slow down
-from where the line is at".
-
-The scope's clock has been running since its first mount and is deliberately
-never restarted - that constraint already shapes two other things, the panel
-staying mounted when you navigate away and staying mounted while the Star
-Map is maximised. So the fix has to change the *rate* the phase advances at
-without resetting the phase, which likely means holding the current position
-when the speed changes and continuing from it, rather than deriving position
-from elapsed time times speed.
 
 ### 15 - Close the shell frame at the bottom, or leave it a bracket
 
