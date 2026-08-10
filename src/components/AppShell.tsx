@@ -57,6 +57,7 @@ import { CareerEndPanel } from "@/components/panels/CareerEndPanel";
 import { usePlayer } from "@/lib/use-player";
 import { ringScansUsed } from "@/lib/survey-log";
 import { LcarsPanel } from "@/components/LcarsShell";
+import { DevSizer } from "@/components/DevSizer"; // DevSizer: temporary, see that file
 import { GAME_NAME, OUTPOST_NAME, PANEL_LABELS } from "@/lib/copy";
 
 // "starmap" and "menu" only exist below `lg`: the map loses its permanent
@@ -186,6 +187,10 @@ export function AppShell() {
   // How much room the walk-through's bar actually needs, reported by the bar
   // itself. See the shell's `paddingBottom` below.
   const [coachHeight, setCoachHeight] = useState(0);
+
+  // DevSizer: temporary, for settling backlog item 4. Delete with the file.
+  const [devSidebarW, setDevSidebarW] = useState(360);
+  const [devLegW, setDevLegW] = useState(40);
 
   // Drives which layout is *mounted*, not just which is visible - see
   // use-media-query.ts for why that distinction is load-bearing.
@@ -730,7 +735,11 @@ export function AppShell() {
          to the glass - stopped short of it with a band of black underneath
          that nothing filled. The coach reports its height and this follows
          it. Zero until it has, which is the same as not running. */
-      style={activeStep && coachHeight > 0 ? { paddingBottom: coachHeight } : undefined}
+      style={{
+        ...(activeStep && coachHeight > 0 ? { paddingBottom: coachHeight } : {}),
+        // DevSizer: temporary override of the panel-leg token.
+        ["--lcars-panel-leg-w" as string]: `${devLegW}px`,
+      } as React.CSSProperties}
     >
       {/* Phone-sized type here is doing real work, not just tidying: at the
           desktop sizes the title and subtitle each wrapped to two lines,
@@ -1017,8 +1026,10 @@ export function AppShell() {
             className={
               mapMaximised
                 ? "flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar -mb-6"
-                : "w-[360px] shrink-0 min-h-0 overflow-y-auto no-scrollbar ml-[20px] -mb-6 max-lg:hidden"
+                : "shrink-0 min-h-0 overflow-y-auto no-scrollbar ml-[20px] -mb-6 max-lg:hidden"
             }
+            /* DevSizer: temporary. Was `w-[360px]` in the class list. */
+            style={mapMaximised ? undefined : { width: devSidebarW }}
           >
             {starMapView}
           </div>
@@ -1041,6 +1052,16 @@ export function AppShell() {
           </div>
         )}
       </div>
+
+      {/* DevSizer: temporary. Delete with the file. */}
+      {!isMobile && (
+        <DevSizer
+          sidebarW={devSidebarW}
+          setSidebarW={setDevSidebarW}
+          legW={devLegW}
+          setLegW={setDevLegW}
+        />
+      )}
 
       {activeStep && !careerOver && (
         <TutorialCoach
