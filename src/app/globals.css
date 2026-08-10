@@ -289,12 +289,23 @@ body {
      exactly where the bar does and the leg carries straight on below it.
      That relationship is what makes it read as a sweep, so it is the thing
      to scale rather than the number: a panel shelf is ~32px, so this is. */
-  --lcars-panel-elbow-outer-r: 1.5rem;
+  --lcars-panel-elbow-outer-r: 3rem;
+  /* Horizontal runs and vertical runs are never the same thickness, and
+     matching pairs match each other: top to bottom, left to right. The
+     shell measures 160 against 92 - a ratio of 1.74, vertical thicker - and
+     both new reference images taper the same way, a thick trunk turning
+     into a thin arm. Here it is 40 against 32.
+
+     A wider leg was tried at 56 and taken back out: it squeezes the content
+     column, which reflows 121px taller and overflows the sidebar. If it is
+     wanted, the sidebar has to widen with it - 376px is enough, and that is
+     backlog item 4. */
+  --lcars-shelf-h-panel: 2rem;
 }
 @media (min-width: 768px) {
   :root {
     --lcars-panel-leg-w: 2.5rem;
-    --lcars-panel-elbow-outer-r: 2rem;
+    --lcars-panel-elbow-outer-r: 4rem;
   }
 }
 
