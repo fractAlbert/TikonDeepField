@@ -26,6 +26,11 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Shipped 2026-08-07 and removed: **the phone hub's S-swoop (18)** - across
+the top, down the left to halfway, across to the right, then off the bottom,
+with the crossing dividing the two groups of six. Written up in
+`mobile-layout-plan.md`.
+
 Shipped 2026-08-07 and removed: **the header rework (17)**, built against
 the user's mock-up and measured off it rather than eyeballed. The header and
 the left rail are now one orange elbow: a 96px outer sweep at the top left, a
@@ -65,7 +70,6 @@ follow-up that was deliberately not applied.
 | 10 | The header overflows horizontally at 320px | Design |
 | 12 | Our vertical runs do not match the references | Design |
 | 15 | Close the shell frame at the bottom, or leave it a bracket | Design |
-| 18 | The phone header as an S-swoop splitting the hub | Design |
 
 ## Design
 

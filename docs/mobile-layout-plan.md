@@ -471,3 +471,37 @@ the emblem returns.
 Measured at 430x932, 390x844 and 320x568: eleven buttons, rows 58-60px, every
 one clear of the 44px touch floor, no vertical overflow, crest shown at the
 top two and hidden at the smallest.
+
+### The S-swoop (2026-08-07)
+
+Backlog 18, to the user's description: *"a swooping S shaped header, Starts
+at the top, swoops down on the left halfway, then swoops to the right side
+and then straight down. The bottom of the S is missing. The swoop splits the
+two sets of buttons."*
+
+The frame does the dividing. The hub's two groups used to be separated by a
+small knee-and-arm drawn between them - the right idiom at the wrong scale,
+since it was a decoration *between* two runs rather than a piece of the thing
+containing them. Now one orange path runs across the top, down the left past
+the first six, across between the groups, and down the right and off the
+bottom edge. The buttons sit in the two pockets it leaves.
+
+Three inner corners, facing three different ways, which is why
+`.lcars-elbow-notch` grew orientation modifiers rather than being copied.
+The outer corners are the opening sweep (2.5rem, about the shelf's height,
+the same ratio the shell and the Star Map use) and the turn out of the left
+leg (1.25rem, about the leg's width).
+
+**Rows are sized against the viewport's height, not stretched.** Stretching
+was tried first and left a void: the grid capped its own height inside a
+pocket that did not, so the crossing floated a long way below the group it
+was meant to divide. Each pocket hugs its buttons now and the crest absorbs
+the slack, which is the only thing on this screen that should. The row token
+steps 48 / 56 / 60px at viewport heights of <700 / 700 / 860, so six rows
+plus the shelf plus the crossing still fit 320x568 without scrolling - the
+rule that navigation never scrolls is the binding constraint here, not
+taste.
+
+Measured at 430x932, 390x844 and 320x568: eleven buttons, rows 60/56/48, all
+clear of the 44px touch floor, three notches each, no vertical overflow at
+any size, and the right leg landing flush on the panel's edge.

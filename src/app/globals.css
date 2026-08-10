@@ -70,10 +70,31 @@ body {
   --lcars-hub-label: 0.8125rem; /* 13px */
 }
 
+/* Rows are a definite height chosen against the *viewport's height*, not
+   stretched to fill. Stretching was tried and left a void: the grid capped
+   itself inside a pocket that did not, so the swoop's crossing sat a long
+   way below the last button. Sizing the row directly means each pocket hugs
+   its buttons and the crest takes whatever is left, which is the only thing
+   on this screen that should absorb slack.
+
+   A height query rather than a width one, because what runs out here is
+   vertical: six rows plus the shelf plus the crossing against 568px. */
+:root {
+  --lcars-hub-row: 3rem; /* 48px - small phones, where six rows barely fit */
+}
+@media (min-height: 700px) {
+  :root {
+    --lcars-hub-row: 3.5rem;
+  }
+}
+@media (min-height: 860px) {
+  :root {
+    --lcars-hub-row: 3.75rem;
+  }
+}
+
 .lcars-hub-grid {
-  grid-auto-rows: minmax(var(--lcars-hub-row-min), 1fr);
-  /* Three rows per group, so the cap is per group rather than per hub. */
-  max-height: calc(var(--lcars-hub-row-max) * 3 + 0.75rem);
+  grid-auto-rows: var(--lcars-hub-row);
 }
 
 /* The crest appears only where there is room for it to read as a crest
@@ -216,6 +237,35 @@ body {
   inset: 0;
   background: var(--lcars-notch-bg, var(--lcars-black));
   border-top-left-radius: var(--lcars-elbow-inner-r);
+}
+
+/* Which way the corner faces. A run that turns has an inner corner on the
+   inside of the turn, and the S-swoop turns three times in three different
+   directions, so the default top-left is only one of four. Name the corner
+   the *curve* occupies, which is the one the overlay rounds. */
+.lcars-notch-tr::after {
+  border-radius: 0 var(--lcars-elbow-inner-r) 0 0;
+}
+.lcars-notch-bl::after {
+  border-radius: 0 0 0 var(--lcars-elbow-inner-r);
+}
+.lcars-notch-br::after {
+  border-radius: 0 0 var(--lcars-elbow-inner-r) 0;
+}
+
+/* The phone hub's S-swoop: across the top, down the left to halfway, across
+   to the right, then straight down and off the bottom. The crossing is what
+   separates the hub's two groups of buttons, so the frame does the dividing
+   rather than a rule drawn between them.
+
+   Sizes are their own tokens rather than the shell's: the shell's leg is
+   160px against a 1350px viewport, and 12% of a 390px phone would be 47px
+   of a screen the buttons already fill. */
+:root {
+  --lcars-hub-leg-w: 1.25rem; /* 20px */
+  --lcars-hub-cross-h: 0.875rem; /* 14px, the thin arm */
+  --lcars-hub-outer-r: 2.5rem; /* the opening sweep, ~= the shelf's height */
+  --lcars-hub-turn-r: 1.25rem; /* the two later turns, ~= the leg's width */
 }
 
 /* The leg continuing below the bar, before the button gap opens. */

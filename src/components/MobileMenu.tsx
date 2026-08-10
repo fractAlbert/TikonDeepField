@@ -1,6 +1,5 @@
 "use client";
 
-import { Fragment } from "react";
 import { LcarsButton } from "@/components/LcarsButton";
 import { LcarsSegment } from "@/components/LcarsSegment";
 import { NavItem } from "@/components/NavRail";
@@ -82,127 +81,115 @@ export function MobileMenu({
   ];
 
   return (
-    <div id={id} className={`flex flex-col h-full ${className}`}>
-      {/* The shelf, now the shared one rather than a hand-rolled copy of
-          it - same device as every panel title, so retuning
-          `--lcars-shelf-h` moves this with them. */}
-      <div className="bg-lcars-orange rounded-t-xl lcars-shelf px-4 shrink-0">
+    /* The S-swoop. Across the top, down the left to halfway, across to the
+       right, then straight down and off the bottom - the bottom of the S is
+       deliberately missing. The crossing is what separates the two groups of
+       buttons, so the frame does the dividing instead of a rule drawn
+       between them, which is the whole point of the shape.
+
+       The panel colour is on the container and the orange sits over it, so
+       every inner corner curves into one known background. */
+    <div
+      id={id}
+      className={`flex flex-col h-full bg-lcars-panel overflow-hidden rounded-tl-[var(--lcars-hub-outer-r)] rounded-tr-xl rounded-b-xl ${className}`}
+    >
+      {/* The top of the S, and still the hub's title shelf. */}
+      <div className="relative bg-lcars-orange lcars-shelf px-4 shrink-0">
         <span className="lcars-caps text-black font-bold text-sm leading-none">Main Menu</span>
+        <div
+          aria-hidden
+          className="lcars-elbow-notch top-full left-[var(--lcars-hub-leg-w)] [--lcars-notch-bg:var(--lcars-panel)] [--lcars-elbow-inner-r:0.5rem]"
+        />
       </div>
 
-      {/* The nested sub-panel, so the run belongs to the header above it
-          without a border being drawn. `bg-lcars-panel` rather than a black
-          tint: black *is* the page, so a black panel over it is invisible
-          and the empty space below the buttons reads as a void rather than
-          as room the layout is deliberately leaving. */}
-      <div className="flex-1 min-h-0 bg-lcars-panel rounded-b-xl p-2 flex flex-col gap-2">
-        {groups.map((group, gi) => (
-          <Fragment key={gi}>
-            {/* The sweep, between the groups and nowhere else. A thick knee
-                with a rounded outer corner turning into a thin arm that
-                runs to the edge of the panel - the move the second and
-                third references use everywhere a run of controls changes
-                subject. It says "different set" the way LCARS says it,
-                with a piece of structure, where a rule across the panel
-                would be a drawn line and the one thing the notes forbid
-                outright.
+      {/* Upper pocket: the left leg, and the first six. `shrink-0` so it
+          hugs its buttons - anything taller and the crossing drifts away
+          from the group it is dividing. */}
+      <div className="flex shrink-0">
+        <div aria-hidden className="w-[var(--lcars-hub-leg-w)] shrink-0 bg-lcars-orange" />
+        <HubPocket slots={pad(groups[0] ?? [])} onSelect={onSelect} />
+      </div>
 
-                The interior corner where knee meets arm stays square:
-                rounded terminates, flat continues, and this joint
-                continues. */}
-            {gi > 0 && (
-              <div aria-hidden className="flex items-end shrink-0 my-0.5">
-                <div className="w-14 h-7 bg-lcars-amber rounded-tl-[1.75rem]" />
-                <div className="flex-1 h-2.5 bg-lcars-amber rounded-r-full" />
-              </div>
-            )}
+      {/* The crossing. Its bottom-left is the outer corner of the turn out
+          of the left leg; its right end runs on into the leg below without
+          a cap, because it continues rather than stops. The two notches are
+          the inner corners of those turns, facing opposite ways. */}
+      <div
+        aria-hidden
+        className="relative shrink-0 h-[var(--lcars-hub-cross-h)] bg-lcars-orange rounded-bl-[var(--lcars-hub-turn-r)]"
+      >
+        <div className="lcars-elbow-notch lcars-notch-bl bottom-full left-[var(--lcars-hub-leg-w)] [--lcars-notch-bg:var(--lcars-panel)] [--lcars-elbow-inner-r:0.5rem]" />
+        <div className="lcars-elbow-notch lcars-notch-tr top-full right-[var(--lcars-hub-leg-w)] [--lcars-notch-bg:var(--lcars-panel)] [--lcars-elbow-inner-r:0.5rem]" />
+      </div>
 
-            {/* `grow shrink-0`: a run takes its natural height where there
-                is no slack, and grows toward its cap where there is.
-                Shrinking would drive the rows under the touch floor. */}
-            <div className="lcars-hub-grid grid grid-cols-2 gap-1.5 grow shrink-0">
-              {pad(group).map((slot, i) =>
-            slot ? (
-              <LcarsButton
-                key={slot.id}
-                color={slot.color}
-                shape="pill"
-                orientation="horizontal"
-                size="compact"
-                onClick={() => onSelect(slot.id)}
-                /* Centred, and asked for explicitly. The default hugs the
-                   flat end, which is right for a rail whose cells are
-                   wider than their labels; here the cell is barely wider
-                   than the word and the label often wraps to two lines,
-                   and the references centre in exactly that case - the
-                   word cells in `Lcars menu`'s foot grid (ORD 3R, COM B6,
-                   SUB ST) are centred where the numeric cells beside them
-                   are not.
-
-                   Height comes from the grid's rows now rather than from
-                   the button, so `h-full` fills whatever the row was
-                   given - floored at 56px, which is the touch floor with
-                   room for a wrapped label. */
-                align="center"
-                className="h-full lcars-hub-label text-center leading-tight"
-              >
-                {slot.label}
-              </LcarsButton>
-            ) : (
-              /* The deliberate gap. `lcars-ultra`'s left grid leaves one
-                 cell of six empty and it reads as unassigned rather than
-                 as a mistake; here it separates the tools from the one
-                 entry that starts work rather than navigating to it.
-
-                 Full strength, not a tint. A dimmed cell reads as a
-                 disabled button - something you were meant to be able to
-                 press - where a solid one is plainly a piece of the panel,
-                 which is what the references do with every unlabelled
-                 block. `LcarsSegment` rather than a styled div so it
-                 cannot pick up button semantics or a pointer cursor.
-
-                 Ice because it is the one palette colour that touches
-                 nothing around it: teal sits to its left, orange to its
-                 right and violet directly above. */
-              <LcarsSegment
-                key={`blank-${gi}-${i}`}
-                color="ice"
-                shape="pill"
-                orientation="horizontal"
-                className="h-full"
-              />
-                )
-              )}
-            </div>
-          </Fragment>
-        ))}
-
-        {/* The room left over, given something to be. The same emblem the
-            no-assignment placeholder uses, so the hub and the empty
-            Briefing read as the same station rather than as two screens
-            that happen to be dark. Decoration, not a control - Station is
-            already a button three rows up, and a second silent route to it
-            would be a worse affordance than none.
-
-            `min-h-0` and `max-h-full` so it gives the space back when
-            there is none: at 320x568 this is the first thing that should
-            shrink, and the grid above it must not move. */}
-        <div className="lcars-hub-crest flex-1 min-h-0 flex-col items-center justify-center gap-2 pb-1">
-          {/* The emblem is what takes the space on a tall handset, not the
-              buttons. Growing the buttons to fill an 844px screen turns
-              pills into tiles and reads as fat; growing this reads as a
-              console with a crest on it. So the grid is capped and the
-              emblem gets everything left over, bounded only by the width
-              of the panel it sits in. */}
-          <OutpostLogo
-            size={260}
-            className="opacity-80 min-h-0 max-h-full w-auto max-w-[min(68%,240px)]"
-          />
-          <span className="lcars-caps font-bold text-lg text-lcars-amber/90 shrink-0">
-            {OUTPOST_NAME}
-          </span>
+      {/* Lower pocket: the second six, then the crest, with the right leg
+          running the full height of both and off the bottom edge. */}
+      <div className="flex flex-1 min-h-0">
+        <div className="flex-1 min-w-0 flex flex-col min-h-0">
+          <div className="shrink-0 flex">
+            <HubPocket slots={pad(groups[1] ?? [])} onSelect={onSelect} />
+          </div>
+          {/* Only where there is room for it to read as a crest rather than
+              a smudge - see `.lcars-hub-crest`. */}
+          <div className="lcars-hub-crest flex-1 min-h-0 flex-col items-center justify-center gap-2 px-2 pb-2">
+            <OutpostLogo
+              size={260}
+              className="opacity-80 min-h-0 max-h-full w-auto max-w-[min(68%,240px)]"
+            />
+            <span className="lcars-caps font-bold text-lg text-lcars-amber/90 shrink-0">
+              {OUTPOST_NAME}
+            </span>
+          </div>
         </div>
+        <div aria-hidden className="w-[var(--lcars-hub-leg-w)] shrink-0 bg-lcars-orange" />
       </div>
+    </div>
+  );
+}
+
+/** One group of six, in the pocket the swoop leaves for it. */
+function HubPocket({
+  slots,
+  onSelect,
+}: {
+  slots: (NavItem | null)[];
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div className="lcars-hub-grid grid grid-cols-2 gap-1.5 flex-1 min-w-0 content-start p-2">
+      {slots.map((slot, i) =>
+        slot ? (
+          <LcarsButton
+            key={slot.id}
+            color={slot.color}
+            shape="pill"
+            orientation="horizontal"
+            size="compact"
+            onClick={() => onSelect(slot.id)}
+            /* Centred, and asked for explicitly. The default hugs the flat
+               end, which is right for a rail whose cells are wider than
+               their labels; here the cell is barely wider than the word and
+               the label often wraps, and the references centre in exactly
+               that case - the word cells in `Lcars menu`'s foot grid are
+               centred where the numeric cells beside them are not. */
+            align="center"
+            className="h-full lcars-hub-label text-center leading-tight"
+          >
+            {slot.label}
+          </LcarsButton>
+        ) : (
+          /* The deliberate gap, at full strength rather than dimmed: a
+             tinted cell reads as a disabled button, a solid one as a piece
+             of the panel. Ice because it touches nothing around it. */
+          <LcarsSegment
+            key={`blank-${i}`}
+            color="ice"
+            shape="pill"
+            orientation="horizontal"
+            className="h-full"
+          />
+        )
+      )}
     </div>
   );
 }
