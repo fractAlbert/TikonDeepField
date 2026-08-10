@@ -590,6 +590,14 @@ The shape, at `lg` and up:
 Everything is behind `--lcars-elbow-*` and `--lcars-left-run-w`, because the
 mock-up's inner radius was hand-drawn and explicitly approximate.
 
+**Scale the ratio, not the number.** The outer radius is the *bar's height* -
+96px against 92 on the shell, so the curve finishes exactly where the bar
+does and the leg carries straight on below it. That relationship is what
+reads as a sweep, and it is what transfers to a smaller elbow: the Star Map's
+shelf is 32px, so its radius is 32, giving 1.00 against the shell's 1.04.
+Copying the shell's 96px into a panel would have been a rounded box with a
+bite out of it; copying the proportion is the same shape held smaller.
+
 **The title belongs to the arm, not to the corner.** It starts *past* the
 leg's right edge, inset by the arm's own padding - never over the leg. The
 shell's header does this because the bar is a separate element that begins

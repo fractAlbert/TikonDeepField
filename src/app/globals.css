@@ -229,10 +229,17 @@ body {
    starts *past* the leg rather than over it. */
 :root {
   --lcars-panel-leg-w: 1.5rem;
+  /* The outer sweep, at panel scale. The shell's is 96px against a 92px
+     bar - the radius is essentially the bar's height, so the curve finishes
+     exactly where the bar does and the leg carries straight on below it.
+     That relationship is what makes it read as a sweep, so it is the thing
+     to scale rather than the number: a panel shelf is ~32px, so this is. */
+  --lcars-panel-elbow-outer-r: 1.5rem;
 }
 @media (min-width: 768px) {
   :root {
     --lcars-panel-leg-w: 2.5rem;
+    --lcars-panel-elbow-outer-r: 2rem;
   }
 }
 

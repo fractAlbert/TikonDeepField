@@ -39,7 +39,11 @@ export function StarMapPanel({
        the constraint never reaches the svg. Docked, none of this applies -
        the panel is as tall as its content and the sidebar scrolls. */
     <div
-      className={`bg-lcars-panel rounded-t-xl overflow-hidden ${
+      /* The top-left is the elbow's outer sweep and takes the panel-scale
+         radius; the top-right is an ordinary panel corner and stays small.
+         `overflow-hidden` is what makes it a sweep rather than a rounded
+         box - the amber shelf inside is clipped to this corner. */
+      className={`bg-lcars-panel rounded-tr-xl rounded-tl-[var(--lcars-panel-elbow-outer-r)] overflow-hidden ${
         maximized ? "h-full flex flex-col min-h-0" : ""
       }`}
     >
