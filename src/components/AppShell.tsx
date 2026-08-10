@@ -773,7 +773,10 @@ export function AppShell() {
             right edge. `top-full` so it tracks the header's height rather
             than assuming one, and it paints into the 48px gutter below,
             which is empty black. */}
-        <div aria-hidden className="lcars-elbow-notch top-full max-lg:hidden" />
+        <div
+          aria-hidden
+          className="lcars-elbow-notch top-full left-[var(--lcars-left-run-w)] max-lg:hidden"
+        />
       </header>
 
       {careerOver && (

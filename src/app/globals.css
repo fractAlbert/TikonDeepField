@@ -188,20 +188,33 @@ body {
 }
 
 /* A concave corner, built from two flat fills rather than a shadow or a
-   gradient: an orange square with a black box over it whose own corner is
-   rounded, leaving a quarter-disc of orange showing through. */
+   gradient: a square of the run's colour with a box of the *background*
+   colour over it whose own corner is rounded, leaving a quarter-disc
+   showing through.
+
+   Parameterised because there is more than one elbow in the app and they do
+   not share a colour, a size, or what sits behind them. The caller
+   positions it (`top-*`/`left-*`) and overrides whichever of the three
+   properties differ:
+
+     --lcars-notch-colour  the run's own colour          (default orange)
+     --lcars-notch-bg      whatever the curve reveals    (default black)
+     --lcars-elbow-inner-r the radius                    (default 20px)
+
+   The background one is the easy mistake: the shell's elbow curves into the
+   page, which is black, but a panel's elbow curves into the panel, which is
+   not. */
 .lcars-elbow-notch {
   position: absolute;
-  left: var(--lcars-left-run-w);
   width: var(--lcars-elbow-inner-r);
   height: var(--lcars-elbow-inner-r);
-  background: var(--lcars-orange);
+  background: var(--lcars-notch-colour, var(--lcars-orange));
 }
 .lcars-elbow-notch::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: var(--lcars-black);
+  background: var(--lcars-notch-bg, var(--lcars-black));
   border-top-left-radius: var(--lcars-elbow-inner-r);
 }
 
