@@ -97,6 +97,25 @@ body {
   grid-auto-rows: var(--lcars-hub-row);
 }
 
+/* The crest, back but small. It only appears where there is genuinely room
+   left under the second group - about 260px at 390x844 and about 30px at
+   320x568, which is why this is a height query and not a width one. Capped
+   well below what that space would allow: the swoop is the thing holding
+   this screen together now, and a large emblem under it competes for the
+   centre rather than sitting in the corner of it. */
+:root {
+  --lcars-hub-crest-max: 6.5rem; /* 104px */
+}
+
+.lcars-hub-crest {
+  display: none;
+}
+@media (min-height: 700px) {
+  .lcars-hub-crest {
+    display: flex;
+  }
+}
+
 .lcars-hub-label {
   font-size: var(--lcars-hub-label);
 }

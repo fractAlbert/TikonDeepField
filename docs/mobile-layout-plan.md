@@ -524,3 +524,19 @@ expected to move again. And the crest came out: it was there because the hub
 had space going spare and nothing to do with it, and the swoop now occupies
 that room structurally - a crest underneath read as a second, competing
 centre.
+
+**The crest came back, small (same day).** Removing it outright was a step
+too far - on a tall handset the space under the second group is real, about
+305px at 390x844, and leaving all of it empty was not better. It returns at
+104px behind `--lcars-hub-crest-max`, gated on a 700px viewport height so it
+never appears at 320x568 where the space is about 30px.
+
+Two things kept from the removal, though. The caption is gone: the emblem
+alone is a mark in the corner of the screen, where "TIKON RESEARCH STATION"
+underneath made it an announcement, and announcing is the swoop's job now.
+And the cap is well below what the space would allow, because the point is
+that it sits in the corner rather than competing for the centre.
+
+One trap worth recording: `OutpostLogo` renders an svg carrying both `width`
+and `height` attributes, so capping only the width squashes it - it came out
+104x160 before `h-auto` was added alongside `w-auto`.

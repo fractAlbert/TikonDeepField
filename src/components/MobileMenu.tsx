@@ -3,6 +3,7 @@
 import { LcarsButton } from "@/components/LcarsButton";
 import { LcarsSegment } from "@/components/LcarsSegment";
 import { NavItem } from "@/components/NavRail";
+import { OutpostLogo } from "@/components/OutpostLogo";
 
 /**
  * The phone landing view: every destination, as a titled block of separate
@@ -128,6 +129,20 @@ export function MobileMenu({
         <div className="flex-1 min-w-0 flex flex-col min-h-0">
           <div className="shrink-0 flex">
             <HubPocket slots={pad(groups[1] ?? [])} onSelect={onSelect} />
+          </div>
+          {/* Small, and only where the space is real - see
+              `.lcars-hub-crest`. The caption is gone with it: the emblem
+              alone is a mark in the corner of the screen, and "TIKON
+              RESEARCH STATION" underneath made it an announcement, which
+              is the swoop's job now. */}
+          <div className="lcars-hub-crest flex-1 min-h-0 items-center justify-center p-2">
+            <OutpostLogo
+              size={160}
+              /* `h-auto` as well as `w-auto`: the svg carries width and
+                 height attributes, so capping only the width squashes it
+                 rather than scaling it - it came out 104x160. */
+              className="opacity-70 min-h-0 max-h-full w-auto h-auto max-w-[var(--lcars-hub-crest-max)]"
+            />
           </div>
         </div>
         <div aria-hidden className="w-[var(--lcars-hub-leg-w)] shrink-0 bg-lcars-orange" />
