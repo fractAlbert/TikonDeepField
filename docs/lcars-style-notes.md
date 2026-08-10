@@ -590,6 +590,20 @@ The shape, at `lg` and up:
 Everything is behind `--lcars-elbow-*` and `--lcars-left-run-w`, because the
 mock-up's inner radius was hand-drawn and explicitly approximate.
 
+**The title belongs to the arm, not to the corner.** It starts *past* the
+leg's right edge, inset by the arm's own padding - never over the leg. The
+shell's header does this because the bar is a separate element that begins
+where the leg ends; the Star Map did not, because its shelf spans the full
+width and the label simply started at the panel's edge, sitting on top of
+the corner. The difference reads immediately once they are side by side: a
+label over the leg looks like text floating on the frame, and a label past it
+looks like the arm's own content. Fixed 2026-08-07 on the user's eye.
+
+A wrapping header's leg width therefore has to be one value, not three.
+`--lcars-panel-leg-w` drives the leg, the notch's offset and the title's
+indent together, because those three drifting apart is precisely how the
+title ends up over the corner again.
+
 Below `lg` none of this applies: there is no rail, so the header's left block
 stays a stub with both caps. The phone gets its own shape - an S-swoop that
 also splits the hub's two groups of buttons - which is backlog item 18.

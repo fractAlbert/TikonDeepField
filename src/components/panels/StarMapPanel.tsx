@@ -43,7 +43,13 @@ export function StarMapPanel({
         maximized ? "h-full flex flex-col min-h-0" : ""
       }`}
     >
-      <div className="bg-lcars-amber lcars-caps text-black font-semibold px-4 py-1.5 text-sm flex items-center justify-between gap-3 shrink-0">
+      {/* The title starts *past* the leg, not over it. The shelf still spans
+          the full width - it is one mass with the leg - but the label
+          belongs to the horizontal arm, and a label sitting on top of the
+          corner reads as text floating on the frame rather than as the
+          arm's own content. Same as the shell's header, where the title
+          begins after the elbow rather than above it. */}
+      <div className="bg-lcars-amber lcars-caps text-black font-semibold pl-[calc(var(--lcars-panel-leg-w)+1rem)] pr-4 py-1.5 text-sm flex items-center justify-between gap-3 shrink-0">
         <span className="truncate">Star Map{region ? ` — ${region.name}` : ""}</span>
         {onToggleMaximize && (
           /* On the header rather than beside the dial: it is a control over
@@ -65,7 +71,7 @@ export function StarMapPanel({
       {/* The amber gutter and padding are pure chrome; below `md` they're
           64px of a ~390px screen the map would rather have. */}
       <div className={`relative flex ${maximized ? "flex-1 min-h-0" : ""}`}>
-        <div className="w-6 md:w-10 shrink-0 bg-lcars-amber" />
+        <div className="w-[var(--lcars-panel-leg-w)] shrink-0 bg-lcars-amber" />
         {/* The same concave corner the shell's elbow has, at panel scale.
             This header wraps: the amber runs across the top and then down
             the side, so the junction between them is a real corner and was
@@ -79,7 +85,7 @@ export function StarMapPanel({
             about the proportion 20px strikes against the shell's 160. */}
         <div
           aria-hidden
-          className="lcars-elbow-notch top-0 left-6 md:left-10 [--lcars-notch-colour:var(--lcars-amber)] [--lcars-notch-bg:var(--lcars-panel)] [--lcars-elbow-inner-r:0.5rem] md:[--lcars-elbow-inner-r:0.75rem]"
+          className="lcars-elbow-notch top-0 left-[var(--lcars-panel-leg-w)] [--lcars-notch-colour:var(--lcars-amber)] [--lcars-notch-bg:var(--lcars-panel)] [--lcars-elbow-inner-r:0.5rem] md:[--lcars-elbow-inner-r:0.75rem]"
         />
         <div className={`flex-1 min-w-0 p-3 md:p-4 ${maximized ? "min-h-0" : ""}`}>
           {/* Only the empty-field line lives here. The instructions for a

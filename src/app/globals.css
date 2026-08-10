@@ -223,6 +223,19 @@ body {
   height: var(--lcars-elbow-leg-drop);
 }
 
+/* A panel-scale elbow's leg. One token because three things have to agree
+   about it and drift between them is exactly what goes wrong: the leg's own
+   width, where the inner notch sits, and how far the title is indented so it
+   starts *past* the leg rather than over it. */
+:root {
+  --lcars-panel-leg-w: 1.5rem;
+}
+@media (min-width: 768px) {
+  :root {
+    --lcars-panel-leg-w: 2.5rem;
+  }
+}
+
 /* Scrollable but chrome-free - content can still be flicked/wheeled, but no
    browser scrollbar track is ever drawn. Used as a safety net on panels
    that should normally fit the viewport outright. */
