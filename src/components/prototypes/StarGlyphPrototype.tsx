@@ -350,7 +350,7 @@ export function StarGlyphPrototype() {
             setMono((m) => !m);
           }}
           className={`lcars-caps text-[11px] px-3 py-1.5 rounded-full cursor-pointer ${
-            mono ? "bg-lcars-amber text-black font-semibold" : "bg-lcars-panel text-lcars-ice/60"
+            mono ? "bg-lcars-amber text-black font-semibold" : "bg-lcars-control text-lcars-ice/60"
           }`}
         >
           Monochrome

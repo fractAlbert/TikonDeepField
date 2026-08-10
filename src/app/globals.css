@@ -15,7 +15,19 @@
   --lcars-violet: #9999ff;
   --lcars-ice: #cce6ff;
   --lcars-teal: #66ccbb;
-  --lcars-panel: #10121a;
+  /* A panel is black, like the page. It was #10121a - a near-black grey -
+     from before panels had coloured chrome of their own, when a fill was
+     the only thing distinguishing one from the background. They have shelves
+     and legs now, so the frame does that job and the fill can stop trying
+     to; black content inside a coloured frame is what all three references
+     actually do.
+
+     `control` keeps the old grey. A chip, tab or button still needs to read
+     as a raised surface, and on a black panel a black control is invisible -
+     which is the same trap the phone hub hit when its sub-panel was black
+     over a black page. */
+  --lcars-panel: #000000;
+  --lcars-control: #10121a;
 }
 
 @theme inline {
@@ -30,6 +42,7 @@
   --color-lcars-ice: var(--lcars-ice);
   --color-lcars-teal: var(--lcars-teal);
   --color-lcars-panel: var(--lcars-panel);
+  --color-lcars-control: var(--lcars-control);
   --font-lcars: var(--font-lcars), "Arial Narrow", sans-serif;
 }
 

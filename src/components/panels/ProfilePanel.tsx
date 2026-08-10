@@ -241,7 +241,7 @@ export function ProfilePanel() {
               className={`lcars-caps text-xs px-4 py-1.5 rounded-full font-semibold cursor-pointer transition-colors ${
                 confirmingRetire
                   ? "bg-lcars-alert text-black hover:bg-lcars-red"
-                  : "bg-lcars-panel text-lcars-ice/80 hover:bg-white/15"
+                  : "bg-lcars-control text-lcars-ice/80 hover:bg-white/15"
               }`}
             >
               {confirmingRetire ? "Confirm retirement" : "Retire"}

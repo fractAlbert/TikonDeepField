@@ -148,8 +148,8 @@ export function RingScanPanel({
                       // time; the salmon "R2" badge in the chip was already
                       // saying it, so the state is carried by colouring the
                       // label to match rather than by drawing round it.
-                      "bg-lcars-panel text-lcars-salmon/90"
-                    : "bg-lcars-panel text-lcars-ice hover:bg-white/10"
+                      "bg-lcars-control text-lcars-salmon/90"
+                    : "bg-lcars-control text-lcars-ice hover:bg-white/10"
                 }`}
               >
                 <QuasarStar color={s.color} glyph={s.glyph} size={16} />
