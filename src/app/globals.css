@@ -153,13 +153,61 @@ body {
    Narrow on a phone because the rail is not rendered below `lg` - there the
    block is a stub terminating the header, and a 160px slab of orange with
    nothing under it would be the header eating a fifth of the screen. */
-.lcars-left-run {
-  width: 2.5rem;
+:root {
+  --lcars-left-run-w: 2.5rem;
 }
 @media (min-width: 1024px) {
-  .lcars-left-run {
-    width: 10rem;
+  :root {
+    --lcars-left-run-w: 10rem;
   }
+}
+
+.lcars-left-run {
+  width: var(--lcars-left-run-w);
+}
+
+/* The elbow: the header and the left rail are one orange shape, the top bar
+   sweeping round into a leg that runs down the edge of the screen with the
+   nav buttons sitting in a gap cut out of it.
+
+   Read off the user's mock-up on 2026-08-07 by scanning the image rather
+   than eyeballing it. The outer corner is a true circle - the arc runs from
+   (x=116, y=22) to (x=20, y=118), 96px each way - which is what makes it
+   read as a sweep instead of a rounded box. It is set at 6rem and allowed to
+   clamp to the leg's height, so the curve always completes exactly where the
+   header ends however tall the header gets.
+
+   The inner corner is the same quarter-circle, smaller: the mock-up's right
+   edge moves 191 -> 186 -> 183 -> 180 -> 179 across 16px of height. The user
+   drew that one by hand in GIMP and asked for a proper quarter circle, so it
+   is one. */
+:root {
+  --lcars-elbow-outer-r: 6rem;
+  --lcars-elbow-inner-r: 1.25rem; /* 20px */
+  --lcars-elbow-leg-drop: 3.625rem; /* 58px, how far the leg runs past the bar */
+}
+
+/* A concave corner, built from two flat fills rather than a shadow or a
+   gradient: an orange square with a black box over it whose own corner is
+   rounded, leaving a quarter-disc of orange showing through. */
+.lcars-elbow-notch {
+  position: absolute;
+  left: var(--lcars-left-run-w);
+  width: var(--lcars-elbow-inner-r);
+  height: var(--lcars-elbow-inner-r);
+  background: var(--lcars-orange);
+}
+.lcars-elbow-notch::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--lcars-black);
+  border-top-left-radius: var(--lcars-elbow-inner-r);
+}
+
+/* The leg continuing below the bar, before the button gap opens. */
+.lcars-elbow-leg {
+  height: var(--lcars-elbow-leg-drop);
 }
 
 /* Scrollable but chrome-free - content can still be flicked/wheeled, but no

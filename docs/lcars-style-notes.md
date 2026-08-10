@@ -558,3 +558,38 @@ Not adopted (deliberately):
 - Terse two/three-letter code labeling convention for nav - would hurt
   usability for panel names, though quasar designations (e.g. "PKS 753")
   already follow this convention naturally
+
+### The header and the rail are one elbow (2026-08-07)
+
+Built to a mock-up the user made by repositioning the real HTML and drawing
+the inner curve over the screenshot in GIMP. Measured off the image by
+scanning it rather than eyeballed - which mattered, because the thing that
+makes it read as a *sweep* rather than a rounded box is the size of the
+outer corner, and that is not a judgement you can make by looking.
+
+The shape, at `lg` and up:
+
+- **One orange mass, not two.** The top bar and the left rail touch, with no
+  grout between them, and turn into each other through a corner.
+- **The outer corner is a true circle of 96px** - the mock-up's arc runs
+  from (116, 22) to (20, 118), 96px on both axes. Ours is `6rem` and allowed
+  to clamp to the header's height, so the curve always completes exactly
+  where the bar ends however tall the bar becomes.
+- **The inner corner is the same quarter circle, smaller** - 20px, concave.
+  Built from two flat fills (an orange square with a black box over it whose
+  own corner is rounded), never a shadow or a gradient.
+- **The bar runs off the right edge of the glass with no cap.** A run ending
+  flat on the screen edge reads as carrying on off-frame; a cap there would
+  say it stops, which it does not.
+- **The leg carries on 58px past the bar**, then the nav buttons open a gap
+  in it, then it resumes and runs to the bottom of the glass. The buttons
+  are not *beside* the frame, they are *in* it - which is the reference
+  images' central move and the first place this project has used it at
+  structural scale.
+
+Everything is behind `--lcars-elbow-*` and `--lcars-left-run-w`, because the
+mock-up's inner radius was hand-drawn and explicitly approximate.
+
+Below `lg` none of this applies: there is no rail, so the header's left block
+stays a stub with both caps. The phone gets its own shape - an S-swoop that
+also splits the hub's two groups of buttons - which is backlog item 18.

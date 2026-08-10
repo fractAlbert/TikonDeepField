@@ -26,6 +26,14 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Shipped 2026-08-07 and removed: **the header rework (17)**, built against
+the user's mock-up and measured off it rather than eyeballed. The header and
+the left rail are now one orange elbow: a 96px outer sweep at the top left, a
+92px bar running off the right edge with no cap, and a leg carrying on 58px
+below the bar before the nav buttons open a gap in it. Written up in
+`lcars-style-notes.md`. Item 10 was *not* folded in - the mock-up was
+desktop, and the 320px overflow is untouched.
+
 Shipped 2026-08-07 and removed: **the commit-message hook (16)**, widened to
 cover the browser preflight as well. Both live in `.claude/hooks/` and are
 wired from `.claude/settings.json`, so they travel with the repo rather than
@@ -57,7 +65,7 @@ follow-up that was deliberately not applied.
 | 10 | The header overflows horizontally at 320px | Design |
 | 12 | Our vertical runs do not match the references | Design |
 | 15 | Close the shell frame at the bottom, or leave it a bracket | Design |
-| 17 | Rework the header, against the user's mock-up | Design |
+| 18 | The phone header as an S-swoop splitting the hub | Design |
 
 ## Design
 
@@ -178,41 +186,38 @@ Three options, with the cost of each:
   corner brackets, so two edges is a legitimate LCARS shape rather than an
   unfinished one - this is a real option, not a cop-out.
 
-### 17 - Rework the header, against the user's mock-up
+### 18 - The phone header as an S-swoop splitting the hub
 
-Raised 2026-08-07, in the user's words: *"Also, we'll talk about the mock-up
-I made so you can fix the header"*, followed by *"That's another todo"*.
-Quoted rather than paraphrased because the paraphrase turned out not to be
-re-readable - asked the next day whether this was a mobile item, the entry
-could not answer and neither could the summary of it.
+Raised 2026-08-07 alongside the desktop elbow (item 17, shipped). The user's
+words, kept verbatim because the shape is the specification and a paraphrase
+of a shape is worth nothing:
 
-**Which it is - mobile, desktop or both - is not recorded and was not
-stated.** That matters more than it looks: there is only one `#app-header`,
-rendered at every width with responsive classes, so a mock-up could target
-either side and the constraints differ. If it is mobile, item 10 folds into
-this job. If it is desktop, item 10 stays separate and the frame
-relationship below is the thing to protect.
+> "Mobile is going to look very different. I'm not sure how you will
+> implement exactly but I think what I want is a swooping S shaped
+> \"header\", Starts at the top, swoops down on the left halfway, then swoops
+> to the right side and then straight down. The bottom of the S is missing.
+> The swoop splits the two sets of buttons."
 
-**Do not design the header from these notes - ask for the mock-up first.**
-It is the specification; everything below is only what is already known
-about the area.
+So: a bar across the top, turning down the left edge, running to about
+halfway, then sweeping across to the right and continuing straight down the
+right edge - with no return at the bottom. The crossing is the divider
+between the hub's two groups of six.
 
-What the mock-up will have to live with:
+What it replaces: `MobileMenu` currently draws that divider as a small knee
+and arm between the two runs, which is the right idiom at the wrong scale.
+This makes it structural and continuous with the header.
 
-- **Item 10 is in this same component.** The header's min-content is 362px
-  against 296px of available width at 320, so "SOUND: ON" is clipped. If the
-  mock-up changes the header at all, that is the moment to fix the overflow
-  rather than a separate job.
-- **The left block is the head of the frame's left run.** As of phase 3a it
-  matches the nav rail's width at `lg` and squares off at the bottom so the
-  two read as one column; below `lg` it keeps its bottom cap and shrinks to
-  a stub. Anything that changes its width or its corners has to keep that
-  relationship or the frame stops reading as one object.
-- **It has no `shrink-0`, deliberately.** Adding one cost 40px of
-  min-content width and broke 390, which had been fitting. Measured, and
-  reverted the same day.
-- **The sound toggle is a plain `<button>`**, not an `LcarsButton`, so it
-  does not inherit the `size` prop.
+What it has to respect:
+
+- **The hub is six rows of buttons in two groups**, and at 320x568 those
+  rows want nearly the whole screen - the emblem is already hidden below a
+  700px viewport height. An S that costs vertical space costs it from the
+  buttons, which are at the 44px touch floor.
+- **Below `lg` there is no left rail**, so the header's left block is a stub
+  today. The S changes what that stub is for.
+- The desktop elbow's tokens (`--lcars-elbow-outer-r`, `-inner-r`,
+  `-leg-drop`) exist and the same curves should almost certainly be reused
+  rather than a second set invented.
 
 ## Gameplay
 

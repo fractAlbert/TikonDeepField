@@ -725,24 +725,27 @@ export function AppShell() {
           making the header 108px of an 844px screen. One line each brings
           it to roughly half that, and the Star Map only needed ~19px more
           than it had. */}
-      <header id="app-header" className="flex items-stretch gap-3 shrink-0">
-        {/* The head of the frame's left-hand run. It is the same width as
-            the nav rail beneath it and squares off at the bottom on
-            desktop, so the two read as one column continuing down the edge
-            of the screen rather than as a decorative stub above a menu -
-            rounded terminates, flat continues, and the 12px of black
-            between them is grout rather than a break.
+      {/* One shape, not two. The leg and the bar touch - no gap - so the
+          header sweeps round into the rail rather than sitting above it,
+          and `lg:-mr-6` runs the bar off the right edge of the glass with
+          no cap, which is where it is going. `relative` is for the notch. */}
+      <header id="app-header" className="relative flex items-stretch shrink-0 lg:-mr-6">
+        {/* The head of the elbow, and the same width as the rail below it.
+            At `lg` it takes the big outer radius and loses its bottom cap,
+            because the leg carries on down past it; below `lg` there is no
+            rail underneath, so it stays a stub and keeps both caps at the
+            small radius - a flat edge needs a visible neighbour.
 
-            Below `lg` there is no rail under it, so it keeps its bottom
-            cap and stays a stub: a flat edge needs a visible neighbour to
-            continue into, and there would not be one. */}
-        {/* No `shrink-0`. The block is decoration, and at 320 the header is
-            already over its budget (backlog item 10) - letting the flex
-            algorithm squeeze this before it squeezes the title is the
-            cheapest 40px available. Adding `shrink-0` here pushed the
+            No `shrink-0`, deliberately. The block is decoration, and at 320
+            the header is already over budget (backlog item 10), so letting
+            flex squeeze this before it squeezes the title is the cheapest
+            40px in the layout. Adding `shrink-0` here once pushed the
             shell's min-content from 362 to 402, measured. */}
-        <div className="lcars-left-run bg-lcars-orange rounded-tl-[2rem] rounded-bl-[2rem] lg:rounded-bl-none" />
-        <div className="flex-1 flex items-center justify-between gap-3 bg-lcars-orange rounded-tr-[2rem] px-3 md:px-8 py-2 md:py-4">
+        <div className="lcars-left-run bg-lcars-orange rounded-tl-[2rem] rounded-bl-[2rem] lg:rounded-tl-[var(--lcars-elbow-outer-r)] lg:rounded-bl-none" />
+        {/* No cap on the right at `lg`: the bar runs straight off the edge
+            of the screen, which is the strongest thing a run can continue
+            into. */}
+        <div className="flex-1 flex items-center justify-between gap-3 bg-lcars-orange rounded-tr-[2rem] lg:rounded-tr-none px-3 md:px-8 py-2 md:py-4 lg:pr-12">
           <div className="min-w-0">
             <h1 className="lcars-caps text-lg md:text-4xl font-bold text-black leading-none">
               {GAME_NAME}
@@ -766,6 +769,11 @@ export function AppShell() {
             <SoundToggle />
           </div>
         </div>
+        {/* The concave corner where the bar's underside meets the leg's
+            right edge. `top-full` so it tracks the header's height rather
+            than assuming one, and it paints into the 48px gutter below,
+            which is empty black. */}
+        <div aria-hidden className="lcars-elbow-notch top-full max-lg:hidden" />
       </header>
 
       {careerOver && (
@@ -797,30 +805,34 @@ export function AppShell() {
           />
         )}
         {!isMobile && (
-          <NavRail
-            id="nav-rail-primary"
-            items={PRIMARY_NAV}
-            fillerColors={LEFT_RAIL_FILLERS}
-            activeId={panel}
-            onSelect={selectPanel}
-            indicatorSide="right"
-            /* max-lg:hidden covers the pre-hydration frame only. The server
-               can't measure a viewport, so a phone's first paint is the
-               desktop layout - and that layout squeezes `main` to zero
-               width, which looks broken rather than merely wrong. Hiding
-               the desktop-only columns in CSS lets that frame render as
-               header + full-width content until the menu appears. Once
-               hydrated these three aren't rendered below `lg` at all, so
-               the class never gets a chance to apply. */
-            /* `-mb-6` cancels the shell's bottom padding so the run reaches
-               the glass. Its foot is a square filler now, and a flat edge
-               needs something to continue into - stopping 24px above the
-               window is the cut-in-mid-air the jump bar was corrected for
-               twice. The rail only exists at `lg` and up, where the
-               shell's padding is `md:p-6`, so 24px is the only value it
-               can meet. */
-            className="lcars-left-run shrink-0 mr-[48px] -mb-6 max-lg:hidden"
-          />
+          /* The left column: the elbow's leg carrying on down, then the
+             buttons in the gap cut out of it, then the filler running to
+             the glass. `-mt-3` cancels the shell's row gap on this side
+             only, so the leg touches the header and the orange reads as one
+             continuous run - the same one-sided cancel the phone bars use.
+             `mb-3` reopens the gap before the first button.
+
+             `-mb-6` runs the foot to the glass: a flat edge needs something
+             to continue into, and stopping 24px above the window is the
+             cut-in-mid-air the jump bar was corrected for twice.
+
+             `max-lg:hidden` covers the pre-hydration frame only. The server
+             cannot measure a viewport, so a phone's first paint is the
+             desktop layout, and that layout squeezes `main` to zero width -
+             broken rather than merely wrong. Once hydrated this is not
+             rendered below `lg` at all. */
+          <div className="lcars-left-run shrink-0 mr-[48px] -mb-6 max-lg:hidden flex flex-col min-h-0">
+            <div aria-hidden className="lcars-elbow-leg shrink-0 bg-lcars-orange -mt-3 mb-3" />
+            <NavRail
+              id="nav-rail-primary"
+              items={PRIMARY_NAV}
+              fillerColors={LEFT_RAIL_FILLERS}
+              activeId={panel}
+              onSelect={selectPanel}
+              indicatorSide="right"
+              className="flex-1 min-h-0"
+            />
+          </div>
         )}
 
         {/* Hidden rather than unmounted while the map is maximised. `main`
