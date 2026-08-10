@@ -85,7 +85,20 @@ export function RelativeDistanceScope({
   const readoutRef = useRef<HTMLSpanElement>(null);
   const coreEls = useRef<Record<string, HTMLDivElement | null>>({});
   const labelEls = useRef<Record<string, HTMLDivElement | null>>({});
-  const startTime = useRef(0);
+  // Phase is carried forward frame by frame rather than recomputed from a
+  // start time, and that is what makes the speed control a *rate* control.
+  //
+  // It used to be `elapsed / period`, so changing the period rescaled the
+  // whole history at once and the line teleported - drag the slider and the
+  // sweep jumped somewhere else mid-pass. Advancing by `dt / period` each
+  // frame leaves the current position untouched and only changes how fast
+  // it moves on from there.
+  //
+  // Counted in cycles: the integer part is the cycle number the readout
+  // shows and the direction alternates on, the fraction is the position
+  // within the pass.
+  const phase = useRef(0);
+  const lastFrameAt = useRef(0);
   const rafId = useRef(0);
   const pingedThisCycle = useRef<Set<string>>(new Set());
   const lastCycle = useRef(-1);
@@ -126,7 +139,11 @@ export function RelativeDistanceScope({
     // means waiting out the rest of a pass that was measuring something
     // else. This is the same reasoning AppShell already applies by deferring
     // the scope's first mount until you actually visit the panel.
-    startTime.current = performance.now();
+    //
+    // Note this is the *only* thing that restarts the sweep. Changing the
+    // period deliberately does not - see `phase`.
+    phase.current = 0;
+    lastFrameAt.current = performance.now();
     lastCycle.current = -1;
     pingedThisCycle.current.clear();
   }, [refId2]);
@@ -188,14 +205,21 @@ export function RelativeDistanceScope({
   // Runs once for the component's lifetime - stays mounted (just hidden)
   // when you switch panels, so the clock keeps advancing in the background.
   useEffect(() => {
-    startTime.current = performance.now();
+    lastFrameAt.current = performance.now();
 
-    function frame() {
-      const elapsed = performance.now() - startTime.current;
-      const period = periodRef.current;
-      const cycle = Math.floor(elapsed / period);
-      const within = elapsed - cycle * period;
-      const t = within / period; // 0..1
+    function frame(now: number) {
+      // Clamped because `requestAnimationFrame` stops entirely while the tab
+      // is in the background, so the first frame after coming back would
+      // otherwise carry minutes of `dt` and skip the sweep across several
+      // cycles at once. Hiding the *panel* is a different thing and still
+      // advances normally - the element is hidden, the callback is not.
+      const dt = Math.min(now - lastFrameAt.current, 100);
+      lastFrameAt.current = now;
+
+      phase.current += dt / periodRef.current;
+
+      const cycle = Math.floor(phase.current);
+      const t = phase.current - cycle; // 0..1
 
       if (cycle !== lastCycle.current) {
         lastCycle.current = cycle;
@@ -281,7 +305,9 @@ export function RelativeDistanceScope({
               setRefId(s.id);
             }}
           >
-            <span className={styles.refDot} style={{ background: s.color }} />
+            <span className={styles.refDot}>
+              <QuasarStar color={s.color} glyph={s.glyph} size={14} />
+            </span>
             {s.label}
           </button>
         ))}

@@ -70,17 +70,43 @@ body {
   --lcars-hub-label: 0.8125rem; /* 13px */
 }
 
-.lcars-hub-grid {
-  grid-auto-rows: minmax(var(--lcars-hub-row-min), 1fr);
-  /* Three rows per group, so the cap is per group rather than per hub. */
-  max-height: calc(var(--lcars-hub-row-max) * 3 + 0.75rem);
+/* Rows are a definite height chosen against the *viewport's height*, not
+   stretched to fill. Stretching was tried and left a void: the grid capped
+   itself inside a pocket that did not, so the swoop's crossing sat a long
+   way below the last button. Sizing the row directly means each pocket hugs
+   its buttons and the crest takes whatever is left, which is the only thing
+   on this screen that should absorb slack.
+
+   A height query rather than a width one, because what runs out here is
+   vertical: six rows plus the shelf plus the crossing against 568px. */
+:root {
+  --lcars-hub-row: 3rem; /* 48px - small phones, where six rows barely fit */
+}
+@media (min-height: 700px) {
+  :root {
+    --lcars-hub-row: 3.5rem;
+  }
+}
+@media (min-height: 860px) {
+  :root {
+    --lcars-hub-row: 3.75rem;
+  }
 }
 
-/* The crest appears only where there is room for it to read as a crest
-   rather than as a smudge. Two groups of six is six rows, and on a 568px
-   screen those rows want nearly all of it - so this is one of the few
-   places a media query is the right tool, because the thing that runs out
-   really is the viewport's height. */
+.lcars-hub-grid {
+  grid-auto-rows: var(--lcars-hub-row);
+}
+
+/* The crest, back but small. It only appears where there is genuinely room
+   left under the second group - about 260px at 390x844 and about 30px at
+   320x568, which is why this is a height query and not a width one. Capped
+   well below what that space would allow: the swoop is the thing holding
+   this screen together now, and a large emblem under it competes for the
+   centre rather than sitting in the corner of it. */
+:root {
+  --lcars-hub-crest-max: 6.5rem; /* 104px */
+}
+
 .lcars-hub-crest {
   display: none;
 }
@@ -153,12 +179,122 @@ body {
    Narrow on a phone because the rail is not rendered below `lg` - there the
    block is a stub terminating the header, and a 160px slab of orange with
    nothing under it would be the header eating a fifth of the screen. */
-.lcars-left-run {
-  width: 2.5rem;
+:root {
+  --lcars-left-run-w: 2.5rem;
 }
 @media (min-width: 1024px) {
-  .lcars-left-run {
-    width: 10rem;
+  :root {
+    --lcars-left-run-w: 10rem;
+  }
+}
+
+.lcars-left-run {
+  width: var(--lcars-left-run-w);
+}
+
+/* The elbow: the header and the left rail are one orange shape, the top bar
+   sweeping round into a leg that runs down the edge of the screen with the
+   nav buttons sitting in a gap cut out of it.
+
+   Read off the user's mock-up on 2026-08-07 by scanning the image rather
+   than eyeballing it. The outer corner is a true circle - the arc runs from
+   (x=116, y=22) to (x=20, y=118), 96px each way - which is what makes it
+   read as a sweep instead of a rounded box. It is set at 6rem and allowed to
+   clamp to the leg's height, so the curve always completes exactly where the
+   header ends however tall the header gets.
+
+   The inner corner is the same quarter-circle, smaller: the mock-up's right
+   edge moves 191 -> 186 -> 183 -> 180 -> 179 across 16px of height. The user
+   drew that one by hand in GIMP and asked for a proper quarter circle, so it
+   is one. */
+:root {
+  --lcars-elbow-outer-r: 6rem;
+  --lcars-elbow-inner-r: 1.25rem; /* 20px */
+  --lcars-elbow-leg-drop: 3.625rem; /* 58px, how far the leg runs past the bar */
+}
+
+/* A concave corner, built from two flat fills rather than a shadow or a
+   gradient: a square of the run's colour with a box of the *background*
+   colour over it whose own corner is rounded, leaving a quarter-disc
+   showing through.
+
+   Parameterised because there is more than one elbow in the app and they do
+   not share a colour, a size, or what sits behind them. The caller
+   positions it (`top-*`/`left-*`) and overrides whichever of the three
+   properties differ:
+
+     --lcars-notch-colour  the run's own colour          (default orange)
+     --lcars-notch-bg      whatever the curve reveals    (default black)
+     --lcars-elbow-inner-r the radius                    (default 20px)
+
+   The background one is the easy mistake: the shell's elbow curves into the
+   page, which is black, but a panel's elbow curves into the panel, which is
+   not. */
+.lcars-elbow-notch {
+  position: absolute;
+  width: var(--lcars-elbow-inner-r);
+  height: var(--lcars-elbow-inner-r);
+  background: var(--lcars-notch-colour, var(--lcars-orange));
+}
+.lcars-elbow-notch::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--lcars-notch-bg, var(--lcars-black));
+  border-top-left-radius: var(--lcars-elbow-inner-r);
+}
+
+/* Which way the corner faces. A run that turns has an inner corner on the
+   inside of the turn, and the S-swoop turns three times in three different
+   directions, so the default top-left is only one of four. Name the corner
+   the *curve* occupies, which is the one the overlay rounds. */
+.lcars-notch-tr::after {
+  border-radius: 0 var(--lcars-elbow-inner-r) 0 0;
+}
+.lcars-notch-bl::after {
+  border-radius: 0 0 0 var(--lcars-elbow-inner-r);
+}
+.lcars-notch-br::after {
+  border-radius: 0 0 var(--lcars-elbow-inner-r) 0;
+}
+
+/* The phone hub's S-swoop: across the top, down the left to halfway, across
+   to the right, then straight down and off the bottom. The crossing is what
+   separates the hub's two groups of buttons, so the frame does the dividing
+   rather than a rule drawn between them.
+
+   Sizes are their own tokens rather than the shell's: the shell's leg is
+   160px against a 1350px viewport, and 12% of a 390px phone would be 47px
+   of a screen the buttons already fill. */
+:root {
+  --lcars-hub-leg-w: 2.5rem; /* 40px - expected to be retuned, hence the token */
+  --lcars-hub-cross-h: 0.875rem; /* 14px, the thin arm */
+  --lcars-hub-outer-r: 2.5rem; /* the opening sweep, ~= the shelf's height */
+  --lcars-hub-turn-r: 1.25rem; /* the two later turns, ~= the leg's width */
+}
+
+/* The leg continuing below the bar, before the button gap opens. */
+.lcars-elbow-leg {
+  height: var(--lcars-elbow-leg-drop);
+}
+
+/* A panel-scale elbow's leg. One token because three things have to agree
+   about it and drift between them is exactly what goes wrong: the leg's own
+   width, where the inner notch sits, and how far the title is indented so it
+   starts *past* the leg rather than over it. */
+:root {
+  --lcars-panel-leg-w: 1.5rem;
+  /* The outer sweep, at panel scale. The shell's is 96px against a 92px
+     bar - the radius is essentially the bar's height, so the curve finishes
+     exactly where the bar does and the leg carries straight on below it.
+     That relationship is what makes it read as a sweep, so it is the thing
+     to scale rather than the number: a panel shelf is ~32px, so this is. */
+  --lcars-panel-elbow-outer-r: 1.5rem;
+}
+@media (min-width: 768px) {
+  :root {
+    --lcars-panel-leg-w: 2.5rem;
+    --lcars-panel-elbow-outer-r: 2rem;
   }
 }
 

@@ -39,11 +39,21 @@ export function StarMapPanel({
        the constraint never reaches the svg. Docked, none of this applies -
        the panel is as tall as its content and the sidebar scrolls. */
     <div
-      className={`bg-lcars-panel rounded-t-xl overflow-hidden ${
+      /* The top-left is the elbow's outer sweep and takes the panel-scale
+         radius; the top-right is an ordinary panel corner and stays small.
+         `overflow-hidden` is what makes it a sweep rather than a rounded
+         box - the amber shelf inside is clipped to this corner. */
+      className={`bg-lcars-panel rounded-tr-xl rounded-tl-[var(--lcars-panel-elbow-outer-r)] overflow-hidden ${
         maximized ? "h-full flex flex-col min-h-0" : ""
       }`}
     >
-      <div className="bg-lcars-amber lcars-caps text-black font-semibold px-4 py-1.5 text-sm flex items-center justify-between gap-3 shrink-0">
+      {/* The title starts *past* the leg, not over it. The shelf still spans
+          the full width - it is one mass with the leg - but the label
+          belongs to the horizontal arm, and a label sitting on top of the
+          corner reads as text floating on the frame rather than as the
+          arm's own content. Same as the shell's header, where the title
+          begins after the elbow rather than above it. */}
+      <div className="bg-lcars-amber lcars-caps text-black font-semibold pl-[calc(var(--lcars-panel-leg-w)+1rem)] pr-4 py-1.5 text-sm flex items-center justify-between gap-3 shrink-0">
         <span className="truncate">Star Map{region ? ` — ${region.name}` : ""}</span>
         {onToggleMaximize && (
           /* On the header rather than beside the dial: it is a control over
@@ -64,8 +74,23 @@ export function StarMapPanel({
       </div>
       {/* The amber gutter and padding are pure chrome; below `md` they're
           64px of a ~390px screen the map would rather have. */}
-      <div className={`flex ${maximized ? "flex-1 min-h-0" : ""}`}>
-        <div className="w-6 md:w-10 shrink-0 bg-lcars-amber" />
+      <div className={`relative flex ${maximized ? "flex-1 min-h-0" : ""}`}>
+        <div className="w-[var(--lcars-panel-leg-w)] shrink-0 bg-lcars-amber" />
+        {/* The same concave corner the shell's elbow has, at panel scale.
+            This header wraps: the amber runs across the top and then down
+            the side, so the junction between them is a real corner and was
+            being drawn as a right angle.
+
+            Three things differ from the shell's. It is amber, not orange.
+            It curves into `bg-lcars-panel` rather than into the page, since
+            what sits beside the leg here is the panel's own fill - getting
+            that wrong paints a black bite out of the content. And the
+            radius is smaller because the leg is: 12px against a 40px leg is
+            about the proportion 20px strikes against the shell's 160. */}
+        <div
+          aria-hidden
+          className="lcars-elbow-notch top-0 left-[var(--lcars-panel-leg-w)] [--lcars-notch-colour:var(--lcars-amber)] [--lcars-notch-bg:var(--lcars-panel)] [--lcars-elbow-inner-r:0.5rem] md:[--lcars-elbow-inner-r:0.75rem]"
+        />
         <div className={`flex-1 min-w-0 p-3 md:p-4 ${maximized ? "min-h-0" : ""}`}>
           {/* Only the empty-field line lives here. The instructions for a
               live survey depend on whether the region has been closed,

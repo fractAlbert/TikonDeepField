@@ -558,3 +558,60 @@ Not adopted (deliberately):
 - Terse two/three-letter code labeling convention for nav - would hurt
   usability for panel names, though quasar designations (e.g. "PKS 753")
   already follow this convention naturally
+
+### The header and the rail are one elbow (2026-08-07)
+
+Built to a mock-up the user made by repositioning the real HTML and drawing
+the inner curve over the screenshot in GIMP. Measured off the image by
+scanning it rather than eyeballed - which mattered, because the thing that
+makes it read as a *sweep* rather than a rounded box is the size of the
+outer corner, and that is not a judgement you can make by looking.
+
+The shape, at `lg` and up:
+
+- **One orange mass, not two.** The top bar and the left rail touch, with no
+  grout between them, and turn into each other through a corner.
+- **The outer corner is a true circle of 96px** - the mock-up's arc runs
+  from (116, 22) to (20, 118), 96px on both axes. Ours is `6rem` and allowed
+  to clamp to the header's height, so the curve always completes exactly
+  where the bar ends however tall the bar becomes.
+- **The inner corner is the same quarter circle, smaller** - 20px, concave.
+  Built from two flat fills (an orange square with a black box over it whose
+  own corner is rounded), never a shadow or a gradient.
+- **The bar runs off the right edge of the glass with no cap.** A run ending
+  flat on the screen edge reads as carrying on off-frame; a cap there would
+  say it stops, which it does not.
+- **The leg carries on 58px past the bar**, then the nav buttons open a gap
+  in it, then it resumes and runs to the bottom of the glass. The buttons
+  are not *beside* the frame, they are *in* it - which is the reference
+  images' central move and the first place this project has used it at
+  structural scale.
+
+Everything is behind `--lcars-elbow-*` and `--lcars-left-run-w`, because the
+mock-up's inner radius was hand-drawn and explicitly approximate.
+
+**Scale the ratio, not the number.** The outer radius is the *bar's height* -
+96px against 92 on the shell, so the curve finishes exactly where the bar
+does and the leg carries straight on below it. That relationship is what
+reads as a sweep, and it is what transfers to a smaller elbow: the Star Map's
+shelf is 32px, so its radius is 32, giving 1.00 against the shell's 1.04.
+Copying the shell's 96px into a panel would have been a rounded box with a
+bite out of it; copying the proportion is the same shape held smaller.
+
+**The title belongs to the arm, not to the corner.** It starts *past* the
+leg's right edge, inset by the arm's own padding - never over the leg. The
+shell's header does this because the bar is a separate element that begins
+where the leg ends; the Star Map did not, because its shelf spans the full
+width and the label simply started at the panel's edge, sitting on top of
+the corner. The difference reads immediately once they are side by side: a
+label over the leg looks like text floating on the frame, and a label past it
+looks like the arm's own content. Fixed 2026-08-07 on the user's eye.
+
+A wrapping header's leg width therefore has to be one value, not three.
+`--lcars-panel-leg-w` drives the leg, the notch's offset and the title's
+indent together, because those three drifting apart is precisely how the
+title ends up over the corner again.
+
+Below `lg` none of this applies: there is no rail, so the header's left block
+stays a stub with both caps. The phone gets its own shape - an S-swoop that
+also splits the hub's two groups of buttons - which is backlog item 18.
