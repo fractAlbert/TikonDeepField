@@ -228,7 +228,7 @@ body {
    width, where the inner notch sits, and how far the title is indented so it
    starts *past* the leg rather than over it. */
 :root {
-  --lcars-panel-leg-w: 0.75rem;
+  --lcars-panel-leg-w: 1.5rem;
   /* The outer sweep, at panel scale. The shell's is 96px against a 92px
      bar - the radius is essentially the bar's height, so the curve finishes
      exactly where the bar does and the leg carries straight on below it.
@@ -238,7 +238,7 @@ body {
 }
 @media (min-width: 768px) {
   :root {
-    --lcars-panel-leg-w: 1.25rem;
+    --lcars-panel-leg-w: 2.5rem;
     --lcars-panel-elbow-outer-r: 2rem;
   }
 }
