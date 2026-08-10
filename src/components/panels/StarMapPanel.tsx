@@ -89,7 +89,7 @@ export function StarMapPanel({
             about the proportion 20px strikes against the shell's 160. */}
         <div
           aria-hidden
-          className="lcars-elbow-notch top-0 left-[var(--lcars-panel-leg-w)] [--lcars-notch-colour:var(--lcars-amber)] [--lcars-notch-bg:var(--lcars-panel)] [--lcars-elbow-inner-r:0.5rem] md:[--lcars-elbow-inner-r:0.75rem]"
+          className="lcars-elbow-notch top-0 left-[var(--lcars-panel-leg-w)] [--lcars-notch-colour:var(--lcars-amber)] [--lcars-notch-bg:var(--lcars-panel)] [--lcars-elbow-inner-r:0.5rem]"
         />
         <div className={`flex-1 min-w-0 p-3 md:p-4 ${maximized ? "min-h-0" : ""}`}>
           {/* Only the empty-field line lives here. The instructions for a
