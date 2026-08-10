@@ -26,7 +26,7 @@
 // keeps the script in sync at the cost of being unable to explore, and
 // exploring is the thing this game is.
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { TutorialStep, tokenizeCopy } from "@/lib/tutorial";
 import { playButtonClick } from "@/lib/sound";
 
@@ -98,6 +98,7 @@ export function TutorialCoach({
   onNext,
   onBack,
   onSkip,
+  onHeightChange,
 }: {
   step: TutorialStep;
   index: number;
@@ -107,20 +108,56 @@ export function TutorialCoach({
   onNext: () => void;
   onBack: () => void;
   onSkip: () => void;
+  /**
+   * Reports how tall the coach actually is, so the shell can reserve
+   * exactly that much and no more. It used to reserve a constant, which was
+   * larger than most steps need - see `AppShell`.
+   */
+  onHeightChange?: (height: number) => void;
 }) {
   useAnchorRing(step.anchorId, true);
 
   const waiting = !!step.done && !satisfied;
 
+  const rootRef = useRef<HTMLDivElement>(null);
+  const reportRef = useRef(onHeightChange);
+  useEffect(() => {
+    reportRef.current = onHeightChange;
+  }, [onHeightChange]);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    // Observed rather than measured once: the copy changes with every step
+    // and wraps differently at every width, so the height is not a constant
+    // and cannot be read at mount and trusted.
+    const ro = new ResizeObserver(() => {
+      reportRef.current?.(el.getBoundingClientRect().height);
+    });
+    ro.observe(el);
+    reportRef.current?.(el.getBoundingClientRect().height);
+    return () => {
+      ro.disconnect();
+      reportRef.current?.(0);
+    };
+  }, []);
+
   return (
     <div
       id="tutorial-coach"
+      ref={rootRef}
       /* The wrapper spans the viewport so the bar can sit flush against the
          bottom edge, but takes no pointer events - only the bar itself
          does, which is what keeps the app underneath live. */
       className="fixed inset-x-0 bottom-0 z-40 pointer-events-none p-2 md:p-3"
     >
-      <div className="pointer-events-auto flex max-w-[1600px] mx-auto rounded-xl overflow-hidden shadow-[0_-4px_24px_rgba(0,0,0,0.55)]">
+      {/* A black surround rather than a drop shadow. The shadow was
+          invisible - it fell on black every time - and the rule forbids
+          shadows anyway. Black grout is what this project uses to say "this
+          sits over that", so the coach gets a band of it and reads as a
+          modal laid on the console rather than as another panel in it. */}
+      <div className="pointer-events-auto max-w-[1600px] mx-auto bg-lcars-black rounded-2xl p-2">
+        <div className="flex rounded-xl overflow-hidden">
         {/* The elbow: a solid colour block that the label rests against,
             the same move the rails make. Teal because it is the one accent
             not already spoken for by a destination in either rail. */}
@@ -209,6 +246,7 @@ export function TutorialCoach({
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

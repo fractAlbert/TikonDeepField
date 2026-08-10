@@ -183,6 +183,10 @@ export function AppShell() {
   // before, without needing to know the viewport during the first render.
   const [requestedPanel, setRequestedPanel] = useState<PanelId>("menu");
 
+  // How much room the walk-through's bar actually needs, reported by the bar
+  // itself. See the shell's `paddingBottom` below.
+  const [coachHeight, setCoachHeight] = useState(0);
+
   // Drives which layout is *mounted*, not just which is visible - see
   // use-media-query.ts for why that distinction is load-bearing.
   const isMobile = useMediaQuery(BELOW_LG);
@@ -717,8 +721,16 @@ export function AppShell() {
          this it would sit on top of whatever is at the bottom of the
          screen - and since the shell never scrolls, covered content is
          unreachable rather than merely hidden. Shrinking the shell keeps
-         every panel fully visible while the walk-through runs. */
-      style={activeStep ? { paddingBottom: isMobile ? 210 : 168 } : undefined}
+         every panel fully visible while the walk-through runs.
+
+         The amount is the coach's *measured* height, not a constant. It was
+         168 on desktop and 210 on a phone, which is more than most steps
+         need: the shell shrank by the worst case every time, and everything
+         anchored to the bottom - the left rail most visibly, since it runs
+         to the glass - stopped short of it with a band of black underneath
+         that nothing filled. The coach reports its height and this follows
+         it. Zero until it has, which is the same as not running. */
+      style={activeStep && coachHeight > 0 ? { paddingBottom: coachHeight } : undefined}
     >
       {/* Phone-sized type here is doing real work, not just tidying: at the
           desktop sizes the title and subtitle each wrapped to two lines,
@@ -1036,6 +1048,7 @@ export function AppShell() {
           onNext={() => advanceTutorial(tutorialStep + 1)}
           onBack={() => advanceTutorial(tutorialStep - 1)}
           onSkip={skipTutorial}
+          onHeightChange={setCoachHeight}
         />
       )}
     </div>
