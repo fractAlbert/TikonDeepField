@@ -205,6 +205,22 @@ body {
   width: var(--lcars-left-run-w);
 }
 
+/* The Star Map's docked sidebar. 400px, settled 2026-08-10 by putting a
+   slider on it rather than picking a figure: the old backlog entry proposed
+   "50% wider" (540) and the answer turned out to be about a tenth of that.
+
+   The trade is that every pixel comes out of `main`, which lands at 839.
+   Two numbers worth keeping if this moves again: 376 is the point where a
+   56px leg stops overflowing the column, and `main` should not go far below
+   ~320 or the Log cards and the Station Info tab row stop fitting. */
+:root {
+  --lcars-map-sidebar-w: 400px;
+}
+
+.lcars-map-sidebar {
+  width: var(--lcars-map-sidebar-w);
+}
+
 /* The elbow: the header and the left rail are one orange shape, the top bar
    sweeping round into a leg that runs down the edge of the screen with the
    nav buttons sitting in a gap cut out of it.

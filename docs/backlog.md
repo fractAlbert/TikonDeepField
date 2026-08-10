@@ -26,6 +26,13 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Shipped 2026-08-10 and removed: **the Star Map's resting width (4)**. 400px,
+up from 360, with `main` landing at 839. Settled by putting a temporary
+slider on it rather than by picking a figure - this entry had proposed "50%
+wider" (540px) since 2026-08-02, and the answer was about a tenth of that.
+The number and the two limits around it live in `--lcars-map-sidebar-w`'s
+comment in `globals.css`.
+
 Shipped 2026-08-07 and removed: **the phone hub's S-swoop (18)** - across
 the top, down the left to halfway, across to the right, then off the bottom,
 with the crossing dividing the two groups of six. Written up in
@@ -64,7 +71,6 @@ follow-up that was deliberately not applied.
 | # | item | where |
 | --- | --- | --- |
 | 2 | No `quasar-type` clues are ever emitted | Gameplay |
-| 4 | Star Map 50% wider | Design |
 | 7 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
 | 10 | The header overflows horizontally at 320px | Design |
@@ -72,29 +78,6 @@ follow-up that was deliberately not applied.
 | 15 | Close the shell frame at the bottom, or leave it a bracket | Design |
 
 ## Design
-
-### 4 - Star Map 50% wider
-
-Raised 2026-08-02. The sidebar is `w-[360px]` and the dial inside it is
-capped at `max-w-[260px]`, which is what makes the ring and segment labels
-paint at ~10px and left no room for the quadrant labels to grow past 17
-user units.
-
-The catch is where the width comes from. `main` is only ~500px at 1344px
-wide once the sidebar and both rails have taken their share; another 180px
-of sidebar leaves it around 320px, which is narrower than the Log cards and
-the Station Info tab row are built for. So this is not a one-number change
-— either the rails give up width too, or the panels that live in `main`
-have to cope with less.
-
-**Half-answered 2026-08-04.** Maximising shipped (the old item 5), and it
-takes most of the pressure off: the map now expands to fill `main` on
-demand, drawing the dial at ~460px against the docked 260 with every label
-scaling to match, and it does that without touching a single width in the
-docked layout. What is left of this item is only the *resting* size - is
-260px enough for the map you spend the survey looking at - and the trade
-above is unchanged. If the answer is no, the honest fix is still that `main`
-or the rails have to give.
 
 ### 7 - Log, Help and Prototypes flick-scroll on a phone
 
