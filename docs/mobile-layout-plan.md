@@ -505,3 +505,22 @@ taste.
 Measured at 430x932, 390x844 and 320x568: eleven buttons, rows 60/56/48, all
 clear of the 44px touch floor, three notches each, no vertical overflow at
 any size, and the right leg landing flush on the panel's edge.
+
+**Corrected the same day, on the user's eye.** Three things were wrong and
+all three are the same rule: *flat is where a run continues, rounded is where
+it stops.*
+
+- The top bar's right end was capped. It runs off the side, so it is flat.
+- The right leg's foot was capped. It runs off the bottom, so it is flat.
+- The turn from the crossing into the right leg was a right angle. A sweep
+  that arrives at 90 degrees is not a sweep - it now has the same outer
+  radius as the turn out of the left leg.
+
+Only the opening corner is rounded now, which is the one place the shape
+genuinely begins.
+
+The legs doubled to 40px, behind `--lcars-hub-leg-w` because that number is
+expected to move again. And the crest came out: it was there because the hub
+had space going spare and nothing to do with it, and the swoop now occupies
+that room structurally - a crest underneath read as a second, competing
+centre.

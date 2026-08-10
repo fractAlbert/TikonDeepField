@@ -3,8 +3,6 @@
 import { LcarsButton } from "@/components/LcarsButton";
 import { LcarsSegment } from "@/components/LcarsSegment";
 import { NavItem } from "@/components/NavRail";
-import { OutpostLogo } from "@/components/OutpostLogo";
-import { OUTPOST_NAME } from "@/lib/copy";
 
 /**
  * The phone landing view: every destination, as a titled block of separate
@@ -17,47 +15,36 @@ import { OUTPOST_NAME } from "@/lib/copy";
  * buys back the ~58px a strip costs on every single screen, which is most
  * of what the Star Map needed to fit. Each panel carries a Back button home.
  *
- * ## Three columns, a blank, and the emblem (2026-08-07)
+ * ## The S-swoop (2026-08-07, current)
  *
- * Two columns made every button ~170px wide against a label of six or seven
- * characters, so each one was mostly empty pill with the text pinned to one
- * end - which is what the align default does to a cell far wider than its
- * word. Three columns fixes the proportion at the cost of the labels
- * wrapping, and the wrap is cheaper than it sounds: at `min-h-14` the grid
- * is four rows of 56px where two columns were six rows of 44px, so the
- * denser layout is *shorter* by about 50px.
+ * One orange path runs across the top, down the left past the first six,
+ * across between the groups, and down the right and off the bottom edge -
+ * the bottom of the S deliberately missing. The buttons sit in the two
+ * pockets it leaves, so the frame does the dividing rather than a rule drawn
+ * between two runs.
  *
- * That reclaimed space plus the space already going spare is the emblem's,
- * which is what the room at the bottom of this screen is now for.
+ * Only the opening corner is rounded. The top bar's right end and the right
+ * leg's foot both *continue*, and a run that continues is flat; capping
+ * either would claim it stops there. Both turns in the middle are swept -
+ * out of the left leg and into the right one - because a sweep that arrives
+ * at a right angle is not a sweep.
  *
- * ## Why this is not two columns and no longer stretches
+ * Rows are a definite height chosen against the viewport's *height*, not
+ * stretched to fill: stretching left the crossing floating a long way below
+ * the group it divides. Each pocket hugs its buttons instead.
  *
- * It was one vertical run with every button on `flex-1`, which is the
- * desktop rail's idiom - its filler segments stretch so the rail reads as a
- * solid edge. The rail earns that by being permanent chrome at the edge of
- * a busy screen; a landing page does not. Blown up to a ninth of an 844px
- * screen each, the buttons read as fat and crude rather than as a system,
- * and by the time Station made it eleven the run was *full*: measured on a
- * cold load at 320x568, every button landed at exactly 44px - the `min-h-11`
- * touch floor, with nothing left over. It fitted, and it fitted by nothing.
+ * The station emblem used to fill the space under the second group. The
+ * swoop now occupies that room structurally and a crest under it read as a
+ * competing centre, so it is gone.
  *
- * So the buttons are small and the leftover space is simply left empty,
- * which is the one screen in the app that can afford to. Six rows of two at
- * the touch floor is about 300px of a 568px screen, so a twelfth
- * destination now costs one row rather than the whole layout.
+ * ## How it got here
  *
- * ## Every button is its own pill (changed 2026-08-05)
+ * Three columns was tried and rejected as crowded: cells came out 89-126px
+ * against 60px of height, a ratio near enough to square that a pill stops
+ * being a pill. Two columns gives 2.4 to 3.2. **That ratio is the thing to
+ * check, not the column count** - it is also why the buttons looked fat at
+ * three columns without having changed height at all.
  *
- * The rows used to be touching runs with per-row caps, on the reasoning that
- * a run reads as one bracket rather than as two loose pills. That is the
- * right rule for a *run* - a set of siblings you read as a group - and these
- * are not siblings. Briefing and Star Map are unrelated destinations that
- * happen to be adjacent, and joining them said they belonged together.
- *
- * Separate pills in a gapped grid is not a departure from the reference
- * image either: its lower-left blocks are exactly that, grids of individually
- * capped pills with black grout between them. Runs are for things that
- * continue into each other; this is a directory.
  */
 export function MobileMenu({
   groups,
@@ -91,7 +78,12 @@ export function MobileMenu({
        every inner corner curves into one known background. */
     <div
       id={id}
-      className={`flex flex-col h-full bg-lcars-panel overflow-hidden rounded-tl-[var(--lcars-hub-outer-r)] rounded-tr-xl rounded-b-xl ${className}`}
+      /* Only the opening corner is rounded. The top bar's right end and the
+         right leg's foot both *continue* - one off the side, one off the
+         bottom - and a run that continues is flat. Capping either would
+         claim it stops there, which is the same mistake the jump bar was
+         corrected for twice. */
+      className={`flex flex-col h-full bg-lcars-panel overflow-hidden rounded-tl-[var(--lcars-hub-outer-r)] ${className}`}
     >
       {/* The top of the S, and still the hub's title shelf. */}
       <div className="relative bg-lcars-orange lcars-shelf px-4 shrink-0">
@@ -110,35 +102,32 @@ export function MobileMenu({
         <HubPocket slots={pad(groups[0] ?? [])} onSelect={onSelect} />
       </div>
 
-      {/* The crossing. Its bottom-left is the outer corner of the turn out
-          of the left leg; its right end runs on into the leg below without
-          a cap, because it continues rather than stops. The two notches are
-          the inner corners of those turns, facing opposite ways. */}
+      {/* The crossing, and it turns at both ends. Bottom-left is the outer
+          corner of the turn *out* of the left leg; top-right is the outer
+          corner of the turn *into* the right leg, and that one was square -
+          a sweep that arrives at a right angle is not a sweep. The two
+          notches are the inner corners of the same two turns, facing
+          opposite ways. */}
       <div
         aria-hidden
-        className="relative shrink-0 h-[var(--lcars-hub-cross-h)] bg-lcars-orange rounded-bl-[var(--lcars-hub-turn-r)]"
+        className="relative shrink-0 h-[var(--lcars-hub-cross-h)] bg-lcars-orange rounded-bl-[var(--lcars-hub-turn-r)] rounded-tr-[var(--lcars-hub-turn-r)]"
       >
         <div className="lcars-elbow-notch lcars-notch-bl bottom-full left-[var(--lcars-hub-leg-w)] [--lcars-notch-bg:var(--lcars-panel)] [--lcars-elbow-inner-r:0.5rem]" />
         <div className="lcars-elbow-notch lcars-notch-tr top-full right-[var(--lcars-hub-leg-w)] [--lcars-notch-bg:var(--lcars-panel)] [--lcars-elbow-inner-r:0.5rem]" />
       </div>
 
-      {/* Lower pocket: the second six, then the crest, with the right leg
-          running the full height of both and off the bottom edge. */}
+      {/* Lower pocket: the second six, with the right leg running the full
+          height beside them and straight off the bottom edge.
+
+          The station emblem used to fill the space under these buttons. It
+          was there because the hub had room going spare and nothing to do
+          with it; the swoop now occupies that room structurally, and a
+          crest under it read as a second, competing centre. Removed on the
+          user's call. */}
       <div className="flex flex-1 min-h-0">
         <div className="flex-1 min-w-0 flex flex-col min-h-0">
           <div className="shrink-0 flex">
             <HubPocket slots={pad(groups[1] ?? [])} onSelect={onSelect} />
-          </div>
-          {/* Only where there is room for it to read as a crest rather than
-              a smudge - see `.lcars-hub-crest`. */}
-          <div className="lcars-hub-crest flex-1 min-h-0 flex-col items-center justify-center gap-2 px-2 pb-2">
-            <OutpostLogo
-              size={260}
-              className="opacity-80 min-h-0 max-h-full w-auto max-w-[min(68%,240px)]"
-            />
-            <span className="lcars-caps font-bold text-lg text-lcars-amber/90 shrink-0">
-              {OUTPOST_NAME}
-            </span>
           </div>
         </div>
         <div aria-hidden className="w-[var(--lcars-hub-leg-w)] shrink-0 bg-lcars-orange" />

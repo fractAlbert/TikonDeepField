@@ -97,20 +97,6 @@ body {
   grid-auto-rows: var(--lcars-hub-row);
 }
 
-/* The crest appears only where there is room for it to read as a crest
-   rather than as a smudge. Two groups of six is six rows, and on a 568px
-   screen those rows want nearly all of it - so this is one of the few
-   places a media query is the right tool, because the thing that runs out
-   really is the viewport's height. */
-.lcars-hub-crest {
-  display: none;
-}
-@media (min-height: 700px) {
-  .lcars-hub-crest {
-    display: flex;
-  }
-}
-
 .lcars-hub-label {
   font-size: var(--lcars-hub-label);
 }
@@ -262,7 +248,7 @@ body {
    160px against a 1350px viewport, and 12% of a 390px phone would be 47px
    of a screen the buttons already fill. */
 :root {
-  --lcars-hub-leg-w: 1.25rem; /* 20px */
+  --lcars-hub-leg-w: 2.5rem; /* 40px - expected to be retuned, hence the token */
   --lcars-hub-cross-h: 0.875rem; /* 14px, the thin arm */
   --lcars-hub-outer-r: 2.5rem; /* the opening sweep, ~= the shelf's height */
   --lcars-hub-turn-r: 1.25rem; /* the two later turns, ~= the leg's width */
