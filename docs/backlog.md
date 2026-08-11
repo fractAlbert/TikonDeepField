@@ -26,6 +26,22 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Closed 2026-08-11 and removed: **frames whose horizontal and vertical runs
+are too alike (19)** - the user's call, on their eye, which is exactly what
+the entry was being held for.
+
+Nothing changed. The tokens are where they were: the hub's shelf 45px
+against 40px legs and a 14px crossing, the Star Map's 32px shelf against a
+40px leg. So the ratio argument stands on paper and was overruled in the
+only court that matters - both of those numbers had been set by eye
+recently, and the entry itself said changing them on arithmetic alone would
+be overriding a judgement.
+
+Worth keeping the general rule separate from this instance: *"horizontal and
+vertical runs are never the same thickness, and pairs match"* is still in
+the style notes and still applies to anything new. It just does not get to
+retune two frames that have been looked at and liked.
+
 Shipped 2026-08-11 and removed: **the sweep's trail restarting at each turn
 (20)**, built to the user's own proposal - *"the easy solution is to have to
 trails, one for each direction. When the sweep turns around, have the old
@@ -130,13 +146,17 @@ written up in `region-difficulty.md`. That doc is now the record of what was
 built, why each lever behaves the way it does, and the one measured
 follow-up that was deliberately not applied.
 
-| # | item | where |
-| --- | --- | --- |
-| 2 | No `quasar-type` clues are ever emitted | Gameplay |
-| 8 | Star Map hover readout dead on touch, accepted | Interaction |
-| 19 | Frames whose horizontal and vertical runs are too alike | Design |
-| 21 | The LCARS pattern kit - a standing check, maybe nothing to do | Design |
-| 22 | Faint arrows showing that a panel can still be scrolled | Interaction |
+**"Accepted" does not mean fixed.** It means the thing is still broken and
+we chose to live with it - the decision is recorded, the defect is not gone.
+Nothing in this table is done; done things are removed from it. The state
+column says what kind of open each item is.
+
+| # | item | where | state |
+| --- | --- | --- | --- |
+| 2 | No `quasar-type` clues are ever emitted | Gameplay | open, needs a design call |
+| 8 | Star Map hover readout dead on touch | Interaction | **still broken**, living with it |
+| 21 | The LCARS pattern kit - a standing check, maybe nothing to do | Design | standing reminder |
+| 22 | Faint arrows showing that a panel can still be scrolled | Interaction | open, waiting on the user's steer |
 
 ## Design
 
@@ -171,35 +191,6 @@ The standing question is whether the sheet should track the app or stay a
 record of what was read off the references. It has been most useful as the
 second thing - a place to check a rule against - which argues for adding the
 new rules rather than mirroring every component.
-
-### 19 - Frames whose horizontal and vertical runs are too alike
-
-Found 2026-08-10 in a sweep of the whole interface against the style guide,
-and the only thing that sweep turned up which is not already tracked.
-
-The rule, in the user's words on 2026-08-07: *"in every example I see, the
-horizontal swoops and side swoops are never the same size. Top matches
-bottom and left matches right."* The shell obeys it comfortably - a 92px bar
-against a 160px leg, a ratio of 1.74, which is also how both new reference
-images taper. Two frames do not:
-
-- **The phone hub.** Its shelf is 45px and its legs are 40px. Those are
-  near enough to identical that the rule is broken outright - a horizontal
-  and a vertical run reading as the same weight. Its crossing is a third
-  value, 14px, so the two *horizontal* runs do not match each other either.
-- **The Star Map**, more mildly: a 32px shelf against a 40px leg, a ratio
-  of 1.25 where the shell manages 1.74.
-
-Not urgent, and deliberately not fixed on the spot. Every one of these
-numbers is already a token, so the change is small - but the hub's leg was
-doubled to 40 on the user's eye eight days ago, and the Star Map's leg was
-tried at 56 and reverted the same day, so both have been *looked* at
-recently and liked. Changing them on a ratio argument alone would be
-overriding a judgement with arithmetic.
-
-What a fix would have to respect: the map's leg cannot exceed 56px without
-the sidebar widening (item 4's note has the numbers), and the hub's leg
-comes straight out of the button columns at 320px.
 
 ## 18 - The phone header as an S-swoop splitting the hub
 
@@ -295,8 +286,20 @@ What a fix has to respect:
 
 ### 8 - The star map hover readout is dead on touch
 
-`StarMap`'s readout uses `onMouseEnter`, which never fires on a touch device,
-so it sits at `--` on a phone for the whole session. Accepted as-is: tapping
-a cell places a signature, which is the actual interaction, and the readout
-is a convenience on top. Only worth revisiting if the readout starts carrying
-information you can't get any other way.
+**This is broken right now**, and "accepted" below means we decided to live
+with it, not that it went away. On a phone the readout shows `--` for the
+entire session, every session.
+
+`StarMap`'s readout is driven by `setHovered` from `onMouseEnter`, and a
+touch device has no hover to enter. Accepted as-is because tapping a cell
+places a signature - that is the actual interaction - and the readout is a
+convenience on top of it.
+
+The mechanical fix is one line: the cell already carries `onPointerDown`,
+which does fire on touch, so feeding `setHovered(id)` from there would put
+*something* in the readout. What has stopped it being one line is the design
+question underneath - on touch the same tap that would fill the readout also
+places a signature, so the readout would only ever describe the cell you
+just acted on, which is not what it is for. Making it useful on touch means
+deciding what "inspect without acting" is on a device with no hover, and
+that needs the user's steer rather than a patch.
