@@ -182,6 +182,55 @@ body {
   --lcars-shelf-h: 4.5rem;
 }
 
+/* The log-list idiom, measured off `thelcars.com/logs/` on 2026-08-11 and
+   built here rather than copied - none of their CSS is used, and the credit
+   is on the Station Info panel.
+
+   Two parts, and the pair is the point: a section announces itself with
+   large right-aligned display type rather than another filled bar, and each
+   entry under it opens with an ellipse, an underlined title and a quieter
+   meta line. It is what stops a long list reading as a wall of chips.
+
+   Their numbers: an 87px title on a 1377px column, right-aligned, uppercase,
+   weight 400; a 34x18 ellipse; 50px of left inset; 22px underlined titles at
+   a 1.5 line-height. Ours are the same *ratios* at our own scale - the
+   panels here are about half that width, so the title is a clamp rather than
+   their fixed size. Scale the ratio, not the number. */
+:root {
+  --lcars-section-title: clamp(1.75rem, 4.5vw, 3rem);
+  --lcars-bullet-w: 2.125rem; /* 34px */
+  --lcars-bullet-h: 1.125rem; /* 18px */
+  --lcars-bullet-gap: 1rem;
+}
+
+.lcars-section-title {
+  font-size: var(--lcars-section-title);
+  line-height: 1.05;
+  font-weight: 400;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+/* The inset is the ellipse plus its gap, so the title's first letter and
+   the meta line beneath it share one left edge. */
+.lcars-log-list > li {
+  padding-left: calc(var(--lcars-bullet-w) + var(--lcars-bullet-gap));
+  position: relative;
+}
+
+.lcars-log-list > li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  /* Centred on the title's first line rather than on the whole item, so a
+     two-line title does not drag the ellipse into the middle of the block. */
+  top: calc(0.75em - var(--lcars-bullet-h) / 2);
+  width: var(--lcars-bullet-w);
+  height: var(--lcars-bullet-h);
+  border-radius: 50%;
+  background: var(--lcars-bullet-colour, var(--lcars-amber));
+}
+
 /* The joint between the rail's buttons and the unlabelled run beneath them.
    It matches the gap between the header and the first button, so the left
    column reads as one object with the same joint at both ends instead of a

@@ -471,6 +471,43 @@ anything else, where our nearest is a much more saturated salmon.
 is wanted, the honest route is to pick one against the reference images, the
 way every other colour here was picked.
 
+### The log-list idiom (built 2026-08-11)
+
+Its News/Updates page is a second way to head a section, and the user asked
+for it. Worth holding next to the shelf rather than replacing it, because
+the two do different jobs:
+
+- **A shelf labels a box** you are about to read the inside of. Solid block,
+  label at the bottom-left. It competes with its own content, which is fine
+  once and flattens into stripes when four of them stack.
+- **A section header labels a stretch of page.** Large right-aligned
+  uppercase display type in the section's colour, over a run of bars. It is
+  type, so it gets quieter as the list under it gets longer.
+
+Measured on their page: an **87px** title on a 1377px column, right-aligned,
+uppercase, weight 400. Each entry is an `li` with **`::before` drawn as a
+34x18 ellipse** at `border-radius: 50%`, **50px of left inset** (the ellipse
+plus a 16px gap), a **22px uppercase underlined** title, and a quieter meta
+line under it - their stardate and date.
+
+Ours are the same *ratios* at our own scale, per "scale the ratio, not the
+number": the panels here are about half that width, so the title is a
+`clamp(1.75rem, 4.5vw, 3rem)` rather than a fixed 87px. The ellipse keeps
+their exact **1.89:1** proportion.
+
+Two departures, both deliberate:
+
+- **The ellipse carries the accent colour and marks selection by growing**
+  (34px to 52px), which replaced the Survey Log's old 2px-to-5px accent bar.
+  Same idea in the idiom's own element rather than a second one beside it,
+  and it obeys the project rule that selection is a swap, an indicator or a
+  lamp - never a stroke. Nothing reflows, since the inset moves with it.
+- **The ellipse is centred on the title's first line**, not on the item, so
+  a title that wraps does not drag the mark into the middle of the block.
+
+Built from measurements; none of their CSS is used. The credit is on the
+Station Info panel's Credits section.
+
 ### Licensing, and what it does and does not cover
 
 The template is free but **not public domain**. Its EULA (by Jim Robertus)

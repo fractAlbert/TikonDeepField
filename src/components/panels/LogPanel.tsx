@@ -20,7 +20,7 @@ import {
 import { SurveyOutcome } from "@/lib/ranks";
 import { COPY, PANEL_LABELS } from "@/lib/copy";
 import { playButtonClick } from "@/lib/sound";
-import { LcarsPanel } from "@/components/LcarsShell";
+import { LcarsPanel, LcarsSectionHeader, LcarsLogItem } from "@/components/LcarsShell";
 import { QuasarStar } from "@/components/QuasarStar";
 import { LcarsButton } from "@/components/LcarsButton";
 
@@ -182,7 +182,13 @@ export function LogPanel({
           </p>
         ) : (
           <>
-            <ul className="flex flex-col gap-2.5">
+            <LcarsSectionHeader
+              title={showArchived ? "Archived Surveys" : "Survey Record"}
+              color="text-lcars-amber"
+              bars={["bg-lcars-amber", "bg-lcars-violet", "bg-lcars-tan"]}
+              className="mb-3"
+            />
+            <ul className="lcars-log-list flex flex-col">
               {pageEntries.map((entry) => (
                 <LogEntryCard
                   key={entry.regionId}
@@ -263,28 +269,33 @@ function LogEntryCard({
   const canResume = !isActive && !outcome;
 
   return (
-    <li
+    /* The ellipse carries the accent colour and marks selection by growing,
+       which is the same job the old 2px-to-5px accent bar did - and it is
+       the log idiom's own element rather than a second one beside it. */
+    <LcarsLogItem
+      title={region.name}
+      bulletColor={accentColor}
+      selected={isPreviewed}
       onClick={() => {
         playButtonClick();
         onPreviewRegion(region);
       }}
-      className={`flex rounded-lg overflow-hidden cursor-pointer transition-opacity ${
-        entry.archived ? "opacity-50" : ""
-      }`}
+      meta={
+        <>
+          {placedCount} / {region.quasars.length} placed &middot; {spent} of {currentFilingLimit()}
+          {" filings used"} &middot; first surveyed {formatDate(entry.firstSurveyedAt)}
+          {outcome && entry.closedAt && (
+            <>
+              {" "}
+              &middot; {style?.label.toLowerCase()} {formatDate(entry.closedAt)}
+            </>
+          )}
+        </>
+      }
+      className={entry.archived ? "opacity-50" : ""}
     >
-      {/* The previewed entry is marked by its own accent bar swelling
-          toward the content, which is the rail's selection indicator
-          turned on its side - the colour pushes out rather than a line
-          being drawn round the row. Every entry already has this bar, so
-          selection costs no new element and nothing shifts but its
-          width. */}
-      <div
-        className={`shrink-0 transition-all ${isPreviewed ? "w-5" : "w-2"}`}
-        style={{ backgroundColor: accentColor }}
-      />
-      <div className="flex-1 min-w-0 bg-lcars-panel px-3.5 py-3">
-        <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-          <span className="text-sm font-semibold text-lcars-ice mr-1">{region.name}</span>
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-1.5 mb-1.5 mt-1.5">
           <span
             className={`lcars-caps text-[10px] font-semibold tracking-wide rounded-full px-2 py-0.5 text-black ${
               style?.chip ?? "bg-lcars-amber"
@@ -398,22 +409,7 @@ function LogEntryCard({
             </p>
           )}
 
-        <p className="text-[11px] text-lcars-ice/40 font-mono">
-          {/* Written as an explicit string because the plain version lost
-              its leading space and rendered "3filings used". The original
-              "verify attempts" line this replaced had the same bug, so
-              it's worth recognising: it shows up when a JSX text node
-              wraps across lines and contains an entity like &middot;. */}
-          {placedCount} / {region.quasars.length} placed &middot; {spent} of {currentFilingLimit()}
-          {" filings used"} &middot; first surveyed {formatDate(entry.firstSurveyedAt)}
-          {outcome && entry.closedAt && (
-            <>
-              {" "}
-              &middot; {style?.label.toLowerCase()} {formatDate(entry.closedAt)}
-            </>
-          )}
-        </p>
       </div>
-    </li>
+    </LcarsLogItem>
   );
 }
