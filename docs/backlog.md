@@ -284,8 +284,33 @@ column says what kind of open each item is.
 | 2 | No `quasar-type` clues are ever emitted | Gameplay | open, needs a design call |
 | 21 | The LCARS pattern kit - a standing check, maybe nothing to do | Design | standing reminder |
 | 22 | Faint arrows showing that a panel can still be scrolled | Interaction | open, waiting on the user's steer |
+| 25 | The text bar - the header style the user actually prefers | Design | open, measured and ready to build |
+| 26 | Let the player choose a difficulty | Gameplay | open, needs the model chosen |
 
 ## Design
+
+### 25 - The text bar, the header style the user prefers
+
+Raised 2026-08-11. The user added `docs/reference/Preferred LCARS header.png`
+after seeing the new section headers, with the verdict *"that's not the style
+I mean, but I am happy with what you did"* - so this is not a defect, it is
+the target whenever they say go.
+
+**Fully measured already**, in `lcars-style-notes.md` under "The text bar":
+one 40px run, a 39px stub capped on each outer end in `#c47d69`, a long flat
+`#ea9c72` bar, and the label as `#edb378` type sitting in a 23px/18px gap.
+Nothing needs re-measuring; the work is building `LcarsTextBar` and deciding
+where it replaces `LcarsSectionHeader`.
+
+The reason it reads as correct is that all four of its moves are rules this
+project already holds - caps only where a run terminates, stub width matching
+run height so a cap is a half-circle, the label in a gap rather than on a
+filled block, and one colour family with the label lightest.
+
+Open question for the user: whether it **replaces** the section headers or
+joins them as a third option. There are now three ways to head something
+here - shelf, section header, text bar - and three is more than a small app
+needs unless each has a clear job.
 
 ### 21 - The LCARS pattern kit, as a standing item
 
@@ -320,6 +345,49 @@ second thing - a place to check a rule against - which argues for adding the
 new rules rather than mirroring every component.
 
 ## Gameplay
+
+### 26 - Let the player choose a difficulty
+
+Raised 2026-08-11, in the user's words: *"add one option.. allow a player to
+select difficulty"*.
+
+Everything needed to build this already exists and is measured; what is
+missing is a decision about what difficulty *means* here. Item 1 (shipped
+2026-08-05, written up in `region-difficulty.md`) made region generation
+scale with rank, so there is already a per-rung profile of signature count,
+anchor separation and quadrant clue count, plus a filing budget that goes
+4 4 3 2 2. A difficulty setting is that same machinery driven by a player
+choice instead of, or alongside, their rank.
+
+The design question is which of those it is, and they are materially
+different games:
+
+- **Difficulty replaces rank** as the input to generation. Simple, and it
+  makes the setting honest - but it disconnects the ladder from the
+  challenge, and the rank ladder is currently the progression.
+- **Difficulty offsets rank** - a Casual/Standard/Exacting shift of one rung
+  either way. Keeps progression intact, but the extremes clamp at the ends.
+- **Difficulty is a separate axis**: rank keeps setting the region, and the
+  choice moves only the filing budget. Smallest change, and probably the
+  most legible - "how many attempts do I get" is a thing a player can
+  actually feel.
+
+What a fix has to respect:
+
+- **The numbers move.** Item 1 measured a careful player reaching Chief of
+  Survey 100% of the time before the difficulty work and 91% after, with the
+  average player dropping 54% to 5%. Any new setting needs
+  `analyze-solvability.ts` re-run per level rather than assumed, and
+  `region-difficulty.md` updated with what was measured.
+- **It has to be per-survey, not global-retroactive.** A region's difficulty
+  is baked in when it is generated, so changing the setting cannot alter a
+  survey already open - it applies to the next one.
+- **Where the control lives.** Survey New Region is the natural point, since
+  that is when the choice takes effect. There is no settings panel today and
+  this does not obviously justify inventing one.
+- **It interacts with item 2.** Type clues would make regions easier, so if
+  both ship, difficulty is the natural place to put them rather than a
+  global on.
 
 ### 2 - No `quasar-type` clues are ever emitted
 
