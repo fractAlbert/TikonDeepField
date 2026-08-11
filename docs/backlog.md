@@ -26,6 +26,12 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Shipped 2026-08-10 and removed: **the header overflow at 320px (10)**. Not
+fixed by shrinking anything - the sound control moved to the phone hub, into
+the spare slot the second group of six was carrying. It was 82px of a header
+that had 42 too few, so moving it settled the item outright: the header now
+needs exactly the 296px it has, against 350 before.
+
 Decided 2026-08-10 and removed: **whether to close the shell frame at the
 bottom (15)** - it stays a bracket. Two edges is a legitimate LCARS shape,
 the references use open-sided corner brackets deliberately, and the elbow
@@ -80,8 +86,8 @@ follow-up that was deliberately not applied.
 | 2 | No `quasar-type` clues are ever emitted | Gameplay |
 | 7 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
-| 10 | The header overflows horizontally at 320px | Design |
 | 12 | Our side bars don't look like the reference ones | Design |
+| 19 | Frames whose horizontal and vertical runs are too alike | Design |
 
 ## Design
 
@@ -108,6 +114,35 @@ other three, because this one is a list rather than prose and it grows with
 the region: eight signatures is the technician's profile, so the worst case
 is worse than what was measured. Pagination, or a denser row, rather than
 shorter copy.
+
+### 19 - Frames whose horizontal and vertical runs are too alike
+
+Found 2026-08-10 in a sweep of the whole interface against the style guide,
+and the only thing that sweep turned up which is not already tracked.
+
+The rule, in the user's words on 2026-08-07: *"in every example I see, the
+horizontal swoops and side swoops are never the same size. Top matches
+bottom and left matches right."* The shell obeys it comfortably - a 92px bar
+against a 160px leg, a ratio of 1.74, which is also how both new reference
+images taper. Two frames do not:
+
+- **The phone hub.** Its shelf is 45px and its legs are 40px. Those are
+  near enough to identical that the rule is broken outright - a horizontal
+  and a vertical run reading as the same weight. Its crossing is a third
+  value, 14px, so the two *horizontal* runs do not match each other either.
+- **The Star Map**, more mildly: a 32px shelf against a 40px leg, a ratio
+  of 1.25 where the shell manages 1.74.
+
+Not urgent, and deliberately not fixed on the spot. Every one of these
+numbers is already a token, so the change is small - but the hub's leg was
+doubled to 40 on the user's eye eight days ago, and the Star Map's leg was
+tried at 56 and reverted the same day, so both have been *looked* at
+recently and liked. Changing them on a ratio argument alone would be
+overriding a judgement with arithmetic.
+
+What a fix would have to respect: the map's leg cannot exceed 56px without
+the sidebar widening (item 4's note has the numbers), and the hub's leg
+comes straight out of the button columns at 320px.
 
 ### 12 - Our side bars don't look like the reference ones
 
@@ -156,28 +191,6 @@ same thing in the phone hub as in the rail. Changing it would cost that.
 
 Still worth doing alongside the `LcarsKitPrototype` conversation, since the
 sheet's "Vertical run" specimen is still wrong in the way point one was.
-
-### 10 - The header overflows horizontally at 320px
-
-Found 2026-08-04 while measuring the menu hub, and confirmed pre-existing by
-stashing that work and re-measuring: `#app-shell` reports `scrollWidth` 362
-against a 320px viewport either way.
-
-The overflow is the officer badge and the sound toggle. Both sit in a
-`shrink-0` group beside a title block that will not give up enough room, so
-the header's min-content lands at 338px inside 296px of available width.
-Nothing is lost - `#app-shell` is `overflow-hidden`, so it clips rather than
-scrolling - but "SOUND: ON" is cut in half, and the project rule is that
-nothing scrolls to reveal chrome, which a clipped control fails in spirit.
-
-Only at 320px. At 390x844 the header fits with room to spare, which is why
-this went unnoticed: 320 is the floor the layout claims to support rather
-than a width anyone tests on.
-
-Worth knowing before fixing it: the sound toggle is a plain `<button>`, not
-an `LcarsButton`, so it does not inherit the `size` prop added on
-2026-08-04. The cheap fixes are dropping the toggle's label to an icon below
-`sm`, or letting the badge collapse to its insignia earlier than `md`.
 
 ### 18 - The phone header as an S-swoop splitting the hub
 

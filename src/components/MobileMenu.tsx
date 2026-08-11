@@ -4,6 +4,7 @@ import { LcarsButton } from "@/components/LcarsButton";
 import { LcarsSegment } from "@/components/LcarsSegment";
 import { NavItem } from "@/components/NavRail";
 import { OutpostLogo } from "@/components/OutpostLogo";
+import { soundLabel, useSoundMuted } from "@/components/SoundToggle";
 
 /**
  * The phone landing view: every destination, as a titled block of separate
@@ -87,7 +88,11 @@ export function MobileMenu({
       className={`flex flex-col h-full bg-lcars-panel overflow-hidden rounded-tl-[var(--lcars-hub-outer-r)] ${className}`}
     >
       {/* The top of the S, and still the hub's title shelf. */}
-      <div className="relative bg-lcars-orange lcars-shelf px-4 shrink-0">
+      {/* The title starts *past* the leg, never over it. The shelf spans the
+          full width because it is one mass with the leg, but the label
+          belongs to the horizontal arm - the same rule the Star Map's
+          header follows, and the same way it got this wrong first. */}
+      <div className="relative bg-lcars-orange lcars-shelf pl-[calc(var(--lcars-hub-leg-w)+1rem)] pr-4 shrink-0">
         <span className="lcars-caps text-black font-bold text-sm leading-none">Main Menu</span>
         <div
           aria-hidden
@@ -128,7 +133,10 @@ export function MobileMenu({
       <div className="flex flex-1 min-h-0">
         <div className="flex-1 min-w-0 flex flex-col min-h-0">
           <div className="shrink-0 flex">
-            <HubPocket slots={pad(groups[1] ?? [])} onSelect={onSelect} />
+            {/* The spare slot earns its keep: the sound control lives here
+                on a phone rather than in the header, where "Sound: On" was
+                82px of a header that had 42 too few at 320. */}
+            <HubPocket slots={pad(groups[1] ?? [])} onSelect={onSelect} blankFill={<HubSoundButton />} />
           </div>
           {/* Small, and only where the space is real - see
               `.lcars-hub-crest`. The caption is gone with it: the emblem
@@ -155,10 +163,14 @@ export function MobileMenu({
 function HubPocket({
   slots,
   onSelect,
+  blankFill,
 }: {
   slots: (NavItem | null)[];
   onSelect: (id: string) => void;
+  /** Drawn in place of the first empty slot, if anything wants it. */
+  blankFill?: React.ReactNode;
 }) {
+  let blanksUsed = 0;
   return (
     <div className="lcars-hub-grid grid grid-cols-2 gap-1.5 flex-1 min-w-0 content-start p-2">
       {slots.map((slot, i) =>
@@ -181,6 +193,10 @@ function HubPocket({
           >
             {slot.label}
           </LcarsButton>
+        ) : blankFill && blanksUsed++ === 0 ? (
+          <div key={`fill-${i}`} className="h-full">
+            {blankFill}
+          </div>
         ) : (
           /* The deliberate gap, at full strength rather than dimmed: a
              tinted cell reads as a disabled button, a solid one as a piece
@@ -195,5 +211,23 @@ function HubPocket({
         )
       )}
     </div>
+  );
+}
+
+/** The sound control, dressed as one of the hub's buttons. */
+function HubSoundButton() {
+  const [muted, setMuted] = useSoundMuted();
+  return (
+    <LcarsButton
+      color="ice"
+      shape="pill"
+      orientation="horizontal"
+      size="compact"
+      align="center"
+      onClick={() => setMuted(!muted)}
+      className="w-full h-full lcars-hub-label text-center leading-tight"
+    >
+      {soundLabel(muted)}
+    </LcarsButton>
   );
 }

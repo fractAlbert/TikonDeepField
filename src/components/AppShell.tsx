@@ -779,7 +779,11 @@ export function AppShell() {
               onClick={() => selectPanel("profile")}
               nameClassName="hidden md:block"
             />
-            <SoundToggle />
+            {/* Desktop only. On a phone it is one of the hub's buttons -
+                which is also what stops the header overflowing at 320,
+                since "Sound: On" was 82px of a header that had 42 too
+                few. */}
+            <SoundToggle className="max-lg:hidden" />
           </div>
         </div>
         {/* The concave corner where the bar's underside meets the leg's
