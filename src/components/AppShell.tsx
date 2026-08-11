@@ -31,6 +31,7 @@ import { SweepScopePanel } from "@/components/panels/SweepScopePanel";
 import { RingScanPanel } from "@/components/panels/RingScanPanel";
 import { LogPanel } from "@/components/panels/LogPanel";
 import { HelpPanel } from "@/components/panels/HelpPanel";
+import { AboutPanel } from "@/components/panels/AboutPanel";
 import { PrototypesPanel } from "@/components/panels/PrototypesPanel";
 import { NoActiveAssignmentPanel } from "@/components/NoActiveAssignmentPanel";
 import { StationInfoPanel } from "@/components/panels/StationInfoPanel";
@@ -72,6 +73,7 @@ type PanelId =
   | "help"
   | "prototypes"
   | "station"
+  | "about"
   | "profile"
   | "starmap"
   | "menu"
@@ -117,6 +119,10 @@ const UTILITY_NAV: NavItem[] = [
   { id: "help", label: "Help", color: "ice" },
   { id: "prototypes", label: "Prototypes", color: "teal" },
   { id: "generate", label: PANEL_LABELS.surveyNewRegion, color: "orange" },
+  // Below Survey New Region at the user's request. Tan because it is the
+  // one destination that steps outside the fiction, and tan is the colour
+  // that carries structure rather than a category.
+  { id: "about", label: "About", color: "tan" },
 ];
 
 // Purely for flavor - the region is already generated before this starts,
@@ -989,6 +995,7 @@ export function AppShell() {
           {panel === "profile" && <ProfilePanel />}
           {panel === "help" && <HelpPanel />}
           {panel === "prototypes" && <PrototypesPanel region={activeRegion} />}
+          {panel === "about" && <AboutPanel />}
           {isMobile && panel === "starmap" && starMapView}
         </main>
 

@@ -508,6 +508,41 @@ Two departures, both deliberate:
 Built from measurements; none of their CSS is used. The credit is on the
 Station Info panel's Credits section.
 
+### How a frame compartmentalises (its image-frame page)
+
+Read 2026-08-11 to answer "the Star Map's border looks weird". Its
+`/image-frame.php` is the clearest statement of how LCARS *encloses* one
+thing without boxing it in, and it is three moves:
+
+1. **The frame is a bracket, not a border.** A thick leg down one side and
+   an arm across the top, rounded on the outer corners and open on the far
+   side. Nothing is drawn all the way round.
+2. **The body is black and inset inside it**, so the frame colour reads as a
+   consistent-width edge rather than as a line.
+3. **The label sits in a gap punched out of the arm**, with a short detached
+   stub closing the run past it. Measured: the title block is a black box
+   with a 14px coloured stub beyond it, on an arm whose own run continues to
+   its left.
+
+Move 3 is the one worth having. A filled bar with a label printed on it is a
+real LCARS shape, but it makes a frame read as a captioned box - the bar
+competes with the content the frame exists to present. Punching the label
+into the arm keeps the frame a frame.
+
+**Applied to the Star Map** the same day. Its title used to be a filled
+full-width amber shelf; it is now a corner block, a gap carrying the label
+and the Maximise control, and a 24px stub. The stub is flat, because the arm
+continues off the column's right edge rather than terminating - so the
+panel's `rounded-tr` went with it.
+
+The label is **left-aligned in its gap**, hugging the run it continues out
+of, which is the one place the right-align default is wrong: the title
+belongs to the arm, and here the arm hands it over directly.
+
+Also worth noting from that page: its own `.left-frame` column is
+`#d29b7f` - the tan - at 240px wide. The structural-tan role we adopted for
+the rail foot is what it uses for the whole page's spine.
+
 ### Licensing, and what it does and does not cover
 
 The template is free but **not public domain**. Its EULA (by Jim Robertus)

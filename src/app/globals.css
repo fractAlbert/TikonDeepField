@@ -203,6 +203,13 @@ body {
   --lcars-bullet-gap: 1rem;
 }
 
+/* A panel that owns a whole screen can afford the reference's generosity;
+   the ones that stack four-deep cannot, which is why this is a modifier and
+   not the default. */
+.lcars-section-lg {
+  --lcars-section-title: clamp(2.25rem, 6vw, 4rem);
+}
+
 .lcars-section-title {
   font-size: var(--lcars-section-title);
   line-height: 1.05;

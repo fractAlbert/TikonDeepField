@@ -1,4 +1,5 @@
 import { CSSProperties, ReactNode } from "react";
+import { TEXT_FOR_ACCENT } from "@/lib/lcars-colors";
 
 /**
  * The end of a run, where a web page would put a hairline rule.
@@ -44,6 +45,7 @@ export function LcarsSectionHeader({
   color = "text-lcars-amber",
   bars = ["bg-lcars-amber", "bg-lcars-violet", "bg-lcars-tan"],
   className = "",
+  titleClassName = "",
 }: {
   title: string;
   /** Text colour class. The bars usually echo it. */
@@ -51,18 +53,22 @@ export function LcarsSectionHeader({
   /** Background classes for the bar run, left to right. */
   bars?: string[];
   className?: string;
+  /** Padding for the title only, so the bars can stay full-bleed. */
+  titleClassName?: string;
 }) {
   return (
     <div className={className}>
       {/* Flat everywhere: this run continues off both edges of the panel
           rather than terminating, so nothing here is capped. The last bar
-          takes the remaining width so the run always reaches the edge. */}
-      <div aria-hidden className="flex gap-1 h-2 mb-2">
+          takes the remaining width so the run always reaches the edge.
+          Uneven widths on purpose - a run of equal blocks reads as a
+          progress bar, and the reference runs never are. */}
+      <div aria-hidden className="flex gap-1 h-2">
         <div className={`w-1/4 ${bars[0] ?? "bg-lcars-amber"}`} />
         <div className={`w-10 ${bars[1] ?? "bg-lcars-violet"}`} />
         <div className={`flex-1 ${bars[2] ?? "bg-lcars-tan"}`} />
       </div>
-      <h2 className={`lcars-section-title lcars-caps ${color}`}>{title}</h2>
+      <h2 className={`lcars-section-title lcars-caps ${color} ${titleClassName}`}>{title}</h2>
     </div>
   );
 }
@@ -125,15 +131,22 @@ export function LcarsLogItem({
 /**
  * A titled panel.
  *
- * The title is a **shelf the label rests on**, not a caption bar above the
- * content: a solid block of the accent colour with the label sitting at its
- * bottom-left, which is what all three reference images do and what the
- * full-width bar here never was. Height lives in `--lcars-shelf-h` rather
- * than here - see `globals.css` for why that ratio, and why it is a token.
+ * The title is a **section header** - a run of bars across the full width
+ * with large right-aligned display type under it, in the accent colour.
  *
- * `size="lg"` buys the taller shelf, for panels that own a whole screen.
- * Everything else takes the floor, because a phone cannot afford more: four
- * of these stack on the Briefing and the Profile.
+ * It was a shelf until 2026-08-11: a solid block of the accent with the
+ * label at its bottom-left. That is a real LCARS shape and the reference
+ * images do use it, but it is the wrong one *here*, and seeing
+ * `thelcars.com` do it the other way is what settled it. A shelf is a solid
+ * block competing with its own content, so where panels stack - four on the
+ * Briefing, four on the Profile - the page turned into bands of colour with
+ * text trapped between them. The header is type, so it announces the section
+ * and then gets out of the way.
+ *
+ * The shelf idiom is not gone: it is still what a *label on a frame* is, and
+ * the Star Map's own title still uses it.
+ *
+ * `size="lg"` buys a bigger title, for panels that own a whole screen.
  */
 export function LcarsPanel({
   title,
@@ -153,13 +166,17 @@ export function LcarsPanel({
   return (
     <div id={id} className={`bg-lcars-panel rounded-xl overflow-hidden flex flex-col ${className}`}>
       {title ? (
-        <div
-          className={`${accent} lcars-shelf ${
-            size === "lg" ? "lcars-shelf-lg" : ""
-          } lcars-caps text-black font-semibold px-4 text-sm shrink-0`}
-        >
-          {title}
-        </div>
+        <LcarsSectionHeader
+          title={title}
+          color={TEXT_FOR_ACCENT[accent] ?? "text-lcars-amber"}
+          /* The accent announces the section and the tan takes the short
+             middle. Repetition is fine and is what the references do - the
+             accent appearing twice in one run is the grouping signal, not a
+             collision. */
+          bars={[accent, "bg-lcars-tan", accent]}
+          className={`shrink-0 ${size === "lg" ? "lcars-section-lg" : ""}`}
+          titleClassName="px-3 md:px-4 pt-1"
+        />
       ) : null}
       {/* `p-3` on a phone, `p-4` above it. 16px of panel padding is generous
           on a 390px screen, and this project has repeatedly taken space from

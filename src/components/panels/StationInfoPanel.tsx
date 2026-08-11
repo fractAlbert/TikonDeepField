@@ -8,7 +8,7 @@ import { OutpostLogo } from "@/components/OutpostLogo";
 import { StationSchematic } from "@/components/StationSchematic";
 import { OUTPOST_NAME } from "@/lib/copy";
 
-type SectionId = "overview" | "size" | "value" | "survey" | "quasars" | "schematic" | "credits";
+type SectionId = "overview" | "size" | "value" | "survey" | "quasars" | "schematic";
 
 const SECTIONS: { id: SectionId; label: string; color: ButtonColor }[] = [
   { id: "overview", label: "Overview", color: "orange" },
@@ -17,7 +17,6 @@ const SECTIONS: { id: SectionId; label: string; color: ButtonColor }[] = [
   { id: "survey", label: "Survey Process", color: "lilac" },
   { id: "quasars", label: "Quasars", color: "salmon" },
   { id: "schematic", label: "Schematic", color: "teal" },
-  { id: "credits", label: "Credits", color: "tan" },
 ];
 
 /**
@@ -128,7 +127,6 @@ export function StationInfoPanel({
           {section === "survey" && <SurveyProcessSection />}
           {section === "quasars" && <QuasarSection />}
           {section === "schematic" && <SchematicSection key={schematicVisit} />}
-          {section === "credits" && <CreditsSection />}
         </div>
       </LcarsPanel>
     </div>
@@ -386,47 +384,6 @@ function QuasarSection() {
           ))}
         </ul>
       )}
-    </div>
-  );
-}
-
-/**
- * Credits, and the attribution the user agreed to give on 2026-08-11.
- *
- * Worth being precise about what is owed to whom. None of TheLCARS.com's
- * code is used here - its EULA covers its template files, and this project
- * vendors none of them. What it gave us is knowledge: the measured log-list
- * idiom below, and the answer to what LCARS was actually set in. Credit is
- * given because it is deserved, not because the licence compels it.
- */
-function CreditsSection() {
-  return (
-    <div className="flex flex-col gap-4 max-w-xl">
-      <p className="text-sm text-lcars-ice/70 leading-relaxed">
-        The LCARS interface was designed by <strong>Michael Okuda</strong> for
-        Star Trek: The Next Generation, and is the property of Paramount. This
-        is a fan work, built for the love of the thing.
-      </p>
-      <p className="text-sm text-lcars-ice/70 leading-relaxed">
-        Reference and guidance from{" "}
-        <a
-          href="https://www.thelcars.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="lcars-caps underline underline-offset-2 text-lcars-tan hover:text-lcars-amber"
-        >
-          TheLCARS.com
-        </a>{" "}
-        by Jim Robertus &mdash; its published colour guide, its notes on the
-        typeface, and its news-log layout, which the Survey Log&apos;s list
-        style is built from. None of its template code is used here; the debt
-        is to the documentation.
-      </p>
-      <p className="text-sm text-lcars-ice/70 leading-relaxed">
-        Type is <strong>Antonio</strong>, standing in for the Helvetica Ultra
-        Compressed that Okuda has said he mostly used &mdash; a face no
-        browser can be assumed to have.
-      </p>
     </div>
   );
 }

@@ -72,6 +72,26 @@ export const INTERACTIVE_FILL: Record<ButtonColor, string> = {
 };
 
 /**
+ * The text colour matching a panel accent, for the section-header title.
+ *
+ * Written out as literal class names rather than built by replacing `bg-`
+ * with `text-`, for the reason `SHAPE_CLASSES` already documents: Tailwind's
+ * scanner reads source text, so a class it never sees written down is a
+ * class it never generates.
+ */
+export const TEXT_FOR_ACCENT: Record<string, string> = {
+  "bg-lcars-orange": "text-lcars-orange",
+  "bg-lcars-amber": "text-lcars-amber",
+  "bg-lcars-violet": "text-lcars-violet",
+  "bg-lcars-lilac": "text-lcars-lilac",
+  "bg-lcars-salmon": "text-lcars-salmon",
+  "bg-lcars-teal": "text-lcars-teal",
+  "bg-lcars-ice": "text-lcars-ice",
+  "bg-lcars-tan": "text-lcars-tan",
+  "bg-lcars-red": "text-lcars-red",
+};
+
+/**
  * LCARS panel segments are either a standalone pill, or part of a touching
  * run - in a run, only the outer end is rounded; joints between segments
  * are cut flat. `orientation` picks which pair of ends "start"/"end" refer

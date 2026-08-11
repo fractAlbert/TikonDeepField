@@ -48,33 +48,53 @@ export function StarMapPanel({
       {/* The body is clipped so the top-left sweep actually cuts the amber
           shelf inside it; the bottom bar lives outside that clip, because it
           has to run past this column's right edge and a clip would eat it. */}
+      {/* No `rounded-tr` any more: the arm now ends in a flat stub that runs
+          off this column's right edge, and rounding the corner would close a
+          run that is meant to continue. */}
       <div
-        className="bg-lcars-panel rounded-tr-xl rounded-tl-[var(--lcars-panel-elbow-outer-r)] overflow-hidden flex-1 min-h-0 flex flex-col"
+        className="bg-lcars-panel rounded-tl-[var(--lcars-panel-elbow-outer-r)] overflow-hidden flex-1 min-h-0 flex flex-col"
       >
-      {/* The title starts *past* the leg, not over it. The shelf still spans
-          the full width - it is one mass with the leg - but the label
-          belongs to the horizontal arm, and a label sitting on top of the
-          corner reads as text floating on the frame rather than as the
-          arm's own content. Same as the shell's header, where the title
-          begins after the elbow rather than above it. */}
-      <div className="bg-lcars-amber lcars-caps text-black font-semibold h-[var(--lcars-shelf-h-panel)] pl-[calc(var(--lcars-panel-leg-w)+1rem)] pr-4 text-sm flex items-center justify-between gap-3 shrink-0">
-        <span className="truncate">Star Map{region ? ` — ${region.name}` : ""}</span>
-        {onToggleMaximize && (
-          /* On the header rather than beside the dial: it is a control over
-             the panel, not over the survey, and the actions row below is
-             already File / Withdraw / Reset - none of which this belongs
-             next to. */
-          <button
-            type="button"
-            onClick={() => {
-              playButtonClick();
-              onToggleMaximize();
-            }}
-            className="shrink-0 lcars-caps text-[10px] font-bold tracking-wider rounded-full px-2.5 py-0.5 bg-black/25 hover:bg-black/45 text-black cursor-pointer transition-colors"
-          >
-            {maximized ? "Restore" : "Maximise"}
-          </button>
-        )}
+      {/* The arm, with the title sitting in a gap punched out of it rather
+          than printed on a filled bar.
+
+          This is the image-frame construction from `thelcars.com`, measured
+          2026-08-11: a long run of the frame colour, a black notch carrying
+          the label, then a short detached stub closing the arm. The filled
+          full-width shelf this replaced was a legitimate LCARS shape but the
+          wrong one for a frame - a solid bar across the top made the panel
+          read as a captioned box, and the label competed with the very
+          content the frame is meant to be presenting.
+
+          The label is left-aligned in its gap, hugging the run it continues
+          out of: the title belongs to the arm, and here the arm hands it
+          over directly. */}
+      <div className="h-[var(--lcars-shelf-h-panel)] shrink-0 flex items-stretch gap-2">
+        {/* One mass with the leg below it - this is the corner. */}
+        <div className="w-[calc(var(--lcars-panel-leg-w)+2.5rem)] shrink-0 bg-lcars-amber rounded-tl-[var(--lcars-panel-elbow-outer-r)]" />
+        <div className="flex-1 min-w-0 flex items-center gap-3">
+          <span className="lcars-caps text-sm font-semibold text-lcars-amber truncate">
+            Star Map{region ? ` — ${region.name}` : ""}
+          </span>
+          {onToggleMaximize && (
+            /* On the arm rather than beside the dial: it is a control over
+               the panel, not over the survey, and the actions row below is
+               already File / Withdraw / Reset - none of which this belongs
+               next to. */
+            <button
+              type="button"
+              onClick={() => {
+                playButtonClick();
+                onToggleMaximize();
+              }}
+              className="ml-auto shrink-0 lcars-caps text-[10px] font-bold tracking-wider rounded-full px-2.5 py-0.5 bg-lcars-amber hover:bg-lcars-orange text-black cursor-pointer transition-colors"
+            >
+              {maximized ? "Restore" : "Maximise"}
+            </button>
+          )}
+        </div>
+        {/* The stub. Flat, because the arm continues off this column's right
+            edge rather than terminating here. */}
+        <div className="w-6 shrink-0 bg-lcars-amber" />
       </div>
       {/* The amber gutter and padding are pure chrome; below `md` they're
           64px of a ~390px screen the map would rather have. */}
