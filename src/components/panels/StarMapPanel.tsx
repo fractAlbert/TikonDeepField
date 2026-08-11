@@ -38,22 +38,26 @@ export function StarMapPanel({
        `min-h-0`, or a flex child refuses to shrink below its content and
        the constraint never reaches the svg. Docked, none of this applies -
        the panel is as tall as its content and the sidebar scrolls. */
-    <div
-      /* The top-left is the elbow's outer sweep and takes the panel-scale
-         radius; the top-right is an ordinary panel corner and stays small.
-         `overflow-hidden` is what makes it a sweep rather than a rounded
-         box - the amber shelf inside is clipped to this corner. */
-      className={`bg-lcars-panel rounded-tr-xl rounded-tl-[var(--lcars-panel-elbow-outer-r)] overflow-hidden ${
-        maximized ? "h-full flex flex-col min-h-0" : ""
-      }`}
-    >
+    /* `min-h-full` always, not only when maximised. The leg is the frame's
+       left edge and has to reach the bottom of the column: sized to its
+       content it stopped wherever the content happened to end, which with no
+       active survey is about half way down and reads as a bug. `min-` rather
+       than `h-` so a tall board still grows the panel instead of spilling
+       out of it. */
+    <div className="flex flex-col min-h-full">
+      {/* The body is clipped so the top-left sweep actually cuts the amber
+          shelf inside it; the bottom bar lives outside that clip, because it
+          has to run past this column's right edge and a clip would eat it. */}
+      <div
+        className="bg-lcars-panel rounded-tr-xl rounded-tl-[var(--lcars-panel-elbow-outer-r)] overflow-hidden flex-1 min-h-0 flex flex-col"
+      >
       {/* The title starts *past* the leg, not over it. The shelf still spans
           the full width - it is one mass with the leg - but the label
           belongs to the horizontal arm, and a label sitting on top of the
           corner reads as text floating on the frame rather than as the
           arm's own content. Same as the shell's header, where the title
           begins after the elbow rather than above it. */}
-      <div className="bg-lcars-amber lcars-caps text-black font-semibold pl-[calc(var(--lcars-panel-leg-w)+1rem)] pr-4 py-1.5 text-sm flex items-center justify-between gap-3 shrink-0">
+      <div className="bg-lcars-amber lcars-caps text-black font-semibold h-[var(--lcars-shelf-h-panel)] pl-[calc(var(--lcars-panel-leg-w)+1rem)] pr-4 text-sm flex items-center justify-between gap-3 shrink-0">
         <span className="truncate">Star Map{region ? ` — ${region.name}` : ""}</span>
         {onToggleMaximize && (
           /* On the header rather than beside the dial: it is a control over
@@ -74,7 +78,7 @@ export function StarMapPanel({
       </div>
       {/* The amber gutter and padding are pure chrome; below `md` they're
           64px of a ~390px screen the map would rather have. */}
-      <div className={`relative flex ${maximized ? "flex-1 min-h-0" : ""}`}>
+      <div className="relative flex flex-1 min-h-0">
         <div className="w-[var(--lcars-panel-leg-w)] shrink-0 bg-lcars-amber" />
         {/* The same concave corner the shell's elbow has, at panel scale.
             This header wraps: the amber runs across the top and then down
@@ -89,7 +93,7 @@ export function StarMapPanel({
             about the proportion 20px strikes against the shell's 160. */}
         <div
           aria-hidden
-          className="lcars-elbow-notch top-0 left-[var(--lcars-panel-leg-w)] [--lcars-notch-colour:var(--lcars-amber)] [--lcars-notch-bg:var(--lcars-panel)] [--lcars-elbow-inner-r:0.5rem] md:[--lcars-elbow-inner-r:0.75rem]"
+          className="lcars-elbow-notch top-0 left-[var(--lcars-panel-leg-w)] [--lcars-notch-colour:var(--lcars-amber)] [--lcars-notch-bg:var(--lcars-panel)] [--lcars-elbow-inner-r:0.75rem] md:[--lcars-elbow-inner-r:1.25rem]"
         />
         <div className={`flex-1 min-w-0 p-3 md:p-4 ${maximized ? "min-h-0" : ""}`}>
           {/* Only the empty-field line lives here. The instructions for a
@@ -109,6 +113,7 @@ export function StarMapPanel({
             hint={hint}
             maximized={maximized}
           />
+        </div>
         </div>
       </div>
     </div>

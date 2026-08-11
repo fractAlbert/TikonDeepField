@@ -829,7 +829,7 @@ export function StarMap({
               drift apart. Padding is tighter than the two-button version
               was: three labels plus the Sector readout is a lot to ask of
               a 260px-wide sidebar. */}
-          <div className="flex gap-1 bg-lcars-panel rounded-full p-1 w-fit">
+          <div className="flex gap-1 bg-lcars-control rounded-full p-1 w-fit">
             {(
               [
                 { mode: "place", label: "Place" },
@@ -929,7 +929,7 @@ export function StarMap({
                   } ${
                     armed === q.id
                       ? "bg-lcars-amber text-black font-semibold"
-                      : `bg-lcars-panel text-lcars-ice ${closed ? "" : "hover:bg-white/10"}`
+                      : `bg-lcars-control text-lcars-ice ${closed ? "" : "hover:bg-white/10"}`
                   } ${sid && !closed && !isHovered ? "opacity-60" : ""} ${ringClass}`}
                 >
                   <QuasarStar color={q.color} glyph={q.glyph} size={16} />
@@ -976,7 +976,7 @@ export function StarMap({
               className={`lcars-caps text-xs px-4 py-1.5 rounded-full font-semibold cursor-pointer transition-colors ${
                 confirmingWithdraw
                   ? "bg-lcars-red text-black hover:bg-lcars-salmon"
-                  : "bg-lcars-panel text-lcars-ice/80 hover:bg-white/15"
+                  : "bg-lcars-control text-lcars-ice/80 hover:bg-white/15"
               }`}
             >
               {confirmingWithdraw ? "Confirm withdrawal" : "Withdraw"}

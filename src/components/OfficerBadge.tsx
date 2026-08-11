@@ -79,7 +79,7 @@ export function OfficerBadge({
       /* Solid panel fill, not a translucent one: this sits on the orange
          header bar, and rank colours (amber, orange) over a tinted orange
          are unreadable. */
-      className={`${layout} cursor-pointer rounded-full bg-lcars-panel hover:bg-black/70 transition-colors px-2.5 py-1 max-w-[210px]`}
+      className={`${layout} cursor-pointer rounded-full bg-lcars-control hover:bg-black/70 transition-colors px-2.5 py-1 max-w-[210px]`}
     >
       {content}
     </button>

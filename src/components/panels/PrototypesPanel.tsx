@@ -204,7 +204,7 @@ function RingSurveyPrototype({ region }: { region: Region | null }) {
             } ${
               mode === id
                 ? "bg-lcars-orange text-black"
-                : "bg-lcars-panel text-lcars-ice/70 hover:bg-white/10"
+                : "bg-lcars-control text-lcars-ice/70 hover:bg-white/10"
             }`}
           >
             {label}

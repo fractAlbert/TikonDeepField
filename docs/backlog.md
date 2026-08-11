@@ -26,6 +26,20 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Decided 2026-08-10 and removed: **whether to close the shell frame at the
+bottom (15)** - it stays a bracket. Two edges is a legitimate LCARS shape,
+the references use open-sided corner brackets deliberately, and the elbow
+already reads as framed. The evidence came from trying it: the Star Map got
+a wrap-around bottom bar the same day and it was taken straight back out.
+Closure turned out not to be clarity.
+
+Shipped 2026-08-10 and removed: **the Star Map's resting width (4)**. 400px,
+up from 360, with `main` landing at 839. Settled by putting a temporary
+slider on it rather than by picking a figure - this entry had proposed "50%
+wider" (540px) since 2026-08-02, and the answer was about a tenth of that.
+The number and the two limits around it live in `--lcars-map-sidebar-w`'s
+comment in `globals.css`.
+
 Shipped 2026-08-07 and removed: **the phone hub's S-swoop (18)** - across
 the top, down the left to halfway, across to the right, then off the bottom,
 with the crossing dividing the two groups of six. Written up in
@@ -64,37 +78,12 @@ follow-up that was deliberately not applied.
 | # | item | where |
 | --- | --- | --- |
 | 2 | No `quasar-type` clues are ever emitted | Gameplay |
-| 4 | Star Map 50% wider | Design |
 | 7 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
 | 10 | The header overflows horizontally at 320px | Design |
-| 12 | Our vertical runs do not match the references | Design |
-| 15 | Close the shell frame at the bottom, or leave it a bracket | Design |
+| 12 | Our side bars don't look like the reference ones | Design |
 
 ## Design
-
-### 4 - Star Map 50% wider
-
-Raised 2026-08-02. The sidebar is `w-[360px]` and the dial inside it is
-capped at `max-w-[260px]`, which is what makes the ring and segment labels
-paint at ~10px and left no room for the quadrant labels to grow past 17
-user units.
-
-The catch is where the width comes from. `main` is only ~500px at 1344px
-wide once the sidebar and both rails have taken their share; another 180px
-of sidebar leaves it around 320px, which is narrower than the Log cards and
-the Station Info tab row are built for. So this is not a one-number change
-— either the rails give up width too, or the panels that live in `main`
-have to cope with less.
-
-**Half-answered 2026-08-04.** Maximising shipped (the old item 5), and it
-takes most of the pressure off: the map now expands to fill `main` on
-demand, drawing the dial at ~460px against the docked 260 with every label
-scaling to match, and it does that without touching a single width in the
-docked layout. What is left of this item is only the *resting* size - is
-260px enough for the map you spend the survey looking at - and the trade
-above is unchanged. If the answer is no, the honest fix is still that `main`
-or the rails have to give.
 
 ### 7 - Log, Help and Prototypes flick-scroll on a phone
 
@@ -120,34 +109,53 @@ the region: eight signatures is the technician's profile, so the worst case
 is worse than what was measured. Pagination, or a denser row, rather than
 shorter copy.
 
-### 12 - Our vertical runs do not match the references
+### 12 - Our side bars don't look like the reference ones
 
-Raised 2026-08-06 by the user on sight of the two new reference images, and
-confirmed by cropping them: their vertical runs look better than ours. The
-full read-off is in `lcars-style-notes.md` under **Vertical runs, and why
-theirs look better than ours**. In short, five differences, of which the
-first is a rule and the rest are proportion:
+In the user's words, 2026-08-06, in two messages:
 
-1. **A vertical run never ends in a rounded cap** in any of the three
-   references - it ends flat, or it turns a corner into a horizontal arm.
-   The half-circle is a horizontal mark.
-2. Cell heights vary a lot within one run; ours are uniform.
-3. Labels sit **bottom-right inside the cell** with the rest left as empty
-   colour; `LcarsButton` is `justify-center`.
-4. Colour varies cell to cell down a rail rather than one colour per item.
-5. Edge-anchored, hairline gaps rather than `gap-1` with an outer margin.
+> "NOte that you never see vertical button rows like we have in our app."
 
-**Not decided, and not a small change.** (3) is the cheapest and probably
-the highest-yield - centring is the most un-LCARS thing about our controls -
-but `justify-center` is baked into `LcarsButton`'s `base`, so it touches
-every button in the app at once and wants to be a prop with a default rather
-than a global flip. (1) invalidates a specimen in `LcarsKitPrototype`, which
-is itself an open conversation, so **do these together with that discussion,
-not before it**.
+> "Their vertical runs look different than ours. They look better"
 
-`NavRail` is *not* wrong about cap placement: a column of horizontal pills
-all capped on the same outer side is precisely what both new references do.
-The divergence is proportion and alignment, not grammar.
+That is the whole of what was asked. Everything below is analysis done
+afterwards - five differences found by measuring the images - and it is
+worth keeping the two apart, because the observation is the thing to satisfy
+and the list is only one reading of how.
+
+**Most of it has
+since shipped as a side effect of other work**, so this entry was rewritten
+on 2026-08-10 against the code rather than left as filed - the original five
+points would send whoever picked it up chasing things that are already done.
+
+Shipped, and not by intent:
+
+- **A vertical run never ends in a rounded cap.** No `rounded-t-full` or
+  `rounded-b-full` remains anywhere; the rail's filler is `shape="block"`.
+  Fixed when the filler shipped as a 500px lozenge and the rule went into
+  the style notes as "a cap belongs to a short segment, a tall block is
+  square".
+- **Cell heights vary within a run.** Buttons sit at their natural 40px and
+  the filler stretches, which is the references' big-block/small-cell
+  pattern. Came out of "let the fillers stretch, not the buttons".
+- **Centring.** `LcarsButton` no longer carries `justify-center`; `align`
+  derives from the segment's shape.
+
+What actually remains, all of it cosmetic:
+
+- **Labels are vertically centred, not tucked bottom-right in the cell**
+  with the rest left as empty colour. This is the half of the centring point
+  that did not ship.
+- **Gaps.** `gap-1` between rows and the 48px gutter to `main`, against the
+  references' hairlines. The rail is edge-anchored now, so only the interior
+  spacing is at issue.
+
+And one that is **not a defect but a disagreement**: the references vary
+colour cell to cell down a rail, where ours uses one orange filler and
+per-destination button colours. That was chosen, so that a colour means the
+same thing in the phone hub as in the rail. Changing it would cost that.
+
+Still worth doing alongside the `LcarsKitPrototype` conversation, since the
+sheet's "Vertical run" specimen is still wrong in the way point one was.
 
 ### 10 - The header overflows horizontally at 320px
 
@@ -170,25 +178,6 @@ Worth knowing before fixing it: the sound toggle is a plain `<button>`, not
 an `LcarsButton`, so it does not inherit the `size` prop added on
 2026-08-04. The cheap fixes are dropping the toggle's label to an icon below
 `sm`, or letting the badge collapse to its insignia earlier than `md`.
-
-### 15 - Close the shell frame at the bottom, or leave it a bracket
-
-Raised 2026-08-07, deferred by the user for a weekend decision. Phase 3a of
-`lcars-consistency-plan.md` gave the shell a frame along its top and down its
-left edge - the header block and the nav rail are one column now, running to
-the glass at the bottom. What is not decided is whether to close it.
-
-Three options, with the cost of each:
-
-- **Close it everywhere.** Most faithful. Costs every screen ~20-28px
-  including its gap, and on a phone that stacks with the title shelf and the
-  jump bar - the scarcest budget in the layout.
-- **Desktop only** (recommended). The bar appears at `lg` and up, where
-  `main` has 832px of width and full height and the cost is nothing. Phones
-  keep their vertical budget.
-- **Leave it a bracket.** Top and left only. The references use open-sided
-  corner brackets, so two edges is a legitimate LCARS shape rather than an
-  unfinished one - this is a real option, not a cop-out.
 
 ### 18 - The phone header as an S-swoop splitting the hub
 

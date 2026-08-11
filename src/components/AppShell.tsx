@@ -187,6 +187,7 @@ export function AppShell() {
   // itself. See the shell's `paddingBottom` below.
   const [coachHeight, setCoachHeight] = useState(0);
 
+
   // Drives which layout is *mounted*, not just which is visible - see
   // use-media-query.ts for why that distinction is load-bearing.
   const isMobile = useMediaQuery(BELOW_LG);
@@ -1009,12 +1010,15 @@ export function AppShell() {
              is what lets the map expand without React unmounting anything
              inside it. Both rails stay where they are, so maximising never
              takes the navigation away. */
+          /* `-mb-6` runs the column to the glass, so the map's leg reaches
+             the bottom of the screen the way the shell's rail does rather
+             than stopping wherever its content happens to end. */
           <div
             id="starmap-sidebar"
             className={
               mapMaximised
-                ? "flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar"
-                : "w-[360px] shrink-0 min-h-0 overflow-y-auto no-scrollbar ml-[20px] max-lg:hidden"
+                ? "flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar -mb-6"
+                : "lcars-map-sidebar shrink-0 min-h-0 overflow-y-auto no-scrollbar ml-[20px] -mb-6 max-lg:hidden"
             }
           >
             {starMapView}

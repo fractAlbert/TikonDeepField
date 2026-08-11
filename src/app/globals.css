@@ -15,7 +15,19 @@
   --lcars-violet: #9999ff;
   --lcars-ice: #cce6ff;
   --lcars-teal: #66ccbb;
-  --lcars-panel: #10121a;
+  /* A panel is black, like the page. It was #10121a - a near-black grey -
+     from before panels had coloured chrome of their own, when a fill was
+     the only thing distinguishing one from the background. They have shelves
+     and legs now, so the frame does that job and the fill can stop trying
+     to; black content inside a coloured frame is what all three references
+     actually do.
+
+     `control` keeps the old grey. A chip, tab or button still needs to read
+     as a raised surface, and on a black panel a black control is invisible -
+     which is the same trap the phone hub hit when its sub-panel was black
+     over a black page. */
+  --lcars-panel: #000000;
+  --lcars-control: #10121a;
 }
 
 @theme inline {
@@ -30,6 +42,7 @@
   --color-lcars-ice: var(--lcars-ice);
   --color-lcars-teal: var(--lcars-teal);
   --color-lcars-panel: var(--lcars-panel);
+  --color-lcars-control: var(--lcars-control);
   --font-lcars: var(--font-lcars), "Arial Narrow", sans-serif;
 }
 
@@ -192,6 +205,22 @@ body {
   width: var(--lcars-left-run-w);
 }
 
+/* The Star Map's docked sidebar. 400px, settled 2026-08-10 by putting a
+   slider on it rather than picking a figure: the old backlog entry proposed
+   "50% wider" (540) and the answer turned out to be about a tenth of that.
+
+   The trade is that every pixel comes out of `main`, which lands at 839.
+   Two numbers worth keeping if this moves again: 376 is the point where a
+   56px leg stops overflowing the column, and `main` should not go far below
+   ~320 or the Log cards and the Station Info tab row stop fitting. */
+:root {
+  --lcars-map-sidebar-w: 400px;
+}
+
+.lcars-map-sidebar {
+  width: var(--lcars-map-sidebar-w);
+}
+
 /* The elbow: the header and the left rail are one orange shape, the top bar
    sweeping round into a leg that runs down the edge of the screen with the
    nav buttons sitting in a gap cut out of it.
@@ -289,12 +318,23 @@ body {
      exactly where the bar does and the leg carries straight on below it.
      That relationship is what makes it read as a sweep, so it is the thing
      to scale rather than the number: a panel shelf is ~32px, so this is. */
-  --lcars-panel-elbow-outer-r: 1.5rem;
+  --lcars-panel-elbow-outer-r: 3rem;
+  /* Horizontal runs and vertical runs are never the same thickness, and
+     matching pairs match each other: top to bottom, left to right. The
+     shell measures 160 against 92 - a ratio of 1.74, vertical thicker - and
+     both new reference images taper the same way, a thick trunk turning
+     into a thin arm. Here it is 40 against 32.
+
+     A wider leg was tried at 56 and taken back out: it squeezes the content
+     column, which reflows 121px taller and overflows the sidebar. If it is
+     wanted, the sidebar has to widen with it - 376px is enough, and that is
+     backlog item 4. */
+  --lcars-shelf-h-panel: 2rem;
 }
 @media (min-width: 768px) {
   :root {
     --lcars-panel-leg-w: 2.5rem;
-    --lcars-panel-elbow-outer-r: 2rem;
+    --lcars-panel-elbow-outer-r: 4rem;
   }
 }
 
