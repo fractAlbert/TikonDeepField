@@ -185,10 +185,35 @@ function buildMandatoryClues(
     { kind: "quasar-sector", quasar: chosenPair.b, sector: region.solution[chosenPair.b].sector },
   ];
 
+  // How many signatures hold each classification. A `type-*` clue names no
+  // signature, so it only pins one down when exactly one signature carries
+  // that type - with at least 3 types across 6-8 signatures, repeats are the
+  // norm and most types do not qualify.
+  const typeCount = new Map<string, number>();
+  for (const n of names) {
+    const t = region.solution[n].type;
+    typeCount.set(t, (typeCount.get(t) ?? 0) + 1);
+  }
+
+  let indirectBudget = difficulty.indirectClues;
   const remaining = shuffle(names.filter((n) => n !== chosenPair.a && n !== chosenPair.b));
   for (const name of remaining.slice(0, difficulty.quadrantClues)) {
     const sector = sectorOf(region, sectorLookup, name);
-    clues.push({ kind: "quasar-quadrant", quasar: name, quadrant: quadrantOf(sector) });
+    const quadrant = quadrantOf(sector);
+    const type = region.solution[name].type;
+
+    // Deliver it through the classification instead: same fact, one more
+    // step to read. See `RegionDifficulty.indirectClues` for why that is a
+    // difficulty axis rather than a cosmetic change - and note the pair is
+    // only equivalent to the direct clue because of the uniqueness guard,
+    // so the fallback below is load-bearing rather than defensive.
+    if (indirectBudget > 0 && typeCount.get(type) === 1) {
+      indirectBudget--;
+      clues.push({ kind: "quasar-type", quasar: name, type });
+      clues.push({ kind: "type-quadrant", type, quadrant });
+    } else {
+      clues.push({ kind: "quasar-quadrant", quasar: name, quadrant });
+    }
   }
 
   return clues;

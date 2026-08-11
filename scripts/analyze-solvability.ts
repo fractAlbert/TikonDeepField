@@ -21,12 +21,19 @@
 //                      of range" is itself an observation (d > 5).
 //   3. Quadrant Survey - per-quadrant signature totals.
 //
-// The per-type breakdown from the Quadrant Survey is deliberately NOT
-// used. Generation currently emits no `quasar-type` clues, so the player
-// never learns any signature's type, which makes the breakdown an
-// anonymous partition - real information in principle, but not something a
-// player can attach to a name. Leaving it out keeps this a lower bound on
-// solvability rather than an optimistic one.
+// Per-type breakdowns are still deliberately NOT used as a channel, but the
+// reason changed on 2026-08-11 and the distinction matters.
+//
+// Generation now does emit `quasar-type` clues - as a chain, paired with a
+// `type-quadrant` about the same type, and only for a type exactly one
+// signature holds. So a player *can* now attach one or two names to a
+// classification. What they still cannot do is learn any *other* signature's
+// type, so a per-type census remains an anonymous partition over everything
+// the chain did not name.
+//
+// The chain itself is folded into the quadrant constraints below, which is
+// exact rather than optimistic: the pair says precisely what the direct
+// clue would have said. Leaving the census out keeps this a lower bound.
 //
 // Usage: npx tsx scripts/analyze-solvability.ts [samples]
 
@@ -96,10 +103,24 @@ function countConsistent(region: Region, ch: Channels, cap = 2): number {
 
   const fixed = new Map<string, string>();
   const quadClue = new Map<string, Quadrant>();
+  const typeOfQuasar = new Map<string, string>();
+  const quadrantOfType = new Map<string, Quadrant>();
   for (const clue of region.clues) {
     if (clue.negate) continue;
     if (clue.kind === "quasar-sector") fixed.set(clue.quasar, clue.sector);
     if (clue.kind === "quasar-quadrant") quadClue.set(clue.quasar, clue.quadrant);
+    if (clue.kind === "quasar-type") typeOfQuasar.set(clue.quasar, clue.type);
+    if (clue.kind === "type-quadrant") quadrantOfType.set(clue.type, clue.quadrant);
+  }
+
+  // Fold indirect quadrant clues back into direct ones. Exact, not an
+  // approximation: generation only chains a type held by a single signature.
+  // This must mirror `src/lib/solvability.ts` - if the two disagree, the
+  // shipped unsolvable flag and the measured rates stop describing the same
+  // game.
+  for (const [quasar, type] of typeOfQuasar) {
+    const quadrant = quadrantOfType.get(type);
+    if (quadrant !== undefined) quadClue.set(quasar, quadrant);
   }
 
   // Which signatures have been surveyed for ring. A budget is spent on the
@@ -208,8 +229,14 @@ function repickAnchors(region: Region, minDist: number): Region {
       : pairs.reduce((c, p) => (p.dist < c.dist ? p : c));
 
   const others = names.filter((n) => n !== chosen.a && n !== chosen.b);
-  // Keep the same number of quadrant clues the generator emits.
-  const quadCount = region.clues.filter((c) => c.kind === "quasar-quadrant").length;
+  // Keep the same number of quadrant clues the generator emits - counting
+  // the indirect ones too, since a `type-quadrant` names a quadrant just as
+  // a `quasar-quadrant` does. Counting only the direct kind would quietly
+  // rebuild these regions with fewer clues than the generator gave them and
+  // report the anchor-separation sweep as harder than it is.
+  const quadCount = region.clues.filter(
+    (c) => c.kind === "quasar-quadrant" || c.kind === "type-quadrant"
+  ).length;
   const shuffled = [...others].sort(() => Math.random() - 0.5).slice(0, quadCount);
 
   return {

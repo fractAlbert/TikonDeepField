@@ -43,10 +43,25 @@ function countConsistent(region: Region, ringKnown: Set<string>): number {
 
   const fixed = new Map<string, string>();
   const quadClue = new Map<string, Quadrant>();
+  const typeOfQuasar = new Map<string, string>();
+  const quadrantOfType = new Map<string, Quadrant>();
   for (const clue of region.clues) {
     if (clue.negate) continue;
     if (clue.kind === "quasar-sector") fixed.set(clue.quasar, clue.sector);
     if (clue.kind === "quasar-quadrant") quadClue.set(clue.quasar, clue.quadrant);
+    if (clue.kind === "quasar-type") typeOfQuasar.set(clue.quasar, clue.type);
+    if (clue.kind === "type-quadrant") quadrantOfType.set(clue.type, clue.quadrant);
+  }
+
+  // A quadrant delivered through a classification is still a quadrant.
+  // Generation only chains a type exactly one signature holds, so the pair
+  // resolves to a single name and folding it here is exact rather than an
+  // approximation. Without this the measure would report a region as harder
+  // purely because of how its briefing is worded, which is the one thing
+  // solvability must never depend on.
+  for (const [quasar, type] of typeOfQuasar) {
+    const quadrant = quadrantOfType.get(type);
+    if (quadrant !== undefined) quadClue.set(quasar, quadrant);
   }
 
   // Directed: the signed metric is antisymmetric, so a symmetric lookup
