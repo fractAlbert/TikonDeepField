@@ -26,6 +26,20 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Closed 2026-08-11 and removed: **the text bar (25)**, on the user's call, one
+turn after it was filed. The section headers stay.
+
+Nothing was built and nothing is owed. It stays *measured* in
+`lcars-style-notes.md` under "The text bar", because the measurement is the
+expensive part and the reference image is committed either way - if it ever
+comes back it is a build, not a study.
+
+Worth recording the reasoning, since the entry had framed it as an open
+question: there were three ways to head something here at once - shelf,
+section header, text bar - and three is more than a small app needs unless
+each has a clear job. Two have one. The third was a preference without a
+role, and the user closed it rather than let it accumulate.
+
 Shipped 2026-08-11 and removed: **header bars like thelcars.com's (24)**,
 once the user pointed at the page they meant - *"the news section has a
 header titled News/Updates. It's style and then the header for each news
@@ -284,33 +298,9 @@ column says what kind of open each item is.
 | 2 | No `quasar-type` clues are ever emitted | Gameplay | open, needs a design call |
 | 21 | The LCARS pattern kit - a standing check, maybe nothing to do | Design | standing reminder |
 | 22 | Faint arrows showing that a panel can still be scrolled | Interaction | open, waiting on the user's steer |
-| 25 | The text bar - the header style the user actually prefers | Design | open, measured and ready to build |
 | 26 | Let the player choose a difficulty | Gameplay | open, needs the model chosen |
 
 ## Design
-
-### 25 - The text bar, the header style the user prefers
-
-Raised 2026-08-11. The user added `docs/reference/Preferred LCARS header.png`
-after seeing the new section headers, with the verdict *"that's not the style
-I mean, but I am happy with what you did"* - so this is not a defect, it is
-the target whenever they say go.
-
-**Fully measured already**, in `lcars-style-notes.md` under "The text bar":
-one 40px run, a 39px stub capped on each outer end in `#c47d69`, a long flat
-`#ea9c72` bar, and the label as `#edb378` type sitting in a 23px/18px gap.
-Nothing needs re-measuring; the work is building `LcarsTextBar` and deciding
-where it replaces `LcarsSectionHeader`.
-
-The reason it reads as correct is that all four of its moves are rules this
-project already holds - caps only where a run terminates, stub width matching
-run height so a cap is a half-circle, the label in a gap rather than on a
-filled block, and one colour family with the label lightest.
-
-Open question for the user: whether it **replaces** the section headers or
-joins them as a third option. There are now three ways to head something
-here - shelf, section header, text bar - and three is more than a small app
-needs unless each has a clear job.
 
 ### 21 - The LCARS pattern kit, as a standing item
 
