@@ -329,10 +329,16 @@ rather than of LCARS as such.
 ## A live source: thelcars.com (reviewed 2026-08-11)
 
 Backlog 23. The first source here that is not a still image: a working
-HTML/CSS LCARS template, so the grammar can be read out of computed styles
-instead of inferred from pixels. Everything below was measured in the
-browser - `getBoundingClientRect`, `getComputedStyle`, and painted area by
-colour - not eyeballed off a screenshot.
+HTML/CSS LCARS template by Jim Robertus, so the grammar can be read out of
+computed styles instead of inferred from pixels. The measurements below came
+from the browser - `getBoundingClientRect`, `getComputedStyle`, and painted
+area by colour - not from a screenshot.
+
+**It is also a written source, and that turned out to be the bigger half.**
+The site documents its own palette, typeface and idioms across a dozen
+pages, and those pages answered questions the pixels could not: what font
+LCARS actually used, why nobody uses it, and what the colours are called.
+Read `/colors.php`, `/fonts.php` and `/buttons.php` before the CSS.
 
 **Weigh it accordingly.** It is a fan-made template, not a screen-used
 reference, so where it disagrees with the images the images still win. Its
@@ -390,24 +396,108 @@ derived alone. On the four rules below it does the confirming.
   leg, `0.67`. Ours is 96px on 160px, `0.60`. Close enough to call the
   existing elbow correctly proportioned.
 
+### The typeface, from the designer himself
+
+Its `/fonts.php` carries the answer we never had a source for. Asked on
+Twitter what font LCARS used, **Michael Okuda** - who designed it - replied
+that he *"mostly used Helvetica Ultra Compressed"*, along with Letraset
+Compacta and a few others as needed.
+
+So the canonical LCARS face is a **very tight condensed grotesque**, and
+neither of those fonts is web-available. The site's author used Oswald up to
+his version 7 and moved to **Antonio** in May 2021 as the closer match.
+
+**This project independently chose Antonio with an `Arial Narrow`
+fallback** - the same substitute, arrived at separately, which is about as
+much corroboration as a type choice can get. Worth recording *why* it is
+right rather than merely popular: it is standing in for Helvetica Ultra
+Compressed, so when a decision comes down to "which of these looks more
+LCARS", the tiebreak is **whichever is more compressed**.
+
+One practical note in passing: the site self-hosts Antonio rather than
+calling Google's CDN, citing an EU ruling that hotlinking Google Fonts
+breaches GDPR. We are already clear on that - `next/font/google` downloads
+and self-hosts at build time, so nothing is fetched from Google at runtime.
+
+### What its own docs say about controls
+
+- **Colours are named, never literal.** A button takes its colour from a
+  class named after the palette entry - `button-dusty-mauve` - which is the
+  same discipline as our tokens, and a good sign the naming instinct here
+  was right.
+- **Button click sound is canonical, not our invention.** The template ships
+  four LCARS keystroke sounds and wires one to each button. `playButtonClick`
+  is doing a thing the style actually does.
+- **Blinking is a real LCARS idiom**, and its guidance is that *the blinking
+  stops on hover, for usability*. If we ever want an attention state, that
+  is the precedent - and it comes with the rule that it must yield the
+  moment the user engages with it.
+
 ### Where its palette differs from ours
 
-Sampled by painted area, its working colours are `#d29b7f` (10.3%),
-`#8899ff` (5.1%), `#cf4f4f` (2.8%), `#ea9c72` (2.5%), `#eb943a` (1.8%) and
-`#baa4e5` (0.7%).
+Its `/colors.php` publishes the palettes by name, and the colours I sampled
+off the home page match its documented **Classic** theme entry for entry -
+`almond #d29b7f` (10.3% of the page), `bluey #8899ff`, `red #cf4f4f`,
+`butterscotch #ea9c72`, `orange #eb943a`, `african-violet #baa4e5`. A clean
+cross-check: the measurement and the documentation agree.
 
-Two differences worth a decision rather than a silent edit, since a
-third-party site does not outrank the images:
+**There is no single "LCARS palette".** It documents five or more - Classic,
+Nemesis Blue, Lower Decks, Picard, Voyager - each a different set. Classic
+is the TNG/DS9/Voyager look, which is the one this project is imitating. So
+"is this colour LCARS" is not a well-formed question; "is it Classic" is.
 
-- **Its most-used colour has no equivalent here.** `#d29b7f` is a muted
-  tan, and at 10.3% it carries more of the page than any other colour. Our
-  nearest is `salmon #ff9c7a`, which is considerably more saturated. A tan
-  that reads as structural rather than as an accent is the one genuinely
-  missing note in our palette.
-- **Ours are more saturated across the board** - `orange #ff9900` against
-  their `#eb943a`, `red #cc6666` against `#cf4f4f`, and our `lilac #cc99cc`
-  is pinker where theirs is bluer. `violet #9999ff` against their `#8899ff`
-  is effectively the same colour.
+Two findings that bear directly on decisions already made here:
+
+- **Our `red #cc6666` is a documented LCARS colour.** It appears in its
+  Nemesis Blue theme as `red-copper`, exactly. Picked here by eye off the
+  reference images, and it landed on a named entry.
+- **The two-reds rule is in its taxonomy too.** Classic carries both `red
+  #cf4f4f` and `mars #ff2200`; Voyager carries `red-alert #ff3300`. That is
+  precisely the split this project settled on 2026-08-06 - a desaturated
+  brick that does structural work, and a scarce saturated one kept for an
+  alarm. Our `alert #ee3b22` sits between their two alarm reds. An
+  independent source reaching the same two-red structure is the strongest
+  evidence we have that the distinction is real rather than a rationalised
+  accident.
+
+Where ours still differ: **ours are more saturated across the board** -
+`orange #ff9900` against their `#eb943a`, and our `lilac #cc99cc` is pinker
+where theirs is bluer. `violet #9999ff` against `bluey #8899ff` is
+effectively the same colour. And **their most-used colour has no equivalent
+here**: `almond #d29b7f` is a muted tan carrying more of the page than
+anything else, where our nearest is a much more saturated salmon.
+
+**Do not copy the palette wholesale** - see the licence note below. If a tan
+is wanted, the honest route is to pick one against the reference images, the
+way every other colour here was picked.
+
+### Licensing, and what it does and does not cover
+
+The template is free but **not public domain**. Its EULA (by Jim Robertus)
+grants personal, **non-commercial** use only; commercial use needs written
+consent. It requires **attribution with a link**, and that changes be
+indicated. It forbids selling, redistributing or hotlinking the files, and
+derivative works stay bound by the same terms.
+
+**None of that currently binds this project, because we use none of it.**
+No HTML, CSS, font file, image or script of theirs is vendored here - a
+search of `src/` for any trace returns nothing. What was taken from the site
+is measurements and facts: that black dominates, that pills are horizontal,
+what Okuda said his font was. Those are observations about a style, not the
+Template.
+
+Two things to keep true:
+
+- **Do not lift their CSS or adopt their named palette as a set.** That is
+  the one easy way to cross from "learned from" into "used a portion of",
+  and there is no need - every colour here was chosen against the reference
+  images already.
+- **If we ever do use the Template**, the terms attach: attribution with a
+  link, changes indicated, and non-commercial only.
+
+Worth stating plainly since it sits underneath all of this: **LCARS itself
+is Paramount's**, designed by Michael Okuda. This project is a fan work on
+the usual footing, and that is a separate question from this EULA.
 
 ## Project rules
 

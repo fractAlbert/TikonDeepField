@@ -47,10 +47,33 @@ its horizontal-to-vertical thickness ratio reaches **8.6:1** against our
 1.74 - recorded as range rather than as a target, since item 19 closed the
 same day on the user's decision that our frames stay put.
 
-One open thread rather than a change: its most-used colour is a muted tan
-`#d29b7f` carrying 10.3% of the page, and we have no equivalent - our
-nearest is a much more saturated salmon. Left for the user, because a
-fan-made site does not outrank the reference images.
+**The written pages turned out to matter more than the CSS**, and the first
+pass missed them. `/fonts.php` carries Michael Okuda's own answer for what
+LCARS was set in - Helvetica Ultra Compressed, plus Letraset Compacta - so
+Antonio is a documented *substitute* for an unavailable face, and the
+tiebreak between two candidate type treatments is whichever is more
+compressed. `/colors.php` publishes five named palettes, which means there
+is no single "LCARS palette": Classic is the one this project imitates.
+
+Two of our own decisions turn out to be corroborated there. Our `red
+#cc6666` is a named LCARS colour, `red-copper` in their Nemesis Blue theme.
+And the **two-reds split settled here on 2026-08-06 is in their taxonomy
+too** - Classic carries both `red #cf4f4f` and `mars #ff2200` - which is the
+strongest evidence yet that the distinction is real rather than a
+rationalised accident.
+
+Licensing is written up in the notes. Short version: the template is free
+but **not** public domain - non-commercial, attribution with a link,
+derivatives bound by the same terms. **None of it binds us, because none of
+it is used here**; a search of `src/` for any trace returns nothing, and
+measurements of a style are not the Template. The one thing to avoid is
+adopting their named palette as a set, which is why the tan below is left
+alone.
+
+One open thread rather than a change: their most-used colour is a muted tan
+(`almond`, 10.3% of the page) and we have no equivalent - our nearest is a
+much more saturated salmon. If the user wants one, it should be picked
+against the reference images the way every other colour here was.
 
 Fixed 2026-08-11 and removed: **the Star Map readout being dead on touch
 (8)**, after the user asked why an item calling itself "accepted" was
