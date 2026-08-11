@@ -22,6 +22,7 @@ its sources travel together.
 | `LCARS-2.jpg` (1920x1271) | data rows, gauges, the dense-directory feel |
 | `Lcars menu.webp` (1024x1024) | titles, sweeps that turn into button runs, lists with lamps |
 | `lcars-ultra-220809.png` (3786x2022) | a whole page: rails, brackets, grids, framed content |
+| `Preferred LCARS header.png` (1251x165) | **the header style the user prefers** - see "The text bar" |
 
 The two newer ones were added 2026-08-06 and are read in **More options,
 from the second and third references** below. That section is additive - it
@@ -507,6 +508,43 @@ Two departures, both deliberate:
 
 Built from measurements; none of their CSS is used. The credit is on the
 Station Info panel's Credits section.
+
+### The text bar - the header style the user actually wants
+
+**Not yet built.** The user added `docs/reference/Preferred LCARS header.png`
+on 2026-08-11 having seen the section headers, with the verdict *"that's not
+the style I mean, but I am happy with what you did"* - so the headers stay as
+they are, and this is the target whenever they say so. It is the second of
+the two readings of backlog 24, the one on `thelcars.com/text-bar.php`.
+
+Pixel-scanned rather than eyeballed. One run, 40px tall throughout:
+
+| piece | width | colour | shape |
+| --- | --- | --- | --- |
+| opening stub | 39 | `#c47d69` subdued-sienna | `rounded-l-full` |
+| gap | 23 | - | - |
+| label "2022" | - | `#edb378` barley | type, not a block |
+| gap | 18 | - | - |
+| long bar | 989 | `#ea9c72` butterscotch | flat both ends |
+| gap | 14 | - | - |
+| closing stub | 39 | `#c47d69` subdued-sienna | `rounded-r-full` |
+
+Four things make it work, and all four are rules already in this document -
+which is why it reads as correct rather than as decoration:
+
+- **Rounded where the run terminates, flat where it continues.** Only the two
+  outer ends are capped; every interior edge is cut square.
+- **The stubs are the same width as the run is tall** (39 against 40), so
+  each cap is a half-circle and nothing reads as a lozenge.
+- **The label sits in a gap in the run**, not on a filled block - the same
+  move as the image frame's title, and the reason a header can carry a label
+  without becoming a caption bar.
+- **Three colours from one family**, all named entries in the Classic
+  palette. The label is the lightest, so it reads as type against its own
+  run rather than as another segment.
+
+Note it is a *sienna/tan* header, which is the family the structural tan was
+added from on the same day.
 
 ### How a frame compartmentalises (its image-frame page)
 
