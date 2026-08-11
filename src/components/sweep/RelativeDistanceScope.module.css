@@ -98,12 +98,25 @@
   transform: translateX(-50%);
 }
 
+/* Two of these, one per direction - see the component for why. The gradient
+   is fixed per direction and so lives here rather than being reassigned
+   every frame: each trail is brightest at the end the line is at and fades
+   toward its tail, which for a rightward pass means opaque on the right. */
 .trail {
   position: absolute;
   top: 0;
   bottom: 0;
   width: 0;
   pointer-events: none;
+  will-change: left, width, opacity;
+}
+
+.trailRight {
+  background: linear-gradient(90deg, transparent, rgba(255, 207, 122, 0.14));
+}
+
+.trailLeft {
+  background: linear-gradient(270deg, transparent, rgba(255, 207, 122, 0.14));
 }
 
 .sweepLine {

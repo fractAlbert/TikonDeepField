@@ -26,6 +26,28 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Shipped 2026-08-11 and removed: **the sweep's trail restarting at each turn
+(20)**, built to the user's own proposal - *"the easy solution is to have to
+trails, one for each direction. When the sweep turns around, have the old
+trail keep moving off the screen while the 2nd starts moving with the scope
+line."*
+
+That is exactly what it does. There are two trail elements, one per
+direction, and because direction alternates with `cycle % 2` a slot is
+always the same direction - which also let the two gradients move out of the
+frame loop and into the stylesheet. The pass that has just finished keeps
+its trail and carries on travelling the way it was already going, at the
+sweep's own speed, fading to nothing across exactly one pass; the other
+grows behind the line. The scope's `overflow: hidden` does the clipping.
+
+Both halves of that are load-bearing and both are checked by
+`scripts/check-sweep-trail.mjs`: same speed is what makes it read as one
+wake still moving rather than a second sweep, and reaching zero exactly as
+the pass ends is what lets the element be reused without a pop. The handoff
+at the turn is seamless by construction - the same element, same position,
+same width, same opacity as one frame earlier. The clock was not touched, so
+item 14 still holds.
+
 Closed 2026-08-10 and removed: **the phone flick-scroll list (7)**. Only one
 of the five was a defect and it is fixed; the rest are content scrolling
 inside their own panel, which the project rules explicitly allow and which
@@ -113,8 +135,8 @@ follow-up that was deliberately not applied.
 | 2 | No `quasar-type` clues are ever emitted | Gameplay |
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
 | 19 | Frames whose horizontal and vertical runs are too alike | Design |
-| 20 | The sweep's trail restarts when it changes direction | Interaction |
 | 21 | The LCARS pattern kit - a standing check, maybe nothing to do | Design |
+| 22 | Faint arrows showing that a panel can still be scrolled | Interaction |
 
 ## Design
 
@@ -149,36 +171,6 @@ The standing question is whether the sheet should track the app or stay a
 record of what was read off the references. It has been most useful as the
 second thing - a place to check a rule against - which argues for adding the
 new rules rather than mirroring every component.
-
-Raised 2026-08-10, in the user's words:
-
-> "The sweep scope has a nice trail behind it and it fades over time.
-> However, when the sweep reaches the end, the trail dissapears and starts
-> again as it moves back in the opposite direction. Can we have the trail not
-> dissapear as we change directions but continue to fade. That way it looks
-> more natural."
-
-The trail is not a decaying thing today, it is a shape recomputed every
-frame from where the line currently is and which way it is going -
-`RelativeDistanceScope`'s frame loop sets `trail.style.left`, `width` and a
-`linear-gradient` whose direction flips with the sweep. So at the moment the
-cycle flips, the whole gradient is rebuilt facing the other way and the old
-one ceases to exist. It does not fade out; it is simply no longer drawn.
-
-What a fix has to respect:
-
-- **The clock must not restart.** Phase is carried frame to frame precisely
-  so that changing the speed does not move the line (item 14). Anything
-  built here has to advance off the same `dt`, not off a fresh timer.
-- **Only picking a new reference restarts the sweep**, and that should keep
-  clearing the trail - a new reference is a new reading.
-- `prefers-reduced-motion` hides the trail entirely today, and should
-  continue to.
-
-The shape of the fix is that the trail has to become something that decays
-on its own - the last N positions with an age each, or a canvas the line
-paints into and which fades - rather than one element re-derived from the
-current direction.
 
 ### 19 - Frames whose horizontal and vertical runs are too alike
 
@@ -266,6 +258,40 @@ reach it 91%, and the average player dropped from 54% to 5%. The full
 argument is in `region-difficulty.md`.
 
 ## Interaction
+
+### 22 - Faint arrows showing that a panel can still be scrolled
+
+Raised 2026-08-11, in the user's words:
+
+> "Let's have a faint arrow visible when scrolling is possible in a
+> direction. When the user scrolls, those arrows dissapear. I have thoughts
+> on the look."
+
+**Ask for those thoughts before designing anything.** The last two times a
+shape was specified rather than guessed at - the desktop elbow and the phone
+S-swoop - the mock-up settled it in one pass, and the guesses before it did
+not.
+
+This lands directly on top of item 7's closure. Four panels scroll inside
+themselves on a phone, and the project rules allow that but forbid a visible
+scrollbar, which leaves nothing at all saying there is more below. That is
+the gap this fills, so the affordance has to be the thing the scrollbar is
+not: part of the console rather than a browser artefact.
+
+What a fix has to respect:
+
+- **Per direction, not per panel.** "Scrolling is possible in a direction"
+  means up and down are independent - at the top only the down arrow shows,
+  in the middle both, at the bottom only the up one.
+- **The panels that scroll are the ones from item 7**: Log, Officer, Star
+  Manifest, Help, Prototypes. The scrolling element is the `p-3 md:p-4`
+  content div inside `LcarsPanel`, so this most likely belongs there rather
+  than at five call sites.
+- **`prefers-reduced-motion`** - if the arrows animate at all, they must not
+  under it.
+- Style rules: flat fill, no strokes, no glow. An arrow is a glyph, so it
+  needs the user's steer on whether it is a chevron, a solid triangle, or
+  something built from the run shapes already in the kit.
 
 ### 8 - The star map hover readout is dead on touch
 

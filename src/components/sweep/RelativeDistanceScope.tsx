@@ -81,7 +81,22 @@ export function RelativeDistanceScope({
 }) {
   const scopeRef = useRef<HTMLDivElement>(null);
   const sweepLineRef = useRef<HTMLDivElement>(null);
-  const trailRef = useRef<HTMLDivElement>(null);
+  // Two trails, one per direction, alternating - not one trail redrawn from
+  // whichever way the line happens to be going.
+  //
+  // A single element had to be re-anchored at the turn, so the whole wake
+  // vanished the instant the line reversed and started again from nothing.
+  // With one element per direction, the pass that just finished keeps its
+  // trail: it carries on travelling the way it was already going, at the
+  // sweep's own speed, and fades out over the following pass while the other
+  // trail grows behind the line. Each is then clipped by the scope's
+  // `overflow: hidden` as it leaves the frame.
+  //
+  // Direction alternates with `cycle % 2`, so a slot is always the same
+  // direction - the rightward trail is only ever drawn on even cycles. That
+  // is what lets the gradients live in the stylesheet.
+  const trailRightRef = useRef<HTMLDivElement>(null);
+  const trailLeftRef = useRef<HTMLDivElement>(null);
   const readoutRef = useRef<HTMLSpanElement>(null);
   const coreEls = useRef<Record<string, HTMLDivElement | null>>({});
   const labelEls = useRef<Record<string, HTMLDivElement | null>>({});
@@ -244,16 +259,44 @@ export function RelativeDistanceScope({
         : sweepEnd - t * (sweepEnd - REF_POS);
 
       if (sweepLineRef.current) sweepLineRef.current.style.left = `${detectorPos}%`;
-      if (trailRef.current) {
-        const trail = trailRef.current;
-        if (sweepingRight) {
-          trail.style.left = `${REF_POS}%`;
-          trail.style.width = `${detectorPos - REF_POS}%`;
-          trail.style.background = "linear-gradient(90deg, transparent, rgba(255,207,122,0.14))";
+
+      // The trail the line is drawing now, and the one left over from the
+      // pass before it.
+      const span = sweepEnd - REF_POS;
+      const growing = sweepingRight ? trailRightRef.current : trailLeftRef.current;
+      const leaving = sweepingRight ? trailLeftRef.current : trailRightRef.current;
+
+      // Anchored at the end this pass started from, stretching to the line.
+      if (growing) {
+        growing.style.opacity = "1";
+        growing.style.left = `${sweepingRight ? REF_POS : detectorPos}%`;
+        growing.style.width = `${sweepingRight ? detectorPos - REF_POS : sweepEnd - detectorPos}%`;
+      }
+
+      if (leaving) {
+        if (cycle === 0) {
+          // Nothing has swept the other way yet - and picking a new
+          // reference resets `phase` to 0, so this also clears the wake of
+          // the reading being abandoned.
+          leaving.style.width = "0%";
+          leaving.style.opacity = "0";
         } else {
-          trail.style.left = `${detectorPos}%`;
-          trail.style.width = `${sweepEnd - detectorPos}%`;
-          trail.style.background = "linear-gradient(270deg, transparent, rgba(255,207,122,0.14))";
+          // Full span at the moment of the turn, then translated on at the
+          // sweep's own speed and faded out across exactly one pass.
+          //
+          // Both halves matter. Moving at the same speed is what makes it
+          // read as the same wake still travelling rather than a second
+          // sweep; reaching zero exactly as the pass ends is what lets the
+          // element be reused for the next one without a visible pop, since
+          // it is invisible at the moment it gets handed back.
+          //
+          // The handoff at the turn is seamless by construction: this is the
+          // same element, at the same position and width, at the same
+          // opacity it held one frame earlier as `growing`.
+          const travelled = t * span;
+          leaving.style.left = `${sweepingRight ? REF_POS - travelled : REF_POS + travelled}%`;
+          leaving.style.width = `${span}%`;
+          leaving.style.opacity = String(1 - t);
         }
       }
 
@@ -327,7 +370,8 @@ export function RelativeDistanceScope({
             ))}
         </div>
         <div className={styles.centerLine} style={{ left: `${REF_POS}%` }} />
-        <div className={styles.trail} ref={trailRef} />
+        <div className={`${styles.trail} ${styles.trailRight}`} ref={trailRightRef} />
+        <div className={`${styles.trail} ${styles.trailLeft}`} ref={trailLeftRef} />
         <div className={styles.sweepLine} ref={sweepLineRef} />
 
         {blips.map((b) => {
