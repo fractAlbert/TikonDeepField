@@ -45,11 +45,29 @@ import { playButtonClick } from "@/lib/sound";
  * ## Sectioned rather than stacked
  *
  * Six sections behind a sub-run of tabs, one open at a time, because the
- * whole sheet stacked is several screens tall and the Prototypes panel
- * already flick-scrolls on a phone (backlog item 7). The tab run is itself a
- * specimen: fixed three columns at every width, one colour for the group,
- * unselected slots dimmed, per-row caps - the sub-run rule from the style
- * notes, which Station Info's Quasars section also follows.
+ * whole sheet stacked is several screens tall - 4725px on a phone, measured
+ * 2026-08-10. That is accepted rather than a defect: the sheet is a
+ * reference and scrolling one is normal, which is how the old backlog item 7
+ * was closed. The tab run is itself a specimen: fixed three columns at every
+ * width, one colour for the group, unselected slots dimmed, per-row caps -
+ * the sub-run rule from the style notes, which Station Info's Quasars
+ * section also follows.
+ *
+ * ## Corrections made to this sheet
+ *
+ * A specimen that is wrong is worse than no specimen, because this is what
+ * gets checked instead of the notes. Recorded so neither comes back:
+ *
+ * - **"Vertical run" (fixed 2026-08-11).** It capped its column top and
+ *   bottom and called itself the desktop nav rail. It was neither: no
+ *   reference image contains a capped vertical column, the rail stopped
+ *   doing it on 2026-08-07, and a cap is a half-circle of half the box's
+ *   height - a mark on a 32px button, a lozenge on a tall filler. Now shows
+ *   what the rail does: horizontal segments capped on the outer edge, and a
+ *   square block for the foot.
+ * - **The palette (fixed 2026-08-11).** It listed eight colours and was
+ *   missing `alert` and `tan`, and badged every off-rotation colour with the
+ *   word "alert" regardless of which one it was.
  */
 
 type SectionId = "shapes" | "runs" | "colour" | "type" | "rows" | "blocks";
@@ -353,38 +371,40 @@ function RunsSection() {
       </Specimen>
 
       <Specimen
-        label="Vertical run"
+        label="A column of segments — the desktop nav rail"
         note={
           <>
-            The same four shapes with <code>orientation=&quot;vertical&quot;</code>,
-            which is the desktop nav rail: caps at the top and bottom of the
-            column, flat joints between. Unlabelled filler segments pad the
-            rail out so it reads as a panel rather than as a handful of
-            buttons over empty space.
+            <strong>The column is not a vertical run, and it has no caps of
+            its own.</strong> Each row is a <em>horizontal</em> segment
+            rounded on the rail&apos;s outer edge and flat toward the content,
+            and the foot is a square block. Nothing rounds the top or bottom
+            of the column, because a cap is a half-circle of half the
+            box&apos;s height &mdash; the LCARS mark on a 32px button, a giant
+            lozenge on a 460px filler.
           </>
         }
       >
         <div className="flex gap-3">
           <div className="flex flex-col gap-1 w-28">
-            {["Briefing", "Manifest", "Sweep"].map((label, i, a) => (
-              <Seg
-                key={label}
-                color="orange"
-                shape={runShape(i, a.length + 2)}
-                vertical
-                className="h-8 px-2 justify-end"
-              >
+            {["Briefing", "Manifest", "Sweep"].map((label) => (
+              <Seg key={label} color="orange" shape="cap-start" className="h-8 px-2 justify-end items-end">
                 {label}
               </Seg>
             ))}
-            <Seg color="amber" vertical className="h-4" />
-            <Seg color="violet" shape="cap-end" vertical className="h-6" />
+            {/* Square, and tall. This is the shape the specimen used to get
+                wrong: it capped the column top and bottom, which is a shape
+                no reference image contains and which the rail itself
+                stopped doing on 2026-08-07. */}
+            <Seg color="tan" shape="block" className="h-16" />
           </div>
           <p className="text-[11px] text-lcars-ice/45 leading-relaxed flex-1">
-            Note the two filler segments at the foot. They carry no label and
-            no behaviour, and the run&apos;s bottom cap belongs to the last of
-            them rather than to the last button &mdash; the bracket is the
-            shape of the <em>panel</em>, not of the menu.
+            The labels are bottom-weighted, not centred &mdash; measured at
+            52px above to 27px below in a 117px cell in{" "}
+            <code>lcars-ultra</code>, and 2.9:1 on{" "}
+            <code>thelcars.com</code>&apos;s buttons. The filler carries no
+            label and no behaviour; it is there so the rail reads as a solid
+            edge rather than as buttons floating over black, and it runs off
+            the bottom of the screen rather than stopping short of it.
           </p>
         </div>
       </Specimen>
@@ -401,22 +421,41 @@ function ColourSection() {
           <>
             Muted and desaturated throughout &mdash; retro-futuristic rather
             than sci-fi neon. <code>BUTTON_COLORS</code> is the seven-colour
-            rotation used for anything that cycles; red is not in it.
+            rotation used for anything that cycles. The three marked{" "}
+            <em>off-rotation</em> are never handed out by cycling: each is
+            assigned on purpose, for the reason given below.
           </>
         }
       >
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
-          {(["orange", "amber", "salmon", "red", "lilac", "violet", "ice", "teal"] as ButtonColor[]).map(
-            (c) => (
-              <div key={c} className="flex flex-col">
-                <Seg color={c} shape="pill" className="h-10 px-3 justify-between">
-                  <span>{c}</span>
-                  {!BUTTON_COLORS.includes(c) && <span className="text-[9px]">alert</span>}
-                </Seg>
-              </div>
-            )
-          )}
+          {(
+            ["orange", "amber", "salmon", "tan", "red", "alert", "lilac", "violet", "ice", "teal"] as ButtonColor[]
+          ).map((c) => (
+            <div key={c} className="flex flex-col">
+              <Seg color={c} shape="pill" className="h-10 px-3 justify-between">
+                <span>{c}</span>
+                {!BUTTON_COLORS.includes(c) && (
+                  <span className="text-[9px] opacity-70">off-rotation</span>
+                )}
+              </Seg>
+            </div>
+          ))}
         </div>
+        <ul className="mt-2 text-[11px] text-lcars-ice/45 leading-relaxed list-disc pl-4">
+          <li>
+            <strong>red</strong> is the structural brick, the category colour
+            for a bad outcome. Used freely in that role.
+          </li>
+          <li>
+            <strong>alert</strong> is the saturated one, kept for something
+            urgent and irreversible &mdash; used exactly once in the app.
+          </li>
+          <li>
+            <strong>tan</strong> carries a whole mass rather than an accent.
+            It is 12.76% of <code>LCARS-2.jpg</code>, the largest coloured
+            area in that reference.
+          </li>
+        </ul>
       </Specimen>
 
       <Specimen
