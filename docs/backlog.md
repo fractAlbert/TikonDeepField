@@ -26,6 +26,37 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Fixed 2026-08-11 and removed: **the Star Map readout being dead on touch
+(8)**, after the user asked why an item calling itself "accepted" was
+sitting in a list of open work. It was a fair hit and the answer was that it
+should not have been.
+
+The fix is one line in `handleCellPointerDown`, above every guard in it:
+`if (e.pointerType !== "mouse") setHovered(sectorIdPressed)`. A press fills
+the readout on any device without a hover to enter, and it then stays put
+until the next press.
+
+**The reason given for not doing it was wrong, and that is the lesson.**
+This entry claimed a tap that fills the readout would also place a
+signature, so the readout could only ever describe the cell you just acted
+on. Reading `handleCellClick` shows it returns at `if (!armed) return` - a
+tap on an empty cell with nothing armed does nothing whatsoever. The safe
+inspect gesture the entry said did not exist had been there the whole time.
+The claim was reasoned from the shape of the code rather than read off it.
+
+Verified in the browser rather than argued: the readout goes `--` -> `R1S8`
+with its detail line on a touch `pointerdown`; a `mouseleave` from a
+different cell does not clear it (the existing `h === id` guard already
+handled that); a second tap moves it; a *mouse* `pointerdown` is ignored so
+the cursor still tracks live; and nothing was placed - 0/6, 3 of 3 filings,
+save byte-identical afterwards.
+
+One honest caveat: the original "`mouseenter` never fires on touch" premise
+was never tested on a real device, and mobile browsers do emit a synthetic
+mouse sequence on tap, so the readout may have half-worked already. What the
+change guarantees is that it works deterministically and stays put, which
+was not true either way.
+
 Closed 2026-08-11 and removed: **frames whose horizontal and vertical runs
 are too alike (19)** - the user's call, on their eye, which is exactly what
 the entry was being held for.
@@ -154,9 +185,9 @@ column says what kind of open each item is.
 | # | item | where | state |
 | --- | --- | --- | --- |
 | 2 | No `quasar-type` clues are ever emitted | Gameplay | open, needs a design call |
-| 8 | Star Map hover readout dead on touch | Interaction | **still broken**, living with it |
 | 21 | The LCARS pattern kit - a standing check, maybe nothing to do | Design | standing reminder |
 | 22 | Faint arrows showing that a panel can still be scrolled | Interaction | open, waiting on the user's steer |
+| 23 | Review thelcars.com | Design | open, reading not yet done |
 
 ## Design
 
@@ -192,38 +223,24 @@ record of what was read off the references. It has been most useful as the
 second thing - a place to check a rule against - which argues for adding the
 new rules rather than mirroring every component.
 
-## 18 - The phone header as an S-swoop splitting the hub
+### 23 - Review thelcars.com
 
-Raised 2026-08-07 alongside the desktop elbow (item 17, shipped). The user's
-words, kept verbatim because the shape is the specification and a paraphrase
-of a shape is worth nothing:
+Raised 2026-08-11, in the user's words: *"todo: review
+https://www.thelcars.com/"*.
 
-> "Mobile is going to look very different. I'm not sure how you will
-> implement exactly but I think what I want is a swooping S shaped
-> \"header\", Starts at the top, swoops down on the left halfway, then swoops
-> to the right side and then straight down. The bottom of the S is missing.
-> The swoop splits the two sets of buttons."
+Not started - filed, not read. The reference material so far has been three
+still images in `docs/reference/`, and every rule in the style notes was
+measured off them. A site is a different kind of source: it shows the
+grammar in motion and at more than one width, which the stills cannot, and
+it may well answer item 19's ratio question and item 22's arrow question
+outright.
 
-So: a bar across the top, turning down the left edge, running to about
-halfway, then sweeping across to the right and continuing straight down the
-right edge - with no return at the bottom. The crossing is the divider
-between the hub's two groups of six.
-
-What it replaces: `MobileMenu` currently draws that divider as a small knee
-and arm between the two runs, which is the right idiom at the wrong scale.
-This makes it structural and continuous with the header.
-
-What it has to respect:
-
-- **The hub is six rows of buttons in two groups**, and at 320x568 those
-  rows want nearly the whole screen - the emblem is already hidden below a
-  700px viewport height. An S that costs vertical space costs it from the
-  buttons, which are at the 44px touch floor.
-- **Below `lg` there is no left rail**, so the header's left block is a stub
-  today. The S changes what that stub is for.
-- The desktop elbow's tokens (`--lcars-elbow-outer-r`, `-inner-r`,
-  `-leg-drop`) exist and the same curves should almost certainly be reused
-  rather than a second set invented.
+What a review has to produce, to be worth more than a browse: rules added to
+`docs/lcars-style-notes.md` with the evidence recorded, in the same form as
+the ones read off the images. Where the site contradicts a bullet the notes
+already have, the notes say the image wins - a third-party site is not a
+reference image, so anything it contradicts needs the user's call rather
+than a silent correction.
 
 ## Gameplay
 
@@ -249,6 +266,7 @@ reach it 91%, and the average player dropped from 54% to 5%. The full
 argument is in `region-difficulty.md`.
 
 ## Interaction
+
 
 ### 22 - Faint arrows showing that a panel can still be scrolled
 
@@ -284,22 +302,3 @@ What a fix has to respect:
   needs the user's steer on whether it is a chevron, a solid triangle, or
   something built from the run shapes already in the kit.
 
-### 8 - The star map hover readout is dead on touch
-
-**This is broken right now**, and "accepted" below means we decided to live
-with it, not that it went away. On a phone the readout shows `--` for the
-entire session, every session.
-
-`StarMap`'s readout is driven by `setHovered` from `onMouseEnter`, and a
-touch device has no hover to enter. Accepted as-is because tapping a cell
-places a signature - that is the actual interaction - and the readout is a
-convenience on top of it.
-
-The mechanical fix is one line: the cell already carries `onPointerDown`,
-which does fire on touch, so feeding `setHovered(id)` from there would put
-*something* in the readout. What has stopped it being one line is the design
-question underneath - on touch the same tap that would fill the readout also
-places a signature, so the readout would only ever describe the cell you
-just acted on, which is not what it is for. Making it useful on touch means
-deciding what "inspect without acting" is on a device with no hover, and
-that needs the user's steer rather than a patch.

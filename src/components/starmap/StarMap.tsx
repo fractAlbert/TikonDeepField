@@ -476,6 +476,23 @@ export function StarMap({
     sectorIdPressed: string,
     occupied: boolean
   ) {
+    // The readout, on a device with no hover to enter. The press itself
+    // fills it, and this sits above every guard below on purpose: which
+    // sector you are looking at is worth knowing in any mark mode, with or
+    // without a signature armed, and on a closed region too - none of that
+    // changes anything, it only reads.
+    //
+    // Safe because a tap on an empty cell with nothing armed does nothing
+    // else at all: `handleCellClick` returns at `if (!armed) return`. So on
+    // touch this is a real inspect gesture rather than a side effect of
+    // acting, which is what the readout is for. When something *is* armed
+    // the tap also places, and the readout then describes the cell you just
+    // filled - still true, still useful.
+    //
+    // Not for a mouse: `mouseenter` already tracks the cursor there, and
+    // adding this would pin the readout to the last cell *clicked* instead.
+    if (e.pointerType !== "mouse") setHovered(sectorIdPressed);
+
     if (closed || !armed || !isAnnotation(markMode) || occupied) return;
     // A finger does not sweep. Painting from pointerdown requires
     // `touch-action: none` on the dial to stop the browser claiming the
@@ -856,12 +873,16 @@ export function StarMap({
           </div>
         </div>
 
-        {/* Hover readout: repeats whatever the cursor is over at a size
+        {/* Sector readout: repeats whatever is being pointed at, at a size
             the in-map labels can't reach without crowding the dial. Fixed
             min-width and a reserved second line so nothing reflows as the
-            cursor moves. Sits at "--" on touch, where mouseenter never
-            fires - accepted, since tapping a cell is the real interaction
-            and it says what it did afterward anyway. */}
+            cursor moves.
+
+            A cursor tracks it live on hover; a finger fills it by pressing
+            a cell, where it then stays put until the next press rather than
+            following anything. Until 2026-08-11 this simply read "--" for
+            the whole session on a phone, because `mouseenter` is the only
+            thing that had ever set it. */}
         <div className="text-right shrink-0 min-w-[104px]">
           <div className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50 mb-1.5">
             Sector

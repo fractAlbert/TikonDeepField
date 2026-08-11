@@ -474,10 +474,14 @@ top two and hidden at the smallest.
 
 ### The S-swoop (2026-08-07)
 
-Backlog 18, to the user's description: *"a swooping S shaped header, Starts
-at the top, swoops down on the left halfway, then swoops to the right side
-and then straight down. The bottom of the S is missing. The swoop splits the
-two sets of buttons."*
+Backlog 18, in the user's own words - kept verbatim and in full because the
+shape is the specification, and a paraphrase of a shape is worth nothing:
+
+> "Mobile is going to look very different. I'm not sure how you will
+> implement exactly but I think what I want is a swooping S shaped
+> \"header\", Starts at the top, swoops down on the left halfway, then swoops
+> to the right side and then straight down. The bottom of the S is missing.
+> The swoop splits the two sets of buttons."
 
 The frame does the dividing. The hub's two groups used to be separated by a
 small knee-and-arm drawn between them - the right idiom at the wrong scale,
