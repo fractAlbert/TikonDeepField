@@ -4,17 +4,19 @@ import {
   ButtonColor,
   ButtonOrientation,
   ButtonShape,
+  ButtonVAlign,
   INTERACTIVE_FILL,
   alignClasses,
   defaultAlign,
+  vAlignClasses,
   shapeClasses,
 } from "@/lib/lcars-colors";
 import { playButtonClick } from "@/lib/sound";
 
-export type { ButtonAlign, ButtonColor, ButtonShape, ButtonOrientation } from "@/lib/lcars-colors";
+export type { ButtonAlign, ButtonColor, ButtonShape, ButtonOrientation, ButtonVAlign } from "@/lib/lcars-colors";
 
 const base =
-  "lcars-caps inline-flex items-center font-semibold tracking-wide transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer";
+  "lcars-caps inline-flex font-semibold tracking-wide transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer";
 
 /**
  * Padding is a prop rather than something a caller overrides through
@@ -43,6 +45,7 @@ export function LcarsButton({
   orientation = "horizontal",
   size = "default",
   align,
+  valign = "center",
   className = "",
 }: {
   children?: ReactNode;
@@ -61,6 +64,8 @@ export function LcarsButton({
    * accident.
    */
   align?: ButtonAlign;
+  /** Vertical placement of the label. See `vAlignClasses`. */
+  valign?: ButtonVAlign;
   className?: string;
 }) {
   const resolvedAlign = align ?? defaultAlign(shape, orientation);
@@ -73,7 +78,7 @@ export function LcarsButton({
         onClick?.();
       }}
       disabled={disabled}
-      className={`${base} ${SIZE[size]} ${alignClasses(resolvedAlign)} ${shapeClasses(shape, orientation)} ${INTERACTIVE_FILL[color]} ${className}`}
+      className={`${base} ${SIZE[size]} ${alignClasses(resolvedAlign)} ${vAlignClasses(valign)} ${shapeClasses(shape, orientation)} ${INTERACTIVE_FILL[color]} ${className}`}
     >
       {children}
     </button>

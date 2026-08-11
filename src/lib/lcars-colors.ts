@@ -129,6 +129,30 @@ export function alignClasses(align: ButtonAlign): string {
 }
 
 /**
+ * Where a label sits *vertically* in its cell.
+ *
+ * The references bottom-weight it rather than centring: measured in
+ * `lcars-ultra`, a 117px labelled cell puts its label 52px from the top and
+ * 27px from the bottom, roughly 2:1. That is what makes a run read as a
+ * column of shelves rather than a stack of buttons.
+ *
+ * A prop rather than a class passed through `className`, for the reason the
+ * `size` record already documents: two utilities setting the same property
+ * are settled by the order Tailwind emits them in, not by the order they are
+ * written, so "just pass items-end" is a coin toss.
+ */
+export type ButtonVAlign = "center" | "end";
+
+const VALIGN_CLASSES: Record<ButtonVAlign, string> = {
+  center: "items-center",
+  end: "items-end",
+};
+
+export function vAlignClasses(valign: ButtonVAlign): string {
+  return VALIGN_CLASSES[valign];
+}
+
+/**
  * **Text hugs the flat end** - the end the segment continues into, rather
  * than the rounded end where it stops.
  *

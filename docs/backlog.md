@@ -26,6 +26,15 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Shipped 2026-08-10 and removed: **the side-bar divergence (12)**, which the
+user raised as *"Their vertical runs look different than ours. They look
+better"*. Closed by measuring the last open point rather than arguing it: a
+117px labelled cell in `lcars-ultra` puts its label 52px from the top and 27
+from the bottom, so a run's labels are bottom-weighted, not centred. The
+rail's are now, via a `valign` prop. The other loose end - gap sizes - turned
+out to be already right: the reference runs 10px gaps on ~380px cells, 2.6%,
+against our 4px on 160px, 2.5%.
+
 Shipped 2026-08-10 and removed: **the header overflow at 320px (10)**. Not
 fixed by shrinking anything - the sound control moved to the phone hub, into
 the spare slot the second group of six was carrying. It was 82px of a header
@@ -86,8 +95,8 @@ follow-up that was deliberately not applied.
 | 2 | No `quasar-type` clues are ever emitted | Gameplay |
 | 7 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
-| 12 | Our side bars don't look like the reference ones | Design |
 | 19 | Frames whose horizontal and vertical runs are too alike | Design |
+| 20 | The sweep's trail restarts when it changes direction | Interaction |
 
 ## Design
 
@@ -114,6 +123,38 @@ other three, because this one is a list rather than prose and it grows with
 the region: eight signatures is the technician's profile, so the worst case
 is worse than what was measured. Pagination, or a denser row, rather than
 shorter copy.
+
+### 20 - The sweep's trail restarts when it changes direction
+
+Raised 2026-08-10, in the user's words:
+
+> "The sweep scope has a nice trail behind it and it fades over time.
+> However, when the sweep reaches the end, the trail dissapears and starts
+> again as it moves back in the opposite direction. Can we have the trail not
+> dissapear as we change directions but continue to fade. That way it looks
+> more natural."
+
+The trail is not a decaying thing today, it is a shape recomputed every
+frame from where the line currently is and which way it is going -
+`RelativeDistanceScope`'s frame loop sets `trail.style.left`, `width` and a
+`linear-gradient` whose direction flips with the sweep. So at the moment the
+cycle flips, the whole gradient is rebuilt facing the other way and the old
+one ceases to exist. It does not fade out; it is simply no longer drawn.
+
+What a fix has to respect:
+
+- **The clock must not restart.** Phase is carried frame to frame precisely
+  so that changing the speed does not move the line (item 14). Anything
+  built here has to advance off the same `dt`, not off a fresh timer.
+- **Only picking a new reference restarts the sweep**, and that should keep
+  clearing the trail - a new reference is a new reading.
+- `prefers-reduced-motion` hides the trail entirely today, and should
+  continue to.
+
+The shape of the fix is that the trail has to become something that decays
+on its own - the last N positions with an age each, or a canvas the line
+paints into and which fades - rather than one element re-derived from the
+current direction.
 
 ### 19 - Frames whose horizontal and vertical runs are too alike
 
@@ -144,55 +185,7 @@ What a fix would have to respect: the map's leg cannot exceed 56px without
 the sidebar widening (item 4's note has the numbers), and the hub's leg
 comes straight out of the button columns at 320px.
 
-### 12 - Our side bars don't look like the reference ones
-
-In the user's words, 2026-08-06, in two messages:
-
-> "NOte that you never see vertical button rows like we have in our app."
-
-> "Their vertical runs look different than ours. They look better"
-
-That is the whole of what was asked. Everything below is analysis done
-afterwards - five differences found by measuring the images - and it is
-worth keeping the two apart, because the observation is the thing to satisfy
-and the list is only one reading of how.
-
-**Most of it has
-since shipped as a side effect of other work**, so this entry was rewritten
-on 2026-08-10 against the code rather than left as filed - the original five
-points would send whoever picked it up chasing things that are already done.
-
-Shipped, and not by intent:
-
-- **A vertical run never ends in a rounded cap.** No `rounded-t-full` or
-  `rounded-b-full` remains anywhere; the rail's filler is `shape="block"`.
-  Fixed when the filler shipped as a 500px lozenge and the rule went into
-  the style notes as "a cap belongs to a short segment, a tall block is
-  square".
-- **Cell heights vary within a run.** Buttons sit at their natural 40px and
-  the filler stretches, which is the references' big-block/small-cell
-  pattern. Came out of "let the fillers stretch, not the buttons".
-- **Centring.** `LcarsButton` no longer carries `justify-center`; `align`
-  derives from the segment's shape.
-
-What actually remains, all of it cosmetic:
-
-- **Labels are vertically centred, not tucked bottom-right in the cell**
-  with the rest left as empty colour. This is the half of the centring point
-  that did not ship.
-- **Gaps.** `gap-1` between rows and the 48px gutter to `main`, against the
-  references' hairlines. The rail is edge-anchored now, so only the interior
-  spacing is at issue.
-
-And one that is **not a defect but a disagreement**: the references vary
-colour cell to cell down a rail, where ours uses one orange filler and
-per-destination button colours. That was chosen, so that a colour means the
-same thing in the phone hub as in the rail. Changing it would cost that.
-
-Still worth doing alongside the `LcarsKitPrototype` conversation, since the
-sheet's "Vertical run" specimen is still wrong in the way point one was.
-
-### 18 - The phone header as an S-swoop splitting the hub
+## 18 - The phone header as an S-swoop splitting the hub
 
 Raised 2026-08-07 alongside the desktop elbow (item 17, shipped). The user's
 words, kept verbatim because the shape is the specification and a paraphrase

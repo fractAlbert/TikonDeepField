@@ -61,6 +61,11 @@ export function NavRail({
             shape={outerShape}
             orientation="horizontal"
             onClick={() => onSelect(item.id)}
+            /* Bottom-weighted, which is what the references do with a
+               labelled cell in a run - measured at 52 above to 27 below in
+               `lcars-ultra`. It is the last of the differences filed as
+               backlog 12. */
+            valign="end"
             className="flex-1 h-full"
           >
             {item.label}
