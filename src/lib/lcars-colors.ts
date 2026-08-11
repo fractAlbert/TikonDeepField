@@ -148,10 +148,23 @@ export type ButtonAlign = "start" | "end" | "center";
 
 // Applied to the button's own flex row, so these are horizontal regardless
 // of `orientation` - which only decides which pair of corners get rounded.
+//
+// **Both properties, and the pair is the point.** `justify-*` places the
+// label box inside the button; `text-align` places the lines inside that
+// box. A single-line label shrinks its box to fit, so justify alone looks
+// correct and text-align never shows - which is exactly why this was wrong
+// for five days without being visible. The moment a label wraps, the box
+// goes full width and text-align is suddenly the only thing deciding.
+//
+// Found 2026-08-11 on the utility rail: Officer, Station, Help, Prototypes
+// and About all sat at a 24px left inset, and "Survey New Region" - the one
+// label long enough to wrap - sat at 34px on both sides, centred, because
+// `text-align: center` was being inherited. No conflict with the ordering
+// hazard the `size` record documents: these are two different properties.
 const ALIGN_CLASSES: Record<ButtonAlign, string> = {
-  start: "justify-start",
-  end: "justify-end",
-  center: "justify-center",
+  start: "justify-start text-left",
+  end: "justify-end text-right",
+  center: "justify-center text-center",
 };
 
 export function alignClasses(align: ButtonAlign): string {
