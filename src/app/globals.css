@@ -385,28 +385,39 @@ body {
    starts *past* the leg rather than over it. */
 :root {
   --lcars-panel-leg-w: 1.5rem;
-  /* The outer sweep, at panel scale. The shell's is 96px against a 92px
-     bar - the radius is essentially the bar's height, so the curve finishes
-     exactly where the bar does and the leg carries straight on below it.
-     That relationship is what makes it read as a sweep, so it is the thing
-     to scale rather than the number: a panel shelf is ~32px, so this is. */
-  --lcars-panel-elbow-outer-r: 3rem;
-  /* Horizontal runs and vertical runs are never the same thickness, and
-     matching pairs match each other: top to bottom, left to right. The
-     shell measures 160 against 92 - a ratio of 1.74, vertical thicker - and
-     both new reference images taper the same way, a thick trunk turning
-     into a thin arm. Here it is 40 against 32.
-
-     A wider leg was tried at 56 and taken back out: it squeezes the content
-     column, which reflows 121px taller and overflows the sidebar. If it is
-     wanted, the sidebar has to widen with it - 376px is enough, and that is
-     backlog item 4. */
+  /* On a phone the radius tracks the *leg* instead, because the leg is the
+     smaller of the two here and a sweep wider than its own leg is the thing
+     that went wrong at desktop scale below. */
+  --lcars-panel-elbow-outer-r: 1.5rem;
   --lcars-shelf-h-panel: 2rem;
 }
+
+/* Retuned 2026-08-11: the user's complaint was "the elbow on the border and
+   the vertical bar", and both were out of proportion in a way the comment
+   here had already described without the numbers obeying it.
+
+   The shell's elbow is the one in this project that reads correctly, so the
+   panel now copies its three relationships rather than inventing any:
+
+     radius ~= arm height   shell 96 vs 92 = 1.04   panel 32 vs 32 = 1.00
+     leg    ~= 1.74 x arm   shell 160 vs 92 = 1.74  panel 56 vs 32 = 1.75
+     radius ~= 0.6 x leg    shell 96 / 160 = 0.60   panel 32 / 56 = 0.57
+
+   What was there: a 64px radius on a 40px leg - 1.6 times the leg's own
+   width, where the shell is 0.60 and thelcars.com's image frame is 0.67. A
+   sweep that much wider than its leg swallows it, so the corner read as a
+   hook with an unrelated thin bar hanging off it. And 40 against 32 is a
+   ratio of 1.25, near enough to identical that the two runs read as the same
+   weight - which is what backlog 19 filed against this frame.
+
+   The 56px leg was tried once before and reverted, because it squeezed the
+   content column into reflowing 121px taller than a 376px sidebar could
+   hold. The sidebar has been 400px since backlog 4 shipped, which is what
+   makes it affordable now - verified, not assumed. */
 @media (min-width: 768px) {
   :root {
-    --lcars-panel-leg-w: 2.5rem;
-    --lcars-panel-elbow-outer-r: 4rem;
+    --lcars-panel-leg-w: 3.5rem;
+    --lcars-panel-elbow-outer-r: 2rem;
   }
 }
 

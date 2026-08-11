@@ -139,12 +139,31 @@ Closed 2026-08-11 and removed: **frames whose horizontal and vertical runs
 are too alike (19)** - the user's call, on their eye, which is exactly what
 the entry was being held for.
 
-Nothing changed. The tokens are where they were: the hub's shelf 45px
-against 40px legs and a 14px crossing, the Star Map's 32px shelf against a
-40px leg. So the ratio argument stands on paper and was overruled in the
-only court that matters - both of those numbers had been set by eye
-recently, and the entry itself said changing them on arithmetic alone would
-be overriding a judgement.
+Nothing changed at the time. The tokens stayed where they were: the hub's
+shelf 45px against 40px legs and a 14px crossing, the Star Map's 32px shelf
+against a 40px leg. The ratio argument stood on paper and was overruled in
+the only court that matters - both numbers had been set by eye recently, and
+the entry itself said changing them on arithmetic alone would be overriding
+a judgement.
+
+**The Star Map half reopened and was fixed the same day**, on the user's
+eye rather than on the arithmetic: *"My biggest issue is the elbow on the
+border and the vertical bar."* Its leg is now 56px against a 32px arm, a
+ratio of 1.75 where the shell manages 1.74, and its elbow radius came down
+from 64px to 32px. The 64 was the worse of the two faults - 1.6 times the
+leg's own width, where the shell is 0.60 and thelcars.com's image frame is
+0.67, so the sweep swallowed the leg and the corner read as a hook. The 56px
+leg had been tried and reverted once at a 376px sidebar; it fits now because
+backlog 4 took the sidebar to 400, verified at zero overflow on both axes and
+at 320 and 390.
+
+**The hub half stands as closed** - nobody has complained about it, and the
+reason for leaving it is unchanged.
+
+The general lesson is not "the arithmetic was right after all". It is that
+the ratio argument could not say *which* of two numbers was wrong, and the
+eye could: the complaint was about the elbow first and the bar second, and
+the elbow was the fault that arithmetic had scored as merely second-worst.
 
 Worth keeping the general rule separate from this instance: *"horizontal and
 vertical runs are never the same thickness, and pairs match"* is still in
