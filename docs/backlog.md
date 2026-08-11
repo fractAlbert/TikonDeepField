@@ -236,6 +236,7 @@ column says what kind of open each item is.
 | 2 | No `quasar-type` clues are ever emitted | Gameplay | open, needs a design call |
 | 21 | The LCARS pattern kit - a standing check, maybe nothing to do | Design | standing reminder |
 | 22 | Faint arrows showing that a panel can still be scrolled | Interaction | open, waiting on the user's steer |
+| 24 | Header bars like thelcars.com's | Design | open, needs the page confirmed first |
 
 ## Design
 
@@ -270,6 +271,34 @@ The standing question is whether the sheet should track the app or stay a
 record of what was read off the references. It has been most useful as the
 second thing - a place to check a rule against - which argues for adding the
 new rules rather than mirroring every component.
+
+### 24 - Header bars like thelcars.com's
+
+Raised 2026-08-11, in the user's words: *"todo: header bars like the lcars
+theme page. They look nicer."*
+
+**Confirm which page and which element before building anything.** There are
+two plausible readings and they are different jobs:
+
+- `thelcars.com/themes/`, meaning the striped multi-colour **bar rows** that
+  run under the elbow - segmented runs of different-coloured blocks.
+- `thelcars.com/text-bar.php`, its documented "LCARS Text Bar", which is a
+  bar *containing* text and is the nearer analogue to our panel shelves.
+
+Our current equivalent is `LcarsPanel`'s shelf - one solid block of accent
+with the label at its bottom-left - so if the answer is the second, this is
+a change to one component and lands everywhere at once.
+
+What the 2026-08-11 review already established, so it does not need
+re-measuring:
+
+- Their bars are **28px** tall, against 240px vertical legs.
+- The gap between segments in a run is a **7.33px black `border-right`**,
+  not spacing, with `box-sizing: border-box`; the last segment has none.
+- **A run can step down in thickness mid-row** - one 28px row contained a
+  14px segment, exactly half.
+- Segment colours come from the named palette, and repetition down a run is
+  normal rather than a collision.
 
 ## Gameplay
 

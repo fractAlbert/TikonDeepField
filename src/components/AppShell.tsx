@@ -140,7 +140,13 @@ const GENERATE_DELAY_MS = 2200;
 // so giving them one colour says that, where the lilac it was first built
 // with said the opposite. The buttons between them keep their own colours;
 // they are the contents of the run, not the run itself.
-const LEFT_RAIL_FILLERS: ButtonColor[] = ["orange"];
+// The foot of the elbow's leg, running from the last button to the glass.
+// Tan rather than orange since 2026-08-11: it is the biggest single mass of
+// colour on the page, and the references give that job to a structural tan
+// rather than to another block of the accent colour - `LCARS-2.jpg` spends
+// 12.76% of itself on exactly this move. It also stops the left run reading
+// as one undifferentiated orange stripe from the header to the floor.
+const LEFT_RAIL_FILLERS: ButtonColor[] = ["tan"];
 
 // Below `lg` both rails are replaced by the menu hub, with the star map
 // joining as a real destination. Amber to match its own panel header - the

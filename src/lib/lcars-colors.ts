@@ -14,12 +14,20 @@
 // used freely in that role. `alert` (#ee3b22) is the saturated one, kept for
 // something genuinely urgent and irreversible. Neither is in BUTTON_COLORS,
 // because neither is a colour you hand out by rotation.
+// `tan` is the structural one, added 2026-08-11. Every other entry here is
+// an accent used in small doses; this is the one meant to carry a whole
+// mass, which is why it is not in BUTTON_COLORS either - it is a colour you
+// assign to a block on purpose, not one handed out by rotation.
+//
+// See `--lcars-tan` in `globals.css` for where the value comes from and for
+// the reference-measured alternative.
 export type ButtonColor =
   | "orange"
   | "amber"
   | "violet"
   | "red"
   | "alert"
+  | "tan"
   | "salmon"
   | "ice"
   | "teal"
@@ -42,6 +50,7 @@ export const SOLID_BG: Record<ButtonColor, string> = {
   violet: "bg-lcars-violet",
   red: "bg-lcars-red",
   alert: "bg-lcars-alert",
+  tan: "bg-lcars-tan",
   salmon: "bg-lcars-salmon",
   ice: "bg-lcars-ice",
   teal: "bg-lcars-teal",
@@ -55,6 +64,7 @@ export const INTERACTIVE_FILL: Record<ButtonColor, string> = {
   violet: "bg-lcars-violet hover:bg-lcars-lilac text-black",
   red: "bg-lcars-red hover:bg-lcars-salmon text-black",
   alert: "bg-lcars-alert hover:bg-lcars-red text-black",
+  tan: "bg-lcars-tan hover:bg-lcars-salmon text-black",
   salmon: "bg-lcars-salmon hover:bg-lcars-orange text-black",
   ice: "bg-lcars-ice hover:bg-white text-black",
   teal: "bg-lcars-teal hover:bg-lcars-ice text-black",

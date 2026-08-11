@@ -10,6 +10,21 @@
      often as the reference uses it, which is once. */
   --lcars-red: #cc6666;
   --lcars-alert: #ee3b22;
+  /* A structural tan, added 2026-08-11. Every other colour here is an
+     accent that appears in small doses; this one is meant to carry a whole
+     mass, which is the role no colour in this palette had.
+
+     The value is `thelcars.com`'s "almond", which the user picked out - but
+     the *family* is independently ours. Counting flat fills in
+     `LCARS-2.jpg` puts `#c97f62` at **12.76% of the image**, the single
+     largest coloured area in it, and that is within a hair of the same
+     site's "subdued-sienna" `#c47d69`. So a tan carrying structural weight
+     is what our own primary reference already does; almond is the lighter,
+     greyer member of that family.
+
+     A token because it will be retuned: `#c97f62` is the reference-measured
+     alternative and swapping to it is this one line. */
+  --lcars-tan: #d29b7f;
   --lcars-salmon: #ff9c7a;
   --lcars-lilac: #cc99cc;
   --lcars-violet: #9999ff;
@@ -36,6 +51,7 @@
   --color-lcars-amber: var(--lcars-amber);
   --color-lcars-red: var(--lcars-red);
   --color-lcars-alert: var(--lcars-alert);
+  --color-lcars-tan: var(--lcars-tan);
   --color-lcars-salmon: var(--lcars-salmon);
   --color-lcars-lilac: var(--lcars-lilac);
   --color-lcars-violet: var(--lcars-violet);
