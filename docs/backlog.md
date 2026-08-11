@@ -81,7 +81,7 @@ follow-up that was deliberately not applied.
 | 7 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
 | 10 | The header overflows horizontally at 320px | Design |
-| 12 | What is left of the vertical-run divergence | Design |
+| 12 | Our side bars don't look like the reference ones | Design |
 
 ## Design
 
@@ -109,9 +109,20 @@ the region: eight signatures is the technician's profile, so the worst case
 is worse than what was measured. Pagination, or a denser row, rather than
 shorter copy.
 
-### 12 - What is left of the vertical-run divergence
+### 12 - Our side bars don't look like the reference ones
 
-Raised 2026-08-06 on sight of the two new reference images. **Most of it has
+In the user's words, 2026-08-06, in two messages:
+
+> "NOte that you never see vertical button rows like we have in our app."
+
+> "Their vertical runs look different than ours. They look better"
+
+That is the whole of what was asked. Everything below is analysis done
+afterwards - five differences found by measuring the images - and it is
+worth keeping the two apart, because the observation is the thing to satisfy
+and the list is only one reading of how.
+
+**Most of it has
 since shipped as a side effect of other work**, so this entry was rewritten
 on 2026-08-10 against the code rather than left as filed - the original five
 points would send whoever picked it up chasing things that are already done.
