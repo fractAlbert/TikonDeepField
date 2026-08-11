@@ -26,6 +26,32 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Done 2026-08-11 and removed: **reviewing thelcars.com (23)**, written up in
+`lcars-style-notes.md` under "A live source". The first source here that is
+not a still image, so the grammar came out of computed styles rather than
+out of pixels.
+
+It confirmed four rules on evidence we did not produce: black is **76.8%**
+of all painted area; **all 7 pills on the page are horizontal and none of
+the 4 vertical runs is capped**, including a 1710px leg at `border-radius:
+0`; 15 of 16 labelled blocks are right-aligned; and every tall block puts
+its label against an edge at 5:1 or worse. The vertical-cap rule is the one
+this project got backwards three times, and it is now 11 for 11 on an
+independent source. Its font stack is `Antonio, "Arial Narrow"` - what we
+picked separately.
+
+Three things it taught us. A swept corner pushes the label to the end the
+curve has not eaten. The gap in a run is a **7.33px black `border-right`**
+rather than spacing, so the grout is structurally part of the segment. And
+its horizontal-to-vertical thickness ratio reaches **8.6:1** against our
+1.74 - recorded as range rather than as a target, since item 19 closed the
+same day on the user's decision that our frames stay put.
+
+One open thread rather than a change: its most-used colour is a muted tan
+`#d29b7f` carrying 10.3% of the page, and we have no equivalent - our
+nearest is a much more saturated salmon. Left for the user, because a
+fan-made site does not outrank the reference images.
+
 Fixed 2026-08-11 and removed: **the Star Map readout being dead on touch
 (8)**, after the user asked why an item calling itself "accepted" was
 sitting in a list of open work. It was a fair hit and the answer was that it
@@ -187,7 +213,6 @@ column says what kind of open each item is.
 | 2 | No `quasar-type` clues are ever emitted | Gameplay | open, needs a design call |
 | 21 | The LCARS pattern kit - a standing check, maybe nothing to do | Design | standing reminder |
 | 22 | Faint arrows showing that a panel can still be scrolled | Interaction | open, waiting on the user's steer |
-| 23 | Review thelcars.com | Design | open, reading not yet done |
 
 ## Design
 
@@ -222,25 +247,6 @@ The standing question is whether the sheet should track the app or stay a
 record of what was read off the references. It has been most useful as the
 second thing - a place to check a rule against - which argues for adding the
 new rules rather than mirroring every component.
-
-### 23 - Review thelcars.com
-
-Raised 2026-08-11, in the user's words: *"todo: review
-https://www.thelcars.com/"*.
-
-Not started - filed, not read. The reference material so far has been three
-still images in `docs/reference/`, and every rule in the style notes was
-measured off them. A site is a different kind of source: it shows the
-grammar in motion and at more than one width, which the stills cannot, and
-it may well answer item 19's ratio question and item 22's arrow question
-outright.
-
-What a review has to produce, to be worth more than a browse: rules added to
-`docs/lcars-style-notes.md` with the evidence recorded, in the same form as
-the ones read off the images. Where the site contradicts a bullet the notes
-already have, the notes say the image wins - a third-party site is not a
-reference image, so anything it contradicts needs the user's call rather
-than a silent correction.
 
 ## Gameplay
 

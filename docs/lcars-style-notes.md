@@ -29,6 +29,12 @@ does not overturn anything here, but it does answer questions this one was
 too small a sample to answer, and it is where to look first for a *layout*
 rather than a control.
 
+There is also a **fourth source that is not an image**: `thelcars.com`, a
+working HTML/CSS template, reviewed 2026-08-11 and written up in **A live
+source** below. It is measurable rather than merely viewable, which is why
+it can settle questions the stills cannot - but it is fan-made, so **where
+it disagrees with the images, the images win.**
+
 `.webp` reads directly, no conversion needed. For crops, `ffmpeg -i in -vf
 "crop=w:h:x:y,scale=iw*3:ih*3:flags=neighbor" out.png` - nearest-neighbour,
 so the corner radii stay crisp enough to measure.
@@ -319,6 +325,89 @@ Both images support the existing muted-palette rule, but note that
 `lcars-ultra` is noticeably more saturated than `LCARS-2.jpg` - full-strength
 periwinkle and violet. The muting is a property of the era being imitated
 rather than of LCARS as such.
+
+## A live source: thelcars.com (reviewed 2026-08-11)
+
+Backlog 23. The first source here that is not a still image: a working
+HTML/CSS LCARS template, so the grammar can be read out of computed styles
+instead of inferred from pixels. Everything below was measured in the
+browser - `getBoundingClientRect`, `getComputedStyle`, and painted area by
+colour - not eyeballed off a screenshot.
+
+**Weigh it accordingly.** It is a fan-made template, not a screen-used
+reference, so where it disagrees with the images the images still win. Its
+value is that it is *independent*: it was built by someone else, from the
+same source material, and can therefore confirm or embarrass a rule we
+derived alone. On the four rules below it does the confirming.
+
+### What it confirms, with numbers
+
+- **Black is structural.** Black is **76.8%** of all painted background
+  area on the page. The colour is the exception and the black is the
+  substrate, which is what the existing rule says.
+- **A vertical run never ends in a rounded cap.** Of the 4 vertical blocks,
+  **zero** are pills: three are perfectly square and one carries a single
+  swept elbow corner. Of the 7 pills on the page, **all 7 are horizontal.**
+  This is the rule this project got backwards three times, and it is now
+  confirmed 11 for 11 on a source we did not write.
+- **A tall block is square.** The longest vertical run is **1710px tall
+  with `border-radius: 0`**. Nothing about being a run makes it want a cap.
+- **Rounding is the exception, not the finish.** 17 of 27 coloured blocks
+  have no rounding at all.
+- **Text hugs one edge.** 15 of 16 labelled blocks are `text-align: right`.
+  The odd one out is a body-copy block, not a control.
+- **Labels are hard against one end, never centred.** Every tall block puts
+  its label against an edge at a ratio of 5:1 or worse - up to 13.9:1. The
+  only near-centred label (1.2:1) sits in the shortest block on the page,
+  94px. Its 86px pill buttons run 2.9:1 bottom-weighted, which brackets the
+  1.9:1 measured in `lcars-ultra` and is what the nav rail already does.
+- **The typeface.** Its stack is `Antonio, "Arial Narrow", ...` - the same
+  family and the same fallback this project picked independently.
+
+### What it adds
+
+- **A swept corner pushes the label to the other end.** Both elbows do it:
+  the block swept at the bottom-left carries its label at the top, the one
+  swept at the top-left carries it at the bottom. The label goes in the part
+  of the block the curve has not eaten. Top-versus-bottom for a *square*
+  block is not decided by anything measurable here - the page does both - so
+  that stays a design choice rather than a rule.
+- **The gap in a run is drawn, not spaced.** Segments are laid out edge to
+  edge and the separation is a **7.33px black `border-right`** with
+  `box-sizing: border-box`; the last segment in each run has none. It is
+  black grout in the most literal sense. Ours is a flex `gap`, which looks
+  identical - but their technique makes the grout structurally part of the
+  segment, so it can never pick up a parent background.
+- **The thickness ratio can be far more extreme than ours.** Its horizontal
+  sub-bars are **28px** against **240px** vertical legs - a ratio of
+  **8.6:1**, where our shell manages 1.74. Recorded as range, not as a
+  target: backlog 19 closed on 2026-08-11 with the user's decision that our
+  frames stay as they are.
+- **A run can step down in thickness mid-row.** One 28px bar row contains a
+  14px segment - exactly half - so a sub-bar is a legitimate move within a
+  run rather than a separate component.
+- **An elbow's radius is about two thirds of its leg.** 160px on a 240px
+  leg, `0.67`. Ours is 96px on 160px, `0.60`. Close enough to call the
+  existing elbow correctly proportioned.
+
+### Where its palette differs from ours
+
+Sampled by painted area, its working colours are `#d29b7f` (10.3%),
+`#8899ff` (5.1%), `#cf4f4f` (2.8%), `#ea9c72` (2.5%), `#eb943a` (1.8%) and
+`#baa4e5` (0.7%).
+
+Two differences worth a decision rather than a silent edit, since a
+third-party site does not outrank the images:
+
+- **Its most-used colour has no equivalent here.** `#d29b7f` is a muted
+  tan, and at 10.3% it carries more of the page than any other colour. Our
+  nearest is `salmon #ff9c7a`, which is considerably more saturated. A tan
+  that reads as structural rather than as an accent is the one genuinely
+  missing note in our palette.
+- **Ours are more saturated across the board** - `orange #ff9900` against
+  their `#eb943a`, `red #cc6666` against `#cf4f4f`, and our `lilac #cc99cc`
+  is pinker where theirs is bluer. `violet #9999ff` against their `#8899ff`
+  is effectively the same colour.
 
 ## Project rules
 
