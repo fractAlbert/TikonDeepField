@@ -93,38 +93,79 @@ follow-up that was deliberately not applied.
 | # | item | where |
 | --- | --- | --- |
 | 2 | No `quasar-type` clues are ever emitted | Gameplay |
-| 7 | Log/Help/Prototypes flick-scroll on a phone, accepted | Design |
+| 7 | Five panels flick-scroll on a phone, accepted | Design |
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
 | 19 | Frames whose horizontal and vertical runs are too alike | Design |
 | 20 | The sweep's trail restarts when it changes direction | Interaction |
+| 21 | The LCARS pattern kit - a standing check, maybe nothing to do | Design |
 
 ## Design
 
-### 7 - Log, Help and Prototypes flick-scroll on a phone
+### 7 - Five panels flick-scroll on a phone
 
-They overflow 390x844 by 85px, 41px and 42px and fall back to the
-hidden-scrollbar scroll inside `main`. That's allowed by the project rules —
-content may scroll inside its own panel — and it was accepted knowingly. The
-three are all long prose, so the fix, if wanted, is editorial (shorter copy,
-or pagination the way the Survey Log does it) rather than layout.
+Accepted, and allowed: the project rules let content scroll inside its own
+panel, and `main` is the only scroller. But **the figures were four days
+stale and two of them had changed character**, so they were re-measured on
+2026-08-10 at 390x844 on a live six-signature region:
 
-**The Profile panel joined them too**, found while measuring the title shelf
-on 2026-08-06: 264px over at 390x844 and 621px at 320x568, of which the
-shelf accounts for 39px (three panels at 13px each) and the rest predates
-it. Same fix as the prose panels - it is a long single column of service
-record, standing, and career history, and the honest answer is fewer things
-on one screen rather than a tighter layout.
+| panel | over | was |
+| --- | --- | --- |
+| Prototypes | **4725px** | 42 |
+| Help | **865px** | 41 |
+| Officer/Profile | 264px | 264 |
+| Star Manifest | 139px | 78 |
+| Log | 61px | 85 |
+| Sweep Scope | **9px** | fitted, by 4 |
+| Briefing, Ring Scan, Station | 0 | - |
 
-**The Star Manifest joined them**, found while measuring the jump bar on
-2026-08-05. It overflows by 78px at 390x844 on a six-signature region, of
-which 30px predates the bar — it is listed as fitting outright in
-`mobile-layout-plan.md` and has not for some time. Different fix from the
-other three, because this one is a list rather than prose and it grows with
-the region: eight signatures is the technician's profile, so the worst case
-is worse than what was measured. Pagination, or a denser row, rather than
-shorter copy.
+**Prototypes is 6.6 screens tall**, and the reason is not editorial: the
+LCARS pattern kit was added to that panel on 2026-08-06 (item 21) and is
+around 900 lines of specimens. That is the sheet doing its job, on a page
+nobody reaches by accident. If it is ever worth fixing, the fix is the kit's
+own tab run collapsing to one section at a time on a phone, not shorter
+prose.
 
-### 20 - The sweep's trail restarts when it changes direction
+**Help at 865px is a genuine drift** and the one place the original
+"editorial" answer still applies.
+
+**The Sweep Scope is the one to watch.** It fitted by exactly 4px, which
+`mobile-layout-plan.md` records as bought deliberately by tightening the
+phone's band gaps. The title shelf spent 13 of those on 2026-08-06 and it is
+now 9px over - so it flick-scrolls where it used to fit. Nine pixels on the
+one panel the layout was tuned around; worth either taking back or
+recording as spent on purpose.
+
+### 21 - The LCARS pattern kit, as a standing item
+
+Numbered 2026-08-10 at the user's request, with the note that there may be
+nothing to do: *"it's been very helpful since you made that page.. I just
+want a number to keep it on my mind."* So this is a place to look, not a
+defect to clear.
+
+`components/prototypes/LcarsKitPrototype.tsx`, in the Prototypes panel: every
+shape, colour, type step and composite block rendered in the app's own
+components and captioned with the rule it demonstrates.
+
+**Two specimens are known wrong**, both since 2026-08-06 and both left alone
+deliberately while this was an open conversation:
+
+- The "Vertical run" specimen caps its column top and bottom. No reference
+  contains that shape, and the app itself no longer does - the rule is now
+  "a cap belongs to a short segment, a tall block is square".
+- That same specimen calls itself "the desktop nav rail", which it is not.
+  `NavRail` stacks *horizontal* buttons capped on one outer side.
+
+**And the sheet has fallen behind the app more generally.** Since it was
+written the project has gained: the elbow at two scales with concave inner
+corners, the title shelf, `alert` as a second red, black panels against a
+separate control colour, bottom-weighted labels in a run, the S-swoop, and
+the rule that horizontal and vertical runs are never the same thickness.
+None of that is on the sheet.
+
+The standing question is whether the sheet should track the app or stay a
+record of what was read off the references. It has been most useful as the
+second thing - a place to check a rule against - which argues for adding the
+new rules rather than mirroring every component.
 
 Raised 2026-08-10, in the user's words:
 
