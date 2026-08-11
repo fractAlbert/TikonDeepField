@@ -51,7 +51,9 @@ export function SweepScopePanel({
   return (
     <div className="flex flex-col gap-4">
       <LcarsPanel title={`${PANEL_LABELS.sweep} — ${region.name}`} accent="bg-lcars-violet">
-        <p className="text-sm text-lcars-ice/70 leading-relaxed mb-4">
+        {/* `mb-3` on a phone: the panel fitted 390x844 by exactly 1px
+            without it, and this is the cheapest 4 in the panel. */}
+        <p className="text-sm text-lcars-ice/70 leading-relaxed mb-3 md:mb-4">
           Pick a signature as a reference &mdash; a single line sweeps out
           from it every cycle. Others glow as the line approaches, peaking
           as it crosses them. Distance is absolute orthogonal distance

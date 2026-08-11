@@ -26,6 +26,24 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Closed 2026-08-10 and removed: **the phone flick-scroll list (7)**. Only one
+of the five was a defect and it is fixed; the rest are content scrolling
+inside their own panel, which the project rules explicitly allow and which
+this item had recorded as accepted since 2026-08-05.
+
+The defect was the Sweep Scope. It fitted 390x844 by exactly 4px - bought
+deliberately by tightening the phone's band gaps - and the title shelf spent
+13 of them on 2026-08-06, leaving it 9px over. Panel padding is now `p-3`
+below `md` against `p-4` above, which is worth 8px on every panel, and the
+Sweep Scope's intro paragraph gives up 4 more. It fits again exactly: 660
+into 660.
+
+Everything else improved with it - Log 61 to 26, Officer 264 to 240, Star
+Manifest 139 to 131 - and the two big ones are not layout problems at all.
+Prototypes is 4725px because the pattern kit lives there (item 21) and is
+doing its job. Help at 865px is long prose, and shortening prose is an
+editorial call rather than a layout one.
+
 Shipped 2026-08-10 and removed: **the side-bar divergence (12)**, which the
 user raised as *"Their vertical runs look different than ours. They look
 better"*. Closed by measuring the last open point rather than arguing it: a
@@ -93,47 +111,12 @@ follow-up that was deliberately not applied.
 | # | item | where |
 | --- | --- | --- |
 | 2 | No `quasar-type` clues are ever emitted | Gameplay |
-| 7 | Five panels flick-scroll on a phone, accepted | Design |
 | 8 | Star Map hover readout dead on touch, accepted | Interaction |
 | 19 | Frames whose horizontal and vertical runs are too alike | Design |
 | 20 | The sweep's trail restarts when it changes direction | Interaction |
 | 21 | The LCARS pattern kit - a standing check, maybe nothing to do | Design |
 
 ## Design
-
-### 7 - Five panels flick-scroll on a phone
-
-Accepted, and allowed: the project rules let content scroll inside its own
-panel, and `main` is the only scroller. But **the figures were four days
-stale and two of them had changed character**, so they were re-measured on
-2026-08-10 at 390x844 on a live six-signature region:
-
-| panel | over | was |
-| --- | --- | --- |
-| Prototypes | **4725px** | 42 |
-| Help | **865px** | 41 |
-| Officer/Profile | 264px | 264 |
-| Star Manifest | 139px | 78 |
-| Log | 61px | 85 |
-| Sweep Scope | **9px** | fitted, by 4 |
-| Briefing, Ring Scan, Station | 0 | - |
-
-**Prototypes is 6.6 screens tall**, and the reason is not editorial: the
-LCARS pattern kit was added to that panel on 2026-08-06 (item 21) and is
-around 900 lines of specimens. That is the sheet doing its job, on a page
-nobody reaches by accident. If it is ever worth fixing, the fix is the kit's
-own tab run collapsing to one section at a time on a phone, not shorter
-prose.
-
-**Help at 865px is a genuine drift** and the one place the original
-"editorial" answer still applies.
-
-**The Sweep Scope is the one to watch.** It fitted by exactly 4px, which
-`mobile-layout-plan.md` records as bought deliberately by tightening the
-phone's band gaps. The title shelf spent 13 of those on 2026-08-06 and it is
-now 9px over - so it flick-scrolls where it used to fit. Nine pixels on the
-one panel the layout was tuned around; worth either taking back or
-recording as spent on purpose.
 
 ### 21 - The LCARS pattern kit, as a standing item
 

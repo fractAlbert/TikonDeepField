@@ -49,7 +49,19 @@ ffmpeg -v error -y -i docs/reference/<file> \
 Sample colours rather than naming them by eye - `System.Drawing` from
 PowerShell over a 3px grid is what produced the palette tables in the notes.
 
-## Verify geometry numerically
+## Measure before you assert
+
+**Re-measure any figure before quoting it.** A number in a doc describes the
+day it was written. On 2026-08-10 three backlog entries in a row described
+states that had stopped being true - one off by 12px, one listing three
+differences that had silently shipped, one off by 4683px. Each was about to
+be repeated to the user as fact. This is the same shape as the browser
+preflight: check the precondition before acting on it.
+
+**And be more suspicious when a measurement agrees with you, not less.**
+Measuring the reference's label alignment took four attempts; the first
+three returned the expected answer and were all wrong, because the probe was
+catching column gutters and rounded-corner pixels rather than text.
 
 Never eyeball whether a shape lines up. Compute the coordinates in a script,
 or measure in the browser (`getBoundingClientRect`, `Range` for text widths,

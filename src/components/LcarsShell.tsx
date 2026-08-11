@@ -63,7 +63,12 @@ export function LcarsPanel({
           {title}
         </div>
       ) : null}
-      <div className="p-4 flex-1 min-h-0">{children}</div>
+      {/* `p-3` on a phone, `p-4` above it. 16px of panel padding is generous
+          on a 390px screen, and this project has repeatedly taken space from
+          chrome to give it to content - the phone's band gaps went to 8px for
+          the same reason. Worth 8px on every panel, which is what puts the
+          Sweep Scope back to fitting. */}
+      <div className="p-3 md:p-4 flex-1 min-h-0">{children}</div>
     </div>
   );
 }
