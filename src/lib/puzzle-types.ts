@@ -41,6 +41,23 @@ export type Clue =
   | { kind: "type-segment"; type: string; segment: number; negate?: boolean }
   | { kind: "quasar-quadrant"; quasar: string; quadrant: Quadrant; negate?: boolean }
   | { kind: "type-quadrant"; type: string; quadrant: Quadrant; negate?: boolean }
+  /**
+   * Every signature of `type` lies in one of `quadrants`, and each listed
+   * quadrant holds at least one. The set is exact, not a lower bound.
+   *
+   * Added 2026-08-11 so a classification held by *several* signatures can
+   * still be talked about - `type-quadrant` cannot, because it resolves to a
+   * single signature and is scored false the moment two share a type.
+   *
+   * **It tells you less than it appears to, on purpose.** The user's own
+   * framing: *"there are Ancient Relics in regions II and IV. Okay, so now I
+   * know there are at least 2 of them. It does help but it also misleads a
+   * bit which is nice for a puzzle."* Two listed quadrants mean at least two
+   * signatures - but three relics with two sharing a quadrant list exactly
+   * the same two, so the count a player naturally reads off is a floor and
+   * not a fact.
+   */
+  | { kind: "type-quadrant-set"; type: string; quadrants: Quadrant[]; negate?: boolean }
   | { kind: "type-adjacent-type"; typeA: string; typeB: string; negate?: boolean }
   | { kind: "quasar-adjacent-quasar"; quasarA: string; quasarB: string; negate?: boolean }
   | { kind: "type-same-ring-type"; typeA: string; typeB: string; negate?: boolean }

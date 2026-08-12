@@ -36,6 +36,22 @@ export function clueText(clue: Clue): string {
     case "type-quadrant":
       return `The ${clue.type} signature is ${not}in Quadrant ${clue.quadrant}.`;
 
+    case "type-quadrant-set": {
+      // Never "the", and never a count. The definite article would promise
+      // exactly one signature of this classification, which is the promise
+      // the user asked about on 2026-08-11 and the one this clue exists to
+      // stop making. "Confined to" states the exclusivity the solver relies
+      // on without asserting how many there are - and the number of
+      // quadrants listed is a floor on that, not a total, since two
+      // signatures of a type can share one.
+      const qs = clue.quadrants;
+      const list =
+        qs.length === 1
+          ? `Quadrant ${qs[0]}`
+          : `Quadrants ${qs.slice(0, -1).join(", ")} and ${qs[qs.length - 1]}`;
+      return `${clue.type} signatures are ${not}confined to ${list}.`;
+    }
+
     case "type-adjacent-type":
       return `The ${clue.typeA} signature is ${not}adjacent to the ${clue.typeB} signature.`;
 

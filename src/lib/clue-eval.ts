@@ -117,6 +117,28 @@ function evaluateRaw(
       return quadrantOf(sectors.get(entry.sector)!) === clue.quadrant;
     }
 
+    case "type-quadrant-set": {
+      // "Every signature of this type is in one of these quadrants."
+      //
+      // Checked as the *monotone* half only: every already-placed signature
+      // of the type must lie inside the listed set. The other half - that
+      // each listed quadrant holds at least one - cannot be judged from a
+      // partial assignment, because a signature not yet placed could still
+      // fill an empty one. Testing only the half that can never be undone by
+      // a later placement is what makes this safe to evaluate mid-search: it
+      // can reject, but it can never reject something that would have come
+      // good.
+      const holders = Object.keys(assignment).filter((k) => assignment[k]?.type === clue.type);
+      if (holders.length === 0) return null;
+      const listed = new Set(clue.quadrants);
+      for (const k of holders) {
+        const sector = sectors.get(assignment[k]!.sector);
+        if (!sector) return null;
+        if (!listed.has(quadrantOf(sector))) return false;
+      }
+      return true;
+    }
+
     case "type-quadrant": {
       const r = resolveType(assignment, clue.type);
       if (r.kind === "none") return null;

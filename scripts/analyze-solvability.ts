@@ -105,22 +105,29 @@ function countConsistent(region: Region, ch: Channels, cap = 2): number {
   const quadClue = new Map<string, Quadrant>();
   const typeOfQuasar = new Map<string, string>();
   const quadrantOfType = new Map<string, Quadrant>();
+  const quadrantSetOfType = new Map<string, Quadrant[]>();
   for (const clue of region.clues) {
     if (clue.negate) continue;
     if (clue.kind === "quasar-sector") fixed.set(clue.quasar, clue.sector);
     if (clue.kind === "quasar-quadrant") quadClue.set(clue.quasar, clue.quadrant);
     if (clue.kind === "quasar-type") typeOfQuasar.set(clue.quasar, clue.type);
     if (clue.kind === "type-quadrant") quadrantOfType.set(clue.type, clue.quadrant);
+    if (clue.kind === "type-quadrant-set") quadrantSetOfType.set(clue.type, clue.quadrants);
   }
 
-  // Fold indirect quadrant clues back into direct ones. Exact, not an
-  // approximation: generation only chains a type held by a single signature.
-  // This must mirror `src/lib/solvability.ts` - if the two disagree, the
-  // shipped unsolvable flag and the measured rates stop describing the same
-  // game.
+  // A chain constrains the named signature to the set of quadrants its
+  // classification occupies - weaker than a direct quadrant clue, and
+  // deliberately so. Must mirror `src/lib/solvability.ts`: if the two
+  // disagree, the shipped unsolvable flag and the measured rates stop
+  // describing the same game.
+  const allowedQuadrants = new Map<string, Set<Quadrant>>();
   for (const [quasar, type] of typeOfQuasar) {
-    const quadrant = quadrantOfType.get(type);
-    if (quadrant !== undefined) quadClue.set(quasar, quadrant);
+    const set = quadrantSetOfType.get(type);
+    if (set) allowedQuadrants.set(quasar, new Set(set));
+    // Pre-2026-08-11 regions carry the single-quadrant form; saves outlive
+    // schema changes, so both are read.
+    const single = quadrantOfType.get(type);
+    if (single !== undefined) quadClue.set(quasar, single);
   }
 
   // Which signatures have been surveyed for ring. A budget is spent on the
@@ -182,6 +189,8 @@ function countConsistent(region: Region, ch: Channels, cap = 2): number {
     for (const cand of candidates) {
       if (used.has(cand.id)) continue;
       if (quadClue.has(name) && quadrantOf(cand) !== quadClue.get(name)) continue;
+      const allowed = allowedQuadrants.get(name);
+      if (allowed && !allowed.has(quadrantOf(cand))) continue;
       if (ringKnown.has(name) && cand.ring !== truth.get(name)!.ring) continue;
       if (ch.distances) {
         let ok = true;

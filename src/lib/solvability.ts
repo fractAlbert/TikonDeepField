@@ -46,23 +46,33 @@ function countConsistent(region: Region, ringKnown: Set<string>): number {
   const quadClue = new Map<string, Quadrant>();
   const typeOfQuasar = new Map<string, string>();
   const quadrantOfType = new Map<string, Quadrant>();
+  const quadrantSetOfType = new Map<string, Quadrant[]>();
   for (const clue of region.clues) {
     if (clue.negate) continue;
     if (clue.kind === "quasar-sector") fixed.set(clue.quasar, clue.sector);
     if (clue.kind === "quasar-quadrant") quadClue.set(clue.quasar, clue.quadrant);
     if (clue.kind === "quasar-type") typeOfQuasar.set(clue.quasar, clue.type);
     if (clue.kind === "type-quadrant") quadrantOfType.set(clue.type, clue.quadrant);
+    if (clue.kind === "type-quadrant-set") quadrantSetOfType.set(clue.type, clue.quadrants);
   }
 
-  // A quadrant delivered through a classification is still a quadrant.
-  // Generation only chains a type exactly one signature holds, so the pair
-  // resolves to a single name and folding it here is exact rather than an
-  // approximation. Without this the measure would report a region as harder
-  // purely because of how its briefing is worded, which is the one thing
-  // solvability must never depend on.
+  // What a chain actually constrains: the named signature lies in one of the
+  // quadrants its classification is confined to.
+  //
+  // This is **weaker** than a direct quadrant clue whenever the type is held
+  // by signatures in more than one quadrant, which is the design - the user
+  // wanted a clue that helps and misleads at once. So unlike the first
+  // version of this fold, it is not an equivalence and regions carrying
+  // chains really are harder. That is measured rather than assumed; see
+  // `docs/region-difficulty.md`.
+  const allowedQuadrants = new Map<string, Set<Quadrant>>();
   for (const [quasar, type] of typeOfQuasar) {
-    const quadrant = quadrantOfType.get(type);
-    if (quadrant !== undefined) quadClue.set(quasar, quadrant);
+    const set = quadrantSetOfType.get(type);
+    if (set) allowedQuadrants.set(quasar, new Set(set));
+    // Regions generated before 2026-08-11 carry the single-quadrant form.
+    // Saves outlive schema changes, so both are read.
+    const single = quadrantOfType.get(type);
+    if (single !== undefined) quadClue.set(quasar, single);
   }
 
   // Directed: the signed metric is antisymmetric, so a symmetric lookup
@@ -95,6 +105,8 @@ function countConsistent(region: Region, ringKnown: Set<string>): number {
     for (const cand of candidates) {
       if (used.has(cand.id)) continue;
       if (quadClue.has(name) && quadrantOf(cand) !== quadClue.get(name)) continue;
+      const allowed = allowedQuadrants.get(name);
+      if (allowed && !allowed.has(quadrantOf(cand))) continue;
       if (ringKnown.has(name) && cand.ring !== truth.get(name)!.ring) continue;
       let ok = true;
       for (const [other, os] of assigned) {

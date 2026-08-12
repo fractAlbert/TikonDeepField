@@ -1,5 +1,5 @@
-import { Clue, Quasar, Region, Sector, Solution } from "./puzzle-types";
-import { buildSectors, orthogonalDistanceSigned, quadrantOf } from "./grid";
+import { Clue, Quadrant, Quasar, Region, Sector, Solution } from "./puzzle-types";
+import { QUADRANTS as QUADRANT_ORDER, buildSectors, orthogonalDistanceSigned, quadrantOf } from "./grid";
 import { generateQuasarNames } from "./name-generator";
 import { generateBriefing } from "./flavor-text";
 import { FieldCharacter, generateRegionName } from "./region-name";
@@ -185,14 +185,19 @@ function buildMandatoryClues(
     { kind: "quasar-sector", quasar: chosenPair.b, sector: region.solution[chosenPair.b].sector },
   ];
 
-  // How many signatures hold each classification. A `type-*` clue names no
-  // signature, so it only pins one down when exactly one signature carries
-  // that type - with at least 3 types across 6-8 signatures, repeats are the
-  // norm and most types do not qualify.
-  const typeCount = new Map<string, number>();
+  // Which quadrants each classification occupies. Distinct and sorted, so
+  // three signatures of a type sharing two quadrants list two - which is the
+  // ambiguity the clue is for rather than a loss of precision.
+  const quadrantsOfType = new Map<string, Quadrant[]>();
   for (const n of names) {
     const t = region.solution[n].type;
-    typeCount.set(t, (typeCount.get(t) ?? 0) + 1);
+    const q = quadrantOf(sectorOf(region, sectorLookup, n));
+    const seen = quadrantsOfType.get(t) ?? [];
+    if (!seen.includes(q)) seen.push(q);
+    quadrantsOfType.set(t, seen);
+  }
+  for (const list of quadrantsOfType.values()) {
+    list.sort((a, b) => QUADRANT_ORDER.indexOf(a) - QUADRANT_ORDER.indexOf(b));
   }
 
   let indirectBudget = difficulty.indirectClues;
@@ -207,30 +212,30 @@ function buildMandatoryClues(
     // difficulty axis rather than a cosmetic change - and note the pair is
     // only equivalent to the direct clue because of the uniqueness guard,
     // so the fallback below is load-bearing rather than defensive.
-    if (indirectBudget > 0 && typeCount.get(type) === 1) {
+    const spread = quadrantsOfType.get(type)!;
+
+    // **Only chain when it costs the player something.**
+    //
+    // A classification confined to one quadrant makes the pair say exactly
+    // what the direct clue says, so it is an extra hop and nothing else -
+    // and the user's objection to the first version was precisely that:
+    // *"the pair chain doesn't add complexity. it just adds what feels like
+    // an extra step. Especially if it's always there."* Ceremony that shows
+    // up every time is worse than no ceremony.
+    //
+    // Requiring two or more quadrants means a chain only ever appears when
+    // it genuinely widens the answer - you learn your signature is in one of
+    // several places rather than one - and it makes the frequency vary on its
+    // own, since whether a type spreads is a property of the draw. It also
+    // means the pointless case is never generated rather than merely being
+    // rare.
+    //
+    // The pair stays a pair. On its own the second clue names no signature
+    // and constrains nothing; the naming clue is the handle.
+    if (indirectBudget > 0 && spread.length > 1) {
       indirectBudget--;
-      // The uniqueness guard above is not a nicety, and this assertion is
-      // here because the whole guarantee rests on one condition.
-      //
-      // `clueText` renders this as "**The** Ancient Relic signature is in
-      // Quadrant I" - a definite article, which tells the player there is
-      // exactly one. That is true today by construction. If it ever stops
-      // being true the briefing does not merely become vague, it becomes
-      // **false**: `resolveType` in `clue-eval.ts` returns "multiple" for a
-      // shared type and the evaluator scores the clue false against the real
-      // solution. A region would ship with a lie in its briefing.
-      //
-      // Dev-only, because a lying briefing is worth stopping a developer for
-      // and not worth crashing a player over - in production the `else`
-      // branch below is a correct clue either way.
-      if (process.env.NODE_ENV !== "production" && typeCount.get(type) !== 1) {
-        throw new Error(
-          `Chained a type held by ${typeCount.get(type)} signatures: "${type}". ` +
-            `The briefing would claim there is exactly one.`
-        );
-      }
       clues.push({ kind: "quasar-type", quasar: name, type });
-      clues.push({ kind: "type-quadrant", type, quadrant });
+      clues.push({ kind: "type-quadrant-set", type, quadrants: spread });
     } else {
       clues.push({ kind: "quasar-quadrant", quasar: name, quadrant });
     }
