@@ -44,48 +44,54 @@ live game references types**: the Quadrant Survey, the only instrument with a
 per-type breakdown, was replaced by the Ring Scan on 2026-08-01. A bare "OJ
 502 is classified Blazar" is therefore inert - true, and useless.
 
-So it ships as a **chain**: the naming clue plus a `type-quadrant` on the
-same type, emitted only when that type is unique and falling back to the
-direct clue otherwise. It says exactly what the direct clue said with one
-more step in front of it.
+It ships as a **chain** - a naming clue plus a positional clue about that
+classification. It went through two designs in one afternoon, and the second
+is the one in the code:
 
-That is the point rather than a compromise. Every other lever here works by
-removing information; this one leaves the information alone and makes the
-briefing harder to *read*. It is the axis 26 was missing.
+> Sensor signature OJ 502 is classified Ancient Relic.
+> Ancient Relic signatures are confined to Quadrants II and IV.
 
-Both claims are proved rather than asserted, by two scripts.
-`check-type-chains.ts` verifies the chained type is real, held by exactly one
-signature, and partnered with the signature's true quadrant.
-`check-chain-equivalence.ts` proves neutrality **region by region** rather
-than statistically - at a few hundred samples a bucket the noise is wider
-than any effect worth catching, so "the rates look similar" would have proved
-nothing. It flattens every chain to its direct clue and re-assesses: 1800
-regions, 664 carrying a chain, **zero mismatches**.
+**The first version was wrong and the user said so.** It named a single
+quadrant and was emitted only for a type held by one signature, which made it
+informationally identical to the direct clue - proved region by region, zero
+mismatches. That was the flaw, not the feature: *"the pair chain doesn't add
+complexity. it just adds what feels like an extra step. Especially if it's
+always there."* Identical information in two lines is ceremony.
 
-Chains land in about half of briefings, since the drawn signature's type is
-often shared. Variety rather than a shortfall.
+Their fix: *"I'm okay if the chain gives out more than one star... now I know
+there are at least 2 of them. It does help but it also misleads a bit which
+is nice for a puzzle."* So the second clue became `type-quadrant-set`, naming
+every quadrant a classification occupies. It is truthful for a type held by
+any number of signatures, and it is **strictly weaker** than the direct clue
+it replaces.
 
-**One qualification, found by the user the same day** and worth carrying
-forward, because the original claim was too broad. They asked whether *"The
-Ancient Relic signature is in Quadrant I"* is safe to read as "there is
-exactly one Ancient Relic". It is - and that means the chain hands the player
-a second fact the direct clue never did.
+Three consequences, all measured:
 
-So "informationally identical" is true **for placing signatures**, which is
-what `check-chain-equivalence.ts` tests, and false in general. The uniqueness
-implication constrains no position today only because nothing else in the
-shipped game observes classifications. It stops being inert the moment a
-type-aware instrument exists: the Test Bench's type filter reports per-ring
-counts by classification, and "exactly one Ancient Relic" plus "Ancient
-Relics appear in ring 3" pins that signature's ring outright. **If the filter
-ships, this lever is no longer free and both need measuring together.**
+- **A chain is only generated when the type spans two or more quadrants.**
+  The single-quadrant case is the pointless one, so it is never generated
+  rather than merely rare - which also makes frequency vary on its own, 46%
+  to 85% of regions by profile.
+- **The definite article is gone**, which retired the uniqueness promise
+  along with the assertion guarding it. "Confined to" states exclusivity
+  without claiming a count, and the number of quadrants listed is a floor on
+  how many signatures share the type, never a total. That is the productive
+  misleading.
+- **The cost is in search effort, not solvability.** Solvable rates move
+  0.0-0.6 points, because `ranks.ts` already records that quadrant clues
+  barely touch solvability and dominate effort. Measured where it lands: a
+  direct quadrant clue leaves 10 of 40 cells open, a chain leaves 22.3.
 
-The definite article is also load-bearing in a way worth guarding. A
-`type-quadrant` on a shared type does not read as merely vague - `resolveType`
-returns "multiple" and the evaluator scores the clue *false* against the real
-solution, so the briefing would carry a lie. `generate-region.ts` now asserts
-the invariant in development rather than trusting one condition to hold
-forever.
+`check-chain-equivalence.ts` was deleted rather than updated - it proved an
+equivalence that is now deliberately false, so keeping it would mean
+asserting a bug. `measure-chain-cost.ts` and
+`measure-baseline-vs-chains.ts` replaced it and measure instead, the latter
+asserting monotonicity directly: no region may become solvable by carrying a
+chain.
+
+The pre-type baseline, recorded because nothing else had it: briefing and
+Sweep Scope alone give **90.4% solvable at Technician down to 70.0% at
+Chief**, tracking quadrant clue count exactly. With two ring scans every rung
+is 99.2% or better.
 
 Closed 2026-08-11 and removed: **the text bar (25)**, on the user's call, one
 turn after it was filed. The section headers stay.
