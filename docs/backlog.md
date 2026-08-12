@@ -360,6 +360,7 @@ column says what kind of open each item is.
 | 22 | Faint arrows showing that a panel can still be scrolled | Interaction | open, waiting on the user's steer |
 | 26 | Let the player choose a difficulty | Gameplay | open, now has a neutral lever to use |
 | 27 | Make types observable through an instrument | Gameplay | open, the user has two designs |
+| 28 | Two more difficulty levers: type ring clue, anonymous anchor | Gameplay | open, anchor is the strong one |
 
 ## Design
 
@@ -460,6 +461,71 @@ What a fix has to respect:
   it only reports which types it can sense, it is an anonymous partition
   unless something links a type to a name - which is exactly the problem
   item 2's chain exists to solve. The two would compose well.
+
+### 28 - Two more difficulty levers the user proposed
+
+Raised 2026-08-11, after the type chain shipped. Their words: *"How about a
+quasar type ring clue? How about at higher difficulties instead of saying
+which star appears in a space, just say that a certain type appears in a
+space? These are all ideas to tweak difficulty."*
+
+Both are buildable on what exists now. They are not equally strong, and the
+first one moves the opposite way from how it reads.
+
+**The unit to think in is candidate cells.** The field is 5 rings x 8
+segments = 40. A quadrant is two segments across every ring, so 10 cells. A
+ring is 8. That single fact decides most of what follows.
+
+| clue | cells left open |
+| --- | --- |
+| exact sector anchor | 1 |
+| **ring** | **8** |
+| quadrant | 10 |
+| ring set, 2 rings | 16 |
+| quadrant set, 2 quadrants | 20 |
+
+#### A type ring clue is a difficulty *reduction*
+
+`type-ring` already exists in the vocabulary, unused. But a ring names 8
+cells where a quadrant names 10, so swapping quadrant clues for ring clues
+hands the player two cells back per clue - it makes the game **easier**,
+which is the reverse of what "another kind of clue" suggests. As a *set* it
+lands between the two: two rings is 16 cells against a two-quadrant set's 20.
+
+There is also an overlap worth weighing before building it. **The Ring Scan
+already sells ring information**, metered at two per region, and its entry
+argues that metering is what makes it measure player judgment at all. A
+briefing clue that gives ring information for free competes with the one
+instrument whose scarcity is doing work.
+
+#### An anonymous anchor is the strong lever
+
+This is the better idea by some distance, because it attacks the strongest
+clue in the game rather than the weakest. Anchors are the two exact-position
+clues and the whole triangulation baseline - the measured spread from
+Technician to Chief, 90.4% down to 70.0% solvable, is what varying *quadrant*
+clues buys. Nothing has ever touched the anchors.
+
+"An Ancient Relic signature is located at sector R1S2" tells the player a
+cell is occupied and by what classification, but not by whom. It does not
+constrain any *named* signature at all - it constrains the set. Combined with
+the pairwise distance matrix it is still powerful, but the player has to work
+out which signature sits there before the baseline is usable.
+
+What a fix has to respect:
+
+- **Only worth emitting for a shared type.** For a unique one it collapses
+  straight back to the direct anchor, which is the same pointless case the
+  chain rule already refuses to generate.
+- **Never both anchors.** Two anonymous anchors may leave no baseline at all;
+  this needs measuring before it is offered, not after.
+- **It composes with the Test Bench's type filter**, which reports per-ring
+  counts by classification - exactly the instrument for working out who is at
+  R1S2. If both ship they have to be measured together, the same coupling
+  already recorded against the chain.
+- **`measure-baseline-vs-chains.ts` is the tool**, and its lesson applies:
+  assess the same region both ways rather than sampling twice, and assert
+  monotonicity, since an anonymous anchor can only be weaker.
 
 ### 26 - Let the player choose a difficulty
 
