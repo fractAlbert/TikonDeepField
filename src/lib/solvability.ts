@@ -24,10 +24,18 @@ const QUADRANTS: Quadrant[] = ["I", "II", "III", "IV"];
 const sectors = buildSectors();
 const sectorLookup = new Map(sectors.map((s) => [s.id, s]));
 
-/** What the Sweep Scope actually shows for a pair: a distance, or "far". */
-function observed(a: Sector, b: Sector): number {
+/**
+ * What the Sweep Scope actually shows for a pair: a distance, or "far".
+ *
+ * Range comes from the region rather than the module, because it is a
+ * per-rank lever now. A region carries the range it was drawn with, so this
+ * measure keeps describing the game the player was actually given - and a
+ * region generated before the split falls back to 5, which is what it was
+ * measured at.
+ */
+function observedAt(range: number, a: Sector, b: Sector): number {
   const d = Math.abs(orthogonalDistanceSigned(a, b));
-  return d <= VISIBILITY_RANGE ? d : OUT_OF_RANGE;
+  return d <= range ? d : OUT_OF_RANGE;
 }
 
 /**
@@ -40,6 +48,8 @@ function observed(a: Sector, b: Sector): number {
  * player gets by cycling the Sweep Scope through every reference.
  */
 function countConsistent(region: Region, ringKnown: Set<string>): number {
+  const range = region.sweepRange ?? VISIBILITY_RANGE;
+  const observed = (a: Sector, b: Sector) => observedAt(range, a, b);
   const names = Object.keys(region.solution);
   const truth = new Map(names.map((n) => [n, sectorLookup.get(region.solution[n].sector)!]));
 

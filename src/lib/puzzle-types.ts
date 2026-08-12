@@ -134,4 +134,14 @@ export interface Region {
    * none, and the Constellation is simply unavailable for those.
    */
   constellationStars?: number;
+  /**
+   * How far this region's Sweep Scope sees. Fixed at generation from the
+   * rank that drew it, for the same reason as constellationStars: a survey
+   * you opened as an Officer must not get harder because you were promoted
+   * while it was open.
+   *
+   * Optional - built-ins and anything generated before 2026-08-11 fall back
+   * to the global default of 5, which is what they were measured at.
+   */
+  sweepRange?: number;
 }

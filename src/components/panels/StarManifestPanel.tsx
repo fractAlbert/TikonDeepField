@@ -89,7 +89,9 @@ function observedDistances(
       const refSector = sectorLookup.get(region.solution[ref]?.sector ?? "");
       if (!refSector) return null;
       const d = Math.abs(orthogonalDistanceSigned(own, refSector));
-      return { from: ref, distance: d <= VISIBILITY_RANGE ? d : null };
+      // The region's own range, not the module default - the manifest must
+      // report exactly what the Sweep Scope would show for this field.
+      return { from: ref, distance: d <= (region.sweepRange ?? VISIBILITY_RANGE) ? d : null };
     })
     .filter((x): x is { from: string; distance: number | null } => x !== null);
 }

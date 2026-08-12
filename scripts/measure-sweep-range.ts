@@ -54,7 +54,15 @@ const se2 = (n: number, d: number) => {
   return `${(2 * 100 * Math.sqrt((p * (1 - p)) / d)).toFixed(1)}`;
 };
 
-console.log(`\nSweep range ${VISIBILITY_RANGE}   -   ${regions} regions (${PER_RANK} per rank)\n`);
+// The range is per-rank now, so printing one number for the run would be a
+// lie whenever the profiles disagree - which, since 2026-08-11, they do.
+const ranges = [...new Set(RANKS.map((r) => r.difficulty.sweepRange))];
+const override = process.env.SWEEP_RANGE ? ` (SWEEP_RANGE=${VISIBILITY_RANGE} overrides nothing - ranges come from the profiles)` : "";
+console.log(
+  `\nSweep ranges ${RANKS.map((r) => r.difficulty.sweepRange).join("/")}` +
+    `${ranges.length === 1 ? "" : "  (per rank)"}${override}` +
+    `   -   ${regions} regions (${PER_RANK} per rank)\n`
+);
 console.log(`  solvable, no scans     ${pct(noScans, regions)}  +/- ${se2(noScans, regions)}pp`);
 console.log(`  solvable, 2 ring scans ${pct(withScans, regions)}  +/- ${se2(withScans, regions)}pp`);
 console.log("\n  by rank, no scans (noisy at this sample size - the pooled figure is the answer):");

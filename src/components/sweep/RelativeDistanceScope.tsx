@@ -65,10 +65,13 @@ interface PositionedBlip {
 
 export function RelativeDistanceScope({
   signatures,
+  range = VISIBILITY_RANGE,
   visible,
   onReference,
 }: {
   signatures: ScopeSignature[];
+  /** How far this region's scope sees. Per-rank since 2026-08-11. */
+  range?: number;
   /** Whether this scope is actually on screen right now - the sweep clock
       keeps running while hidden (background panel), but sound should not. */
   visible: boolean;
@@ -168,7 +171,7 @@ export function RelativeDistanceScope({
     const inRange = signatures
       .filter((s) => s.id !== ref.id)
       .map((s) => ({ s, dist: Math.abs(orthogonalDistanceSigned(ref, s)) }))
-      .filter(({ dist }) => dist <= VISIBILITY_RANGE);
+      .filter(({ dist }) => dist <= range);
 
     // Bucket by distance, then centre each bucket on the baseline: a lone
     // blip stays exactly where it always sat, a pair straddles it, three
@@ -189,7 +192,7 @@ export function RelativeDistanceScope({
           label: s.label,
           color: s.color,
           glyph: s.glyph,
-          pos: REF_POS + (dist / VISIBILITY_RANGE) * AXIS_SPAN,
+          pos: REF_POS + (dist / range) * AXIS_SPAN,
           dy: (i - (bucket.length - 1) / 2) * BLIP_ROW_GAP,
         });
       });
@@ -213,7 +216,7 @@ export function RelativeDistanceScope({
 
   const ticks = useMemo(() => {
     const arr: number[] = [];
-    for (let n = 0; n <= VISIBILITY_RANGE; n++) arr.push(n);
+    for (let n = 0; n <= range; n++) arr.push(n);
     return arr;
   }, []);
 
@@ -241,7 +244,7 @@ export function RelativeDistanceScope({
         pingedThisCycle.current.clear();
       }
 
-      const fadeWidth = (AXIS_SPAN / VISIBILITY_RANGE) * FADE_WIDTH_TICKS;
+      const fadeWidth = (AXIS_SPAN / range) * FADE_WIDTH_TICKS;
 
       // One line, and it's the actual detector - what you see is what's
       // revealing blips, nothing decorative running separately from it.
@@ -365,7 +368,7 @@ export function RelativeDistanceScope({
               <div
                 key={n}
                 className={styles.distLine}
-                style={{ left: `${REF_POS + (n / VISIBILITY_RANGE) * AXIS_SPAN}%` }}
+                style={{ left: `${REF_POS + (n / range) * AXIS_SPAN}%` }}
               />
             ))}
         </div>
@@ -408,7 +411,7 @@ export function RelativeDistanceScope({
           <div
             key={n}
             className={`${styles.tick} ${n === 0 ? styles.ref : ""}`}
-            style={{ left: `${REF_POS + (n / VISIBILITY_RANGE) * AXIS_SPAN}%` }}
+            style={{ left: `${REF_POS + (n / range) * AXIS_SPAN}%` }}
           >
             {n === 0 ? "REF" : n}
           </div>

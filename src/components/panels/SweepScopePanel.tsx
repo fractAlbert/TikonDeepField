@@ -67,6 +67,9 @@ export function SweepScopePanel({
             regions but not guaranteed to be, so map rather than assume. */}
         <RelativeDistanceScope
           signatures={signatures}
+          // Per-rank since 2026-08-11: a region carries the range it was
+          // drawn with, so a promotion cannot narrow a survey already open.
+          range={region.sweepRange}
           visible={visible}
           onReference={(designation) => {
             const quasar = region.quasars.find((q) => q.designation === designation);

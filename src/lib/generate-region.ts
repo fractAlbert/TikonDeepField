@@ -120,6 +120,7 @@ export function generateRegion(options?: {
     // whole field - "only include a few stars.. not all". A profile asking
     // for 5 on a 6-signature draw gets 5, which still holds one back.
     constellationStars: Math.max(3, Math.min(difficulty.constellationStars, quasarCount - 1)),
+    sweepRange: difficulty.sweepRange,
   };
 
   region.clues = buildMandatoryClues(region, sectorLookup, difficulty);
