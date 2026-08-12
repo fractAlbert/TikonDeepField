@@ -46,7 +46,6 @@ export function ExperimentsPanel({ region }: { region: Region | null }) {
   return (
     <div className="flex flex-col gap-4">
       <Banner />
-      <ConstellationInstrument region={region} />
       <TypeFilterInstrument region={region} />
       <SweepRangeNote />
     </div>
@@ -72,55 +71,6 @@ function Banner() {
         </p>
       </div>
     </div>
-  );
-}
-
-/**
- * Constellation: a few signatures as a shape, rotated, classifications only.
- */
-function ConstellationInstrument({ region }: { region: Region }) {
-  const [count, setCount] = useState(4);
-  const max = Math.min(6, Object.keys(region.solution).length - 1);
-
-  return (
-    <LcarsPanel title="Constellation" accent="bg-lcars-violet">
-      <p className="text-sm text-lcars-ice/70 leading-relaxed mb-3">
-        A few signatures drawn as a shape &mdash; no grid, no orientation, no
-        designations. Only classifications. The pattern is stable for a given
-        region but arbitrarily rotated, so it tells you how these signatures
-        sit relative to each other and nothing about where they are.
-      </p>
-
-      <div className="flex items-center gap-2 mb-3">
-        <span className="lcars-caps text-[10px] tracking-wider text-lcars-ice/50">
-          Signatures
-        </span>
-        {[3, 4, 5].filter((n) => n <= max).map((n) => (
-          <LcarsButton
-            key={n}
-            color="violet"
-            size="compact"
-            shape="pill"
-            align="center"
-            onClick={() => setCount(n)}
-            className={count === n ? "" : "opacity-50"}
-          >
-            {String(n)}
-          </LcarsButton>
-        ))}
-      </div>
-
-      <ConstellationView region={region} count={count} className="w-full max-w-sm h-auto" />
-
-      <p className="text-[11px] text-lcars-ice/45 leading-relaxed mt-3">
-        <strong className="text-lcars-alert">Known hazard:</strong> this
-        picture is Euclidean and the Sweep Scope is not. The field&apos;s
-        metric is orthogonal &mdash; rings and segments &mdash; so two pairs
-        that look equally far apart here can read differently on the scope.
-        Decide whether that is a second language worth teaching or a reason to
-        lay the view out differently; it is the first thing to judge.
-      </p>
-    </LcarsPanel>
   );
 }
 

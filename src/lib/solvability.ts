@@ -14,6 +14,7 @@
 import { buildSectors, orthogonalDistanceSigned, quadrantOf } from "./grid";
 import { Quadrant, Region, Sector } from "./puzzle-types";
 import { RING_SCAN_LIMIT } from "./survey-log";
+import { constellationKey, sectorPoint } from "./constellation";
 
 // Single source of truth since 2026-08-11 - it was a bare 5 in twelve files.
 import { VISIBILITY_RANGE } from "./experiments";
@@ -85,6 +86,18 @@ function countConsistent(region: Region, ringKnown: Set<string>): number {
   const trueQuadTotals = [0, 0, 0, 0];
   for (const n of names) trueQuadTotals[QUADRANTS.indexOf(quadrantOf(truth.get(n)!))]++;
 
+  // What the Constellation shows, reduced to one comparable string. The
+  // shape and the classifications on it, with rotation and scale divided
+  // out - see `constellation.ts`, which the view uses too so the solver
+  // cannot end up modelling an instrument the player does not have.
+  const constellationOf = (place: Map<string, Sector>) =>
+    constellationKey(region, (n) => {
+      const s = place.get(n);
+      return s ? sectorPoint(s) : undefined;
+    });
+
+  const trueConstellation = constellationOf(new Map(names.map((n) => [n, truth.get(n)!])));
+
   // Anchored first, so pruning bites earliest.
   const order = [...names].sort((a, b) => (fixed.has(b) ? 1 : 0) - (fixed.has(a) ? 1 : 0));
   const assigned = new Map<string, Sector>();
@@ -97,6 +110,15 @@ function countConsistent(region: Region, ringKnown: Set<string>): number {
       const totals = [0, 0, 0, 0];
       for (const s of assigned.values()) totals[QUADRANTS.indexOf(quadrantOf(s))]++;
       if (totals.some((t, k) => t !== trueQuadTotals[k])) return;
+      // The Constellation, checked at the leaf because it is a property of
+      // the whole arrangement rather than of one placement.
+      //
+      // A shipped instrument is part of what a player can know, so leaving it
+      // out would make this report regions as unsolvable that the
+      // Constellation settles - and that verdict is the one thing the Survey
+      // Log promises is not the player's fault. Under-counting information
+      // here is not a safe lower bound; it is a false accusation.
+      if (trueConstellation && constellationOf(assigned) !== trueConstellation) return;
       found++;
       return;
     }

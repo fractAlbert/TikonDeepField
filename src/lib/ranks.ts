@@ -92,6 +92,19 @@ export interface RegionDifficulty {
    * `scripts/measure-baseline-vs-chains.ts`.
    */
   indirectClues: number;
+  /**
+   * How many signatures the Constellation shows.
+   *
+   * **More is easier**, which is the same direction every other lever here
+   * runs and the opposite of how it reads. Each extra star is another
+   * constraint on the shape, so a bigger constellation is easier to register
+   * against the field, not harder.
+   *
+   * Never all of them - the user's framing from the start was *"it would only
+   * include a few stars.. not all"*. Three is the floor: two signatures are a
+   * single distance with no shape to them, and the instrument is a shape.
+   */
+  constellationStars: number;
 }
 
 /**
@@ -109,6 +122,7 @@ export const DEFAULT_DIFFICULTY: RegionDifficulty = {
   anchorSeparation: [2, 5],
   quadrantClues: 2,
   indirectClues: 1,
+  constellationStars: 4,
 };
 
 export interface Rank {
@@ -162,7 +176,7 @@ export const RANKS: Rank[] = [
     duty: "The station's most heavily briefed fields - eight signatures, four quadrants named, and the two known positions set wide apart. Nobody is worried about these.",
     filings: 4,
     filingMarks: true,
-    difficulty: { signatures: [8], anchorSeparation: [4, 5], quadrantClues: 4, indirectClues: 0 },
+    difficulty: { signatures: [8], anchorSeparation: [4, 5], quadrantClues: 4, indirectClues: 0, constellationStars: 5 },
   },
   {
     index: 1,
@@ -176,7 +190,7 @@ export const RANKS: Rank[] = [
     duty: "Well-briefed and easy to triangulate: plenty of signatures to read against each other, three quadrants named.",
     filings: 4,
     filingMarks: true,
-    difficulty: { signatures: [7, 8], anchorSeparation: [3, 5], quadrantClues: 3, indirectClues: 1 },
+    difficulty: { signatures: [7, 8], anchorSeparation: [3, 5], quadrantClues: 3, indirectClues: 1, constellationStars: 5 },
   },
   {
     index: 2,
@@ -204,7 +218,7 @@ export const RANKS: Rank[] = [
     duty: "Sparser fields and a thinner briefing - fewer signatures to read against each other, one quadrant named, and the two known positions closer together.",
     filings: 2,
     filingMarks: true,
-    difficulty: { signatures: [6, 7], anchorSeparation: [2, 4], quadrantClues: 1, indirectClues: 1 },
+    difficulty: { signatures: [6, 7], anchorSeparation: [2, 4], quadrantClues: 1, indirectClues: 1, constellationStars: 4 },
   },
   {
     index: 4,
@@ -218,7 +232,7 @@ export const RANKS: Rank[] = [
     duty: "The fields nobody else has resolved. Six signatures, two positions almost on top of each other, and not one quadrant named.",
     filings: 2,
     filingMarks: false,
-    difficulty: { signatures: [6], anchorSeparation: [2, 3], quadrantClues: 0, indirectClues: 0 },
+    difficulty: { signatures: [6], anchorSeparation: [2, 3], quadrantClues: 0, indirectClues: 0, constellationStars: 3 },
   },
 ];
 

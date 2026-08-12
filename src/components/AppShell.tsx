@@ -32,6 +32,7 @@ import { RingScanPanel } from "@/components/panels/RingScanPanel";
 import { LogPanel } from "@/components/panels/LogPanel";
 import { HelpPanel } from "@/components/panels/HelpPanel";
 import { AboutPanel } from "@/components/panels/AboutPanel";
+import { ConstellationPanel } from "@/components/panels/ConstellationPanel";
 import { useExperiments } from "@/lib/experiments";
 
 /**
@@ -91,6 +92,7 @@ type PanelId =
   | "prototypes"
   | "station"
   | "about"
+  | "constellation"
   | "experiments"
   | "profile"
   | "starmap"
@@ -107,13 +109,14 @@ const MOBILE_ONLY_PANELS: PanelId[] = ["starmap", "menu"];
 // or administer the career. These are the four that get a one-tap hop to the
 // Star Map on a phone, and the only four the map offers to return you to -
 // see MobileJumpBar.
-const SOLVING_PANELS: PanelId[] = ["briefing", "manifest", "sweep", "ringscan"];
+const SOLVING_PANELS: PanelId[] = ["briefing", "manifest", "sweep", "ringscan", "constellation"];
 
 const PRIMARY_NAV: NavItem[] = [
   { id: "briefing", label: "Briefing", color: "orange" },
   { id: "manifest", label: PANEL_LABELS.manifest, color: "lilac" },
   { id: "sweep", label: PANEL_LABELS.sweep, color: "violet" },
   { id: "ringscan", label: PANEL_LABELS.ringScan, color: "salmon" },
+  { id: "constellation", label: "Constellation", color: "violet" },
   { id: "log", label: "Log", color: "amber" },
 ];
 
@@ -1038,6 +1041,7 @@ export function AppShell() {
           {panel === "help" && <HelpPanel />}
           {panel === "prototypes" && <PrototypesPanel region={activeRegion} />}
           {panel === "about" && <AboutPanel />}
+          {panel === "constellation" && <ConstellationPanel region={activeRegion} />}
           {panel === "experiments" && ExperimentsPanel && <ExperimentsPanel region={activeRegion} />}
           {isMobile && panel === "starmap" && starMapView}
         </main>

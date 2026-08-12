@@ -118,4 +118,20 @@ export interface Region {
    * decide the game for the player. It is for the Log, after the fact.
    */
   solvability?: { withoutScans: boolean; withBestScans: boolean };
+  /**
+   * How many signatures this region's Constellation shows, fixed at
+   * generation from the rank that drew it.
+   *
+   * **On the region rather than read from the player**, and that is not a
+   * convenience. A region outlives the rank that produced it - you can open
+   * one at Officer, get promoted, and come back to it - and its difficulty
+   * must not change underneath you. It is also what lets `solvability.ts`
+   * know what a given region actually revealed, which it has to, because a
+   * shipped instrument is part of what a player can know and the "nobody
+   * could have got this" flag is wrong the moment it ignores one.
+   *
+   * Optional: built-in regions and anything generated before 2026-08-11 have
+   * none, and the Constellation is simply unavailable for those.
+   */
+  constellationStars?: number;
 }
