@@ -55,38 +55,41 @@ export interface RegionDifficulty {
    * chain through the signature's classification rather than as a single
    * statement about the signature itself:
    *
-   *   "Sensor signature OJ 502 is classified Blazar."
-   *   "The Blazar signature is in Quadrant III."
+   *   "Sensor signature OJ 502 is classified Ancient Relic."
+   *   "Ancient Relic signatures are confined to Quadrants II and IV."
    *
-   * instead of "Sensor signature OJ 502 is in Quadrant III."
+   * instead of "Sensor signature OJ 502 is in Quadrant II."
    *
-   * **The information is identical for placing signatures**, which is the
-   * claim `check-chain-equivalence.ts` actually tests: flatten every chain
-   * to its direct clue and solvability is unchanged region by region. That
-   * is the point of the lever - it makes a briefing harder to *read* without
-   * making a region harder to *solve*, which is a difficulty axis this game
-   * did not previously have, since every other one works by taking
-   * information away.
+   * **The pair is strictly weaker than the clue it replaces**, and that is
+   * the whole value. The second clue names every quadrant the classification
+   * occupies, so the player learns their signature is in one of several
+   * places rather than one. A first version named a single quadrant for a
+   * uniquely-held type, which made it informationally identical to the direct
+   * clue - and identical information delivered in two lines is an extra step,
+   * not a puzzle. That version was rejected on 2026-08-11 for exactly that.
    *
-   * **But it is not identical in general, and the difference is live.** The
-   * user asked on 2026-08-11 whether "The Ancient Relic signature is in
-   * Quadrant I" is safe to read as "there is exactly one Ancient Relic". It
-   * is - generation guarantees it and the assertion in `generate-region.ts`
-   * enforces it - which means the chain hands the player a *second* fact the
-   * direct clue never did: that this classification is unique in the region.
+   * **Only generated when the type spans two or more quadrants.** A
+   * single-quadrant chain is the pointless case, so it is never built rather
+   * than merely rare - which also means the frequency varies on its own,
+   * since whether a classification spreads is a property of the draw. In
+   * practice 46% to 85% of regions carry one, depending on the profile.
    *
-   * That extra fact is inert today only because nothing else in the shipped
-   * game observes types, so it constrains no position. It stops being inert
-   * the moment a type-aware instrument exists - the Test Bench's type filter
-   * reports per-ring counts by classification, and "exactly one Ancient
-   * Relic" plus "Ancient Relics appear in ring 3" pins that signature's ring
-   * outright. If that filter ever ships, this lever is no longer free and
-   * has to be re-measured with it.
+   * No uniqueness is claimed or needed. The text says "confined to" rather
+   * than "the", so it promises no count - and the number of quadrants listed
+   * is a floor on how many signatures share the type, never a total, since
+   * two of a type can sit in one quadrant. That gap is deliberate: it helps
+   * and misleads at once.
    *
    * Capped by `quadrantClues`, so a profile with none is unaffected however
-   * high this is set. Falls back to the direct clue whenever the chosen
-   * signature's type is shared, which is common: regions carry at least 3
-   * distinct types across 6-8 signatures, so repeats are the norm.
+   * high this is set.
+   *
+   * **What it costs, measured.** Solvable rates move 0.0-0.6 points, which
+   * is nearly nothing and is not the point - solvability is the wrong
+   * instrument for a quadrant lever, as the note above already says. The
+   * cost lands in search effort: a direct quadrant clue leaves 10 of the 40
+   * cells open and a chain leaves about 22, handing back half the collapse.
+   * See `scripts/measure-chain-cost.ts` and
+   * `scripts/measure-baseline-vs-chains.ts`.
    */
   indirectClues: number;
 }

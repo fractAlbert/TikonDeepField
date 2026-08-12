@@ -431,11 +431,12 @@ types attached and no orientation. It fits the instrument the game already
 teaches you to think in. It also sidesteps the constraint that forced item 2
 into a chain, because it labels by type without needing a type to be unique.
 
-**Why it is harder to balance, precisely.** Item 2 needed no re-measurement
-because a chain is provably the direct clue - `check-chain-equivalence.ts`
-shows zero mismatches across 664 chained regions. A constellation is a
-genuinely new information channel, so nothing about the existing rates
-carries over. It needs a channel model in `analyze-solvability.ts` and the
+**Why it is harder to balance, precisely.** Item 2 stayed cheap because a
+chain only ever *narrows* an existing lever - it replaces a quadrant clue
+with a weaker quadrant clue, so the effect is a number on a scale that was
+already measured, and `measure-chain-cost.ts` reads it off in one run. A
+constellation is a genuinely new information channel, so nothing about the
+existing rates carries over. It needs a channel model in `analyze-solvability.ts` and the
 rank profiles in `region-difficulty.md` re-measured, which is the work item 1
 did and it was not small.
 
