@@ -5,6 +5,7 @@ import { orthogonalDistanceSigned } from "@/lib/grid";
 import { playButtonClick, playSweepPing } from "@/lib/sound";
 import { QuasarStar } from "@/components/QuasarStar";
 import { QuasarGlyph } from "@/lib/quasar-glyph";
+import { VISIBILITY_RANGE } from "@/lib/experiments";
 import styles from "./RelativeDistanceScope.module.css";
 
 export interface ScopeSignature {
@@ -23,7 +24,6 @@ export interface ScopeSignature {
   placed?: boolean;
 }
 
-const VISIBILITY_RANGE = 5;
 // The glow falloff reaches half a distance-tick's spacing on either side of
 // a blip's true position, so a blip at value 2 is fully faded by 1.5 and
 // fully gone again by 2.5 - never bleeding into a neighboring tick.

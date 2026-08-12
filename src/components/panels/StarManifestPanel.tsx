@@ -22,12 +22,12 @@ import {
 import { LcarsPanel } from "@/components/LcarsShell";
 import { QuasarStar } from "@/components/QuasarStar";
 import { quasarGlyph } from "@/lib/quasar-glyph";
+import { VISIBILITY_RANGE } from "@/lib/experiments";
 
 const sectorLookup = new Map(buildSectors().map((s) => [s.id, s]));
 
 // Must match RelativeDistanceScope, or the manifest would report readings
 // the scope never showed.
-const VISIBILITY_RANGE = 5;
 
 interface KnownFact {
   label: string;

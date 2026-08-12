@@ -32,6 +32,23 @@ import { RingScanPanel } from "@/components/panels/RingScanPanel";
 import { LogPanel } from "@/components/panels/LogPanel";
 import { HelpPanel } from "@/components/panels/HelpPanel";
 import { AboutPanel } from "@/components/panels/AboutPanel";
+import { useExperiments } from "@/lib/experiments";
+
+/**
+ * Loaded through a require inside a statically-false branch, which is the
+ * only form webpack actually removes. A normal top-level import keeps the
+ * module in the graph even when every use of it is dead - verified by
+ * grepping the production chunks for "Test Bench" and finding it.
+ *
+ * NODE_ENV is inlined at build time, so in a production build this whole
+ * expression folds to null and the panel, the constellation and the type
+ * filter have no live reference to keep them in the graph.
+ */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const ExperimentsPanel =
+  process.env.NODE_ENV !== "production"
+    ? (require("@/components/panels/ExperimentsPanel").ExperimentsPanel as typeof import("@/components/panels/ExperimentsPanel").ExperimentsPanel)
+    : null;
 import { PrototypesPanel } from "@/components/panels/PrototypesPanel";
 import { NoActiveAssignmentPanel } from "@/components/NoActiveAssignmentPanel";
 import { StationInfoPanel } from "@/components/panels/StationInfoPanel";
@@ -74,6 +91,7 @@ type PanelId =
   | "prototypes"
   | "station"
   | "about"
+  | "experiments"
   | "profile"
   | "starmap"
   | "menu"
@@ -124,6 +142,17 @@ const UTILITY_NAV: NavItem[] = [
   // that carries structure rather than a category.
   { id: "about", label: "About", color: "tan" },
 ];
+
+// Localhost only. Alert red because the style notes reserve that colour for
+// something urgent, and a test instrument reaching a player is exactly that.
+// Folded to null in a production build for the same reason the panel itself
+// is required rather than imported: a module-level object literal survives
+// dead-code elimination, and grepping the chunks found "Test Bench" still in
+// them after everything else had gone.
+const EXPERIMENTS_NAV: NavItem | null =
+  process.env.NODE_ENV !== "production"
+    ? { id: "experiments", label: "Test Bench", color: "alert" }
+    : null;
 
 // Purely for flavor - the region is already generated before this starts,
 // so nothing is actually blocked on it.
@@ -203,6 +232,19 @@ export function AppShell() {
   // Drives which layout is *mounted*, not just which is visible - see
   // use-media-query.ts for why that distinction is load-bearing.
   const isMobile = useMediaQuery(BELOW_LG);
+  // False on the server and the first paint, so this cannot desync hydration.
+  const experiments = useExperiments();
+  const utilityNav = useMemo(
+    () => (experiments && EXPERIMENTS_NAV ? [...UTILITY_NAV, EXPERIMENTS_NAV] : UTILITY_NAV),
+    [experiments]
+  );
+  const hubGroups = useMemo(
+    () =>
+      experiments && EXPERIMENTS_NAV
+        ? MOBILE_HUB_GROUPS.map((g, i) => (i === MOBILE_HUB_GROUPS.length - 1 ? [...g, EXPERIMENTS_NAV] : g))
+        : MOBILE_HUB_GROUPS,
+    [experiments]
+  );
 
   // Resolving the phone-only panels here rather than redirecting in an
   // effect avoids a cascading render, and has the nicer side effect of
@@ -885,7 +927,7 @@ export function AppShell() {
               the hub's eleven destinations are the least useful thing to
               hand someone who has never played and has no survey to open. */}
           {panel === "menu" && !showWelcome && (
-            <MobileMenu id="mobile-menu" groups={MOBILE_HUB_GROUPS} onSelect={handleNavSelect} />
+            <MobileMenu id="mobile-menu" groups={hubGroups} onSelect={handleNavSelect} />
           )}
           {/* The welcome takes the Briefing slot rather than being a
               destination of its own: it is what a first run lands on, and
@@ -996,6 +1038,7 @@ export function AppShell() {
           {panel === "help" && <HelpPanel />}
           {panel === "prototypes" && <PrototypesPanel region={activeRegion} />}
           {panel === "about" && <AboutPanel />}
+          {panel === "experiments" && ExperimentsPanel && <ExperimentsPanel region={activeRegion} />}
           {isMobile && panel === "starmap" && starMapView}
         </main>
 
@@ -1046,7 +1089,7 @@ export function AppShell() {
           <div className="w-28 md:w-36 shrink-0 min-h-0 flex flex-col ml-[48px] max-lg:hidden">
             <NavRail
               id="nav-rail-utility"
-              items={UTILITY_NAV}
+              items={utilityNav}
               activeId={panel}
               onSelect={handleNavSelect}
               indicatorSide="left"

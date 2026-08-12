@@ -15,7 +15,8 @@ import { buildSectors, orthogonalDistanceSigned, quadrantOf } from "./grid";
 import { Quadrant, Region, Sector } from "./puzzle-types";
 import { RING_SCAN_LIMIT } from "./survey-log";
 
-const VISIBILITY_RANGE = 5; // must match RelativeDistanceScope
+// Single source of truth since 2026-08-11 - it was a bare 5 in twelve files.
+import { VISIBILITY_RANGE } from "./experiments";
 const OUT_OF_RANGE = 99;
 const QUADRANTS: Quadrant[] = ["I", "II", "III", "IV"];
 
