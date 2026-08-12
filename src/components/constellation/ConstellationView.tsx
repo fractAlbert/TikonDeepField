@@ -52,7 +52,26 @@ export function buildConstellation(region: Region, count: number): Constellation
 
   // Polar to cartesian. `ring + 1` so the innermost ring is not a point at
   // the origin, which would collapse every inner signature onto one spot.
-  const angle = rand() * Math.PI * 2;
+  // Rotated by a whole number of *segments*, never a free angle.
+  //
+  // Not a correctness fix - a tractability one, and worth stating precisely
+  // because the obvious argument for it is wrong. A free-angle rotation is
+  // still *rigid*, so the shape stays congruent to the real arrangement and
+  // could in principle be rotated back. Nothing is falsified by it.
+  //
+  // What it destroys is the player's ability to search. The field is polar
+  // with eight segments, so a real arrangement can only be seen from eight
+  // orientations. Quantising to those turns registration into eight things to
+  // try; a free angle turns it into eyeballing a continuous rotation, which
+  // is the same puzzle with the handle filed off.
+  //
+  // That matters most once this is paired with an anonymous anchor (backlog
+  // 28): the anchor is one fixed cell of known classification, and
+  // registering means trying the turns until the shape fits it. Eight is also
+  // about the right ambiguity - enough that the shape alone gives nothing
+  // away, few enough to work through.
+  const turn = Math.floor(rand() * SEGMENT_COUNT);
+  const angle = (turn / SEGMENT_COUNT) * Math.PI * 2;
   const raw = chosen.map((name) => {
     const sector = sectorLookup.get(region.solution[name].sector)!;
     const r = sector.ring + 1;
