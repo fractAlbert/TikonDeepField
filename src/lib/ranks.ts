@@ -60,13 +60,28 @@ export interface RegionDifficulty {
    *
    * instead of "Sensor signature OJ 502 is in Quadrant III."
    *
-   * **The information is identical.** A chain is only emitted for a type
-   * exactly one signature in the region holds, so the second clue resolves
-   * to precisely one name and the pair is logically the direct clue with an
-   * extra step in front of it. That is the whole point: it makes a briefing
-   * harder to *read* without making a region harder to *solve*, which is a
-   * difficulty axis this game did not previously have - every other lever
-   * here works by taking information away.
+   * **The information is identical for placing signatures**, which is the
+   * claim `check-chain-equivalence.ts` actually tests: flatten every chain
+   * to its direct clue and solvability is unchanged region by region. That
+   * is the point of the lever - it makes a briefing harder to *read* without
+   * making a region harder to *solve*, which is a difficulty axis this game
+   * did not previously have, since every other one works by taking
+   * information away.
+   *
+   * **But it is not identical in general, and the difference is live.** The
+   * user asked on 2026-08-11 whether "The Ancient Relic signature is in
+   * Quadrant I" is safe to read as "there is exactly one Ancient Relic". It
+   * is - generation guarantees it and the assertion in `generate-region.ts`
+   * enforces it - which means the chain hands the player a *second* fact the
+   * direct clue never did: that this classification is unique in the region.
+   *
+   * That extra fact is inert today only because nothing else in the shipped
+   * game observes types, so it constrains no position. It stops being inert
+   * the moment a type-aware instrument exists - the Test Bench's type filter
+   * reports per-ring counts by classification, and "exactly one Ancient
+   * Relic" plus "Ancient Relics appear in ring 3" pins that signature's ring
+   * outright. If that filter ever ships, this lever is no longer free and
+   * has to be re-measured with it.
    *
    * Capped by `quadrantClues`, so a profile with none is unaffected however
    * high this is set. Falls back to the direct clue whenever the chosen

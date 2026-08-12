@@ -65,6 +65,28 @@ regions, 664 carrying a chain, **zero mismatches**.
 Chains land in about half of briefings, since the drawn signature's type is
 often shared. Variety rather than a shortfall.
 
+**One qualification, found by the user the same day** and worth carrying
+forward, because the original claim was too broad. They asked whether *"The
+Ancient Relic signature is in Quadrant I"* is safe to read as "there is
+exactly one Ancient Relic". It is - and that means the chain hands the player
+a second fact the direct clue never did.
+
+So "informationally identical" is true **for placing signatures**, which is
+what `check-chain-equivalence.ts` tests, and false in general. The uniqueness
+implication constrains no position today only because nothing else in the
+shipped game observes classifications. It stops being inert the moment a
+type-aware instrument exists: the Test Bench's type filter reports per-ring
+counts by classification, and "exactly one Ancient Relic" plus "Ancient
+Relics appear in ring 3" pins that signature's ring outright. **If the filter
+ships, this lever is no longer free and both need measuring together.**
+
+The definite article is also load-bearing in a way worth guarding. A
+`type-quadrant` on a shared type does not read as merely vague - `resolveType`
+returns "multiple" and the evaluator scores the clue *false* against the real
+solution, so the briefing would carry a lie. `generate-region.ts` now asserts
+the invariant in development rather than trusting one condition to hold
+forever.
+
 Closed 2026-08-11 and removed: **the text bar (25)**, on the user's call, one
 turn after it was filed. The section headers stay.
 

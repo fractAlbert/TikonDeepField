@@ -209,6 +209,26 @@ function buildMandatoryClues(
     // so the fallback below is load-bearing rather than defensive.
     if (indirectBudget > 0 && typeCount.get(type) === 1) {
       indirectBudget--;
+      // The uniqueness guard above is not a nicety, and this assertion is
+      // here because the whole guarantee rests on one condition.
+      //
+      // `clueText` renders this as "**The** Ancient Relic signature is in
+      // Quadrant I" - a definite article, which tells the player there is
+      // exactly one. That is true today by construction. If it ever stops
+      // being true the briefing does not merely become vague, it becomes
+      // **false**: `resolveType` in `clue-eval.ts` returns "multiple" for a
+      // shared type and the evaluator scores the clue false against the real
+      // solution. A region would ship with a lie in its briefing.
+      //
+      // Dev-only, because a lying briefing is worth stopping a developer for
+      // and not worth crashing a player over - in production the `else`
+      // branch below is a correct clue either way.
+      if (process.env.NODE_ENV !== "production" && typeCount.get(type) !== 1) {
+        throw new Error(
+          `Chained a type held by ${typeCount.get(type)} signatures: "${type}". ` +
+            `The briefing would claim there is exactly one.`
+        );
+      }
       clues.push({ kind: "quasar-type", quasar: name, type });
       clues.push({ kind: "type-quadrant", type, quadrant });
     } else {
