@@ -26,6 +26,45 @@ signatures in the Sweep Scope and Ring Scan (9). Numbers are never reused -
 a freed number stays free, so nobody reading an old note lands on a
 different item than the one it meant.
 
+Shipped 2026-08-11 and removed: **no `quasar-type` clues are ever emitted
+(2)**, the oldest item on the list and the one repeatedly put off for needing
+the most thought. The user's call to take it first: *"if we deal with 2, that
+opens up more options for difficulty management."* That ordering was right -
+built the other way round, 26 would have been built twice.
+
+The vocabulary already existed. `quasar-type`, `type-quadrant`, `type-ring`
+and the rest were wired through evaluation, briefing text and the solver;
+generation simply never emitted any, so types sat in the solution as
+write-only data revealed at close.
+
+Two constraints shaped the answer. **Types repeat** - at least 3 distinct
+across 6-8 signatures - and a `type-*` clue names no signature, so it pins
+one down only when exactly one holds that type. And **nothing else in the
+live game references types**: the Quadrant Survey, the only instrument with a
+per-type breakdown, was replaced by the Ring Scan on 2026-08-01. A bare "OJ
+502 is classified Blazar" is therefore inert - true, and useless.
+
+So it ships as a **chain**: the naming clue plus a `type-quadrant` on the
+same type, emitted only when that type is unique and falling back to the
+direct clue otherwise. It says exactly what the direct clue said with one
+more step in front of it.
+
+That is the point rather than a compromise. Every other lever here works by
+removing information; this one leaves the information alone and makes the
+briefing harder to *read*. It is the axis 26 was missing.
+
+Both claims are proved rather than asserted, by two scripts.
+`check-type-chains.ts` verifies the chained type is real, held by exactly one
+signature, and partnered with the signature's true quadrant.
+`check-chain-equivalence.ts` proves neutrality **region by region** rather
+than statistically - at a few hundred samples a bucket the noise is wider
+than any effect worth catching, so "the rates look similar" would have proved
+nothing. It flattens every chain to its direct clue and re-assesses: 1800
+regions, 664 carrying a chain, **zero mismatches**.
+
+Chains land in about half of briefings, since the drawn signature's type is
+often shared. Variety rather than a shortfall.
+
 Closed 2026-08-11 and removed: **the text bar (25)**, on the user's call, one
 turn after it was filed. The section headers stay.
 
@@ -295,10 +334,10 @@ column says what kind of open each item is.
 
 | # | item | where | state |
 | --- | --- | --- | --- |
-| 2 | No `quasar-type` clues are ever emitted | Gameplay | open, needs a design call |
 | 21 | The LCARS pattern kit - a standing check, maybe nothing to do | Design | standing reminder |
 | 22 | Faint arrows showing that a panel can still be scrolled | Interaction | open, waiting on the user's steer |
-| 26 | Let the player choose a difficulty | Gameplay | open, needs the model chosen |
+| 26 | Let the player choose a difficulty | Gameplay | open, now has a neutral lever to use |
+| 27 | Make types observable through an instrument | Gameplay | open, the user has two designs |
 
 ## Design
 
@@ -335,6 +374,70 @@ second thing - a place to check a rule against - which argues for adding the
 new rules rather than mirroring every component.
 
 ## Gameplay
+
+### 27 - Make types observable through an instrument
+
+Raised 2026-08-11, after item 2 shipped type clues as a briefing chain. The
+user's two ideas, verbatim:
+
+> "My thought was adding things like some sort of type filter. You would go
+> look at it and it might give you information about the types that the
+> filter can sense."
+
+> "A differnet thought I had was some sort of constellation view that shows
+> you a number of stars without the star map grid. It would be rotated
+> arbritrarily so you won't necessarily know what is what. It would only
+> include a few stars.. not all and it would give you star type information.
+> So you can say, I have to ancient relics near each other and farther away
+> at thrice the distance is some other type of quasar."
+
+And their own reservation, which is correct: *"My ideas sound much harder to
+balance"*.
+
+**The constellation is the stronger of the two**, and it is worth saying why
+rather than just agreeing. This game's entire deduction is already relative -
+the Sweep Scope gives distances between signatures, never positions. A
+constellation is that same relativity given a second dimension: a shape, with
+types attached and no orientation. It fits the instrument the game already
+teaches you to think in. It also sidesteps the constraint that forced item 2
+into a chain, because it labels by type without needing a type to be unique.
+
+**Why it is harder to balance, precisely.** Item 2 needed no re-measurement
+because a chain is provably the direct clue - `check-chain-equivalence.ts`
+shows zero mismatches across 664 chained regions. A constellation is a
+genuinely new information channel, so nothing about the existing rates
+carries over. It needs a channel model in `analyze-solvability.ts` and the
+rank profiles in `region-difficulty.md` re-measured, which is the work item 1
+did and it was not small.
+
+**The lever that decides how hard.** How much geometry the view shows:
+
+- **Types only, positions redundant.** If the constellation's geometry is
+  just the pairwise distances the Sweep Scope already gives, then the only
+  new information is the type labelling, and balance is close to free -
+  measurable as "the player learns the types of k signatures".
+- **Types plus true shape.** If it shows angles - a real 2D configuration,
+  rotated - that is strictly more than the distance matrix, because the
+  field's metric is orthogonal and a distance matrix does not fix chirality
+  or bearing. Richer, and it needs the full measurement.
+
+That choice is the design decision, not an implementation detail, and it
+should be made deliberately rather than falling out of how the view happens
+to get drawn.
+
+What a fix has to respect:
+
+- **`analyze-solvability.ts` already has a channels architecture** (`rings`,
+  `ringTotals` are optional channels), so this is the documented shape of the
+  work rather than new machinery.
+- **It has to be metered or targeted**, like the Ring Scan and unlike a
+  census. A published constellation reads identically for every player, so it
+  lowers the loss rate for everyone and measures nothing - the Ring Scan
+  entry has the argument and the numbers.
+- **The type filter idea is the cheaper cousin** and shares the ceiling: if
+  it only reports which types it can sense, it is an anonymous partition
+  unless something links a type to a name - which is exactly the problem
+  item 2's chain exists to solve. The two would compose well.
 
 ### 26 - Let the player choose a difficulty
 
@@ -378,27 +481,6 @@ What a fix has to respect:
 - **It interacts with item 2.** Type clues would make regions easier, so if
   both ship, difficulty is the natural place to put them rather than a
   global on.
-
-### 2 - No `quasar-type` clues are ever emitted
-
-Lives in **`win-conditions.md`** - the clue vocabulary design. Generation
-emits only `quasar-sector` and `quasar-quadrant`, so a player never learns
-any signature's classification until the region closes and the report
-reveals it. That is why the Quadrant Survey's per-type breakdown was never
-usable, and why `analyze-solvability.ts` deliberately leaves it out.
-
-**Note it would make regions *easier*.** A type clue is another constraint,
-and the difficulty work (item 1, shipped 2026-08-05) measured what that
-does: more information means fewer regions that stall. If this ships, the
-per-rank profiles in `region-difficulty.md` need re-measuring rather than
-assuming they still hold.
-
-**What item 1 settled, for the record.** The filing budget scales with rank
-(4 4 3 2 2) and the *regions* now do too - signature count, anchor
-separation and quadrant clue count, per rung. A careful player used to reach
-Chief of Survey 100% of the time under every threshold tested; they now
-reach it 91%, and the average player dropped from 54% to 5%. The full
-argument is in `region-difficulty.md`.
 
 ## Interaction
 
