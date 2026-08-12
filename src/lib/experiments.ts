@@ -81,7 +81,27 @@ export function useExperiments(): boolean {
  * measured at 5. Re-run `scripts/analyze-solvability.ts` before believing
  * any of them at another value.
  */
-export const VISIBILITY_RANGE = 5;
+export const VISIBILITY_RANGE = readSweepRange();
+
+/**
+ * 5 unless `SWEEP_RANGE` says otherwise, which only the analysis scripts do.
+ *
+ * An env override rather than a second constant, so a measurement runs the
+ * *real* `solvability.ts` at the candidate value instead of a script's copy
+ * of it. A reimplementation would be measuring the reimplementation - and
+ * this project already has one lesson about a constant that lived in twelve
+ * places disagreeing with itself.
+ *
+ * Browser bundles never see it: Next only inlines `NEXT_PUBLIC_`-prefixed
+ * vars into client code, so this reads undefined there and falls back to 5.
+ * Anything but a number in 1..8 falls back too - an out-of-range sweep would
+ * silently rewrite what every instrument reports.
+ */
+function readSweepRange(): number {
+  const raw = typeof process !== "undefined" ? process.env?.SWEEP_RANGE : undefined;
+  const n = Number(raw);
+  return Number.isInteger(n) && n >= 1 && n <= 8 ? n : 5;
+}
 
 /**
  * The reduced range the constellation experiment is meant to be tried
